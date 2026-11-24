@@ -9,21 +9,46 @@ const bossById=new Map(bosses.map(b=>[String(b.id),b]));
 el('boss').insertAdjacentHTML('beforeend',bosses.map(b=>'<option value="' + b.id + '">' + b.name.text + '</option>').join(''));
 const emptyTeammate={name:'空气',role:'空位',portrait:null,engines:[['0','无音擎']]};
 const teammateChoices={
-  f:{air:emptyTeammate,jufufu:{name:'橘福福',role:'击破 · 火',portrait:portraits[1],engines:[['1','福虓炉炉'],['0','燃狱齿轮']]},roxy:{name:'洛克茜',role:'击破 · 风',portrait:'https://i.gachabase.net/DijdTpaLWeJmg39VwoMIkRzIVyKh8cy96PpISuBx68c/q:50/f:webp/plain/zzz/assets/386b80141590c07add669b27246d96df.png',engines:[['1','永夜辗眠'],['0','其他音擎']]},norma:{name:'诺姆',role:'击破 · 火',portrait:'https://i.gachabase.net/ZCzHYreyZcNjBTh-HiFeXL7mazPZS4lVSvWEcZkklxc/q:50/f:webp/plain/zzz/assets/136be6592f54d191d26e33e3d8cd955c.png',engines:[['1','首席跟班'],['0','其他音擎']]}},
-  r:{air:emptyTeammate,robin:{name:'知更鸟',role:'防护 · 以太',portrait:portraits[2],engines:[['1','星韵流彩'],['2','奔袭獠牙'],['0','仅生命主词条']]},rina:{name:'丽娜',role:'支援 · 电',portrait:'https://i.gachabase.net/Z_0BPPOC5MxvcyiogXatpCYqOMc4jknjbBs-H2d1m4g/q:50/f:webp/plain/zzz/assets/9da302acd93c121cccd36bc60aff4cf2.png',engines:[['1','啜泣摇篮'],['0','其他音擎']]}}
+  air:emptyTeammate,
+  jufufu:{name:'橘福福',role:'击破 · 火',portrait:portraits[1],engines:[['1','福虓炉炉'],['0','燃狱齿轮']]},
+  roxy:{name:'洛克茜',role:'击破 · 风',portrait:'https://i.gachabase.net/DijdTpaLWeJmg39VwoMIkRzIVyKh8cy96PpISuBx68c/q:50/f:webp/plain/zzz/assets/386b80141590c07add669b27246d96df.png',engines:[['1','永夜辗眠'],['0','其他音擎']]},
+  norma:{name:'诺姆',role:'击破 · 火',portrait:'https://i.gachabase.net/ZCzHYreyZcNjBTh-HiFeXL7mazPZS4lVSvWEcZkklxc/q:50/f:webp/plain/zzz/assets/136be6592f54d191d26e33e3d8cd955c.png',engines:[['1','首席跟班'],['0','其他音擎']]},
+  trigger:{name:'扳机',role:'击破 · 电',portrait:'https://i.gachabase.net/3DKa3mJdWQ2VSLRRL2zwqJAmLmYKPbTeLw78m_sltUw/q:50/f:webp/plain/zzz/assets/0f407c34390c90ec495e3b37ab73039a.png',engines:[['1','索魂影眸'],['0','其他音擎']]},
+  robin:{name:'知更鸟',role:'防护 · 以太',portrait:portraits[2],engines:[['1','星韵流彩'],['2','奔袭獠牙'],['0','仅生命主词条']]},
+  rina:{name:'丽娜',role:'支援 · 电',portrait:'https://i.gachabase.net/Z_0BPPOC5MxvcyiogXatpCYqOMc4jknjbBs-H2d1m4g/q:50/f:webp/plain/zzz/assets/9da302acd93c121cccd36bc60aff4cf2.png',engines:[['1','啜泣摇篮'],['0','其他音擎']]}
 };
 el('two').innerHTML=options(Object.entries(twoPieceNames));
+const tunableSlots=[4,5,6];
 el('mainSlots').innerHTML=mainPools.map((pool,i)=>{
   const choices=pool.map(stat=>[stat,mainLabels[stat]]);
   if(i===3 || i===4)choices.unshift(['auto','自动择优']);
-  return `<label>${i+1} 号位${pool.length===1?' · 固定':''}<select id="main${i+1}" ${pool.length===1?'disabled':''}>${options(choices)}</select></label>`;
+  const fixed=pool.length===1;
+  const label=`${i+1} 号位`;
+  return `<div class="disc-field"><label>${label}${fixed?' · 固定':''}<select id="main${i+1}" ${fixed?'disabled':''}>${options(choices)}</select></label>${fixed?'':`<label class="disc-lock"><input type="checkbox" id="lockMain${i+1}" aria-label="锁定${label}主属性">锁定</label>`}</div>`;
 }).join('');
 el('main4').value='crit';
-const agents=[['w','挽昼','锋御 · 燎源','星之碑 / 荆棘玫瑰',['蜃炎梦火']],['f','橘福福','击破 · 火','赤翼夜曲',['福虓炉炉','燃狱齿轮']],['r','知更鸟','防护 · 以太','雪兔梦游仙境',['星韵流彩','仅生命主词条']]];
-const teammateCard=(key,initial)=>{const choices=teammateChoices[key],ch=choices[initial];return `<div class="card"><div class="agent"><img id="${key}portrait" alt="" src="${ch.portrait}" onerror="this.style.display='none'"><div><h3 id="${key}name">${ch.name}</h3><small id="${key}role">${ch.role}</small></div></div><div class="fields"><label>队友<select id="${key}char">${Object.entries(choices).map(([id,v])=>`<option value="${id}"${id===initial?' selected':''}>${v.name}</option>`).join('')}</select></label><label>意象影画<select id="${key}">${numericOptions(0,6,' 影')}</select></label><label>音擎星级<select id="${key}r">${numericOptions(1,5,' 星')}</select></label><label class="wide"><span id="${key}engineLabel">专属音擎 / 其他音擎</span><select id="${key}e">${options(ch.engines)}</select></label></div><div id="${key}BuffSummary" class="team-buffs"></div></div>`};
-el('cards').innerHTML=agents.slice(0,1).map(([key,name,role,disc,engines],i)=>`<div class="card"><div class="agent"><img alt="" src="${portraits[i]}" onerror="this.style.display='none'"><div><h3>${name}</h3><small>${role}</small></div></div><div class="fields"><label>意象影画<select id="${key}">${numericOptions(0,6,' 影')}</select></label><label>音擎星级<select id="${key}r">${numericOptions(1,5,' 星')}</select></label><label class="wide">音擎　·　${disc}<select id="${key}e" disabled>${options(engines.map((e,i)=>[1-i,e]))}</select></label></div></div>`).join('')+teammateCard('f','jufufu')+teammateCard('r','robin');
+el('rollLocks').innerHTML=statNames.map((name,i)=>`<div class="disc-field">
+  <label>${name}条数<input id="discRoll${i}" type="number" min="0" max="36" step="1" value="0" required disabled></label>
+  <label class="disc-lock"><input type="checkbox" id="lockDiscRoll${i}" aria-label="锁定${name}条数">锁定</label>
+</div>`).join('');
+const rollInputs=statNames.map((_,i)=>el('discRoll'+i));
+const rollLocks=statNames.map((_,i)=>el('lockDiscRoll'+i));
+const sunbringer={name:'挽昼',engines:[['1','蜃炎梦火']]};
+function teammateCard(slot,index){
+  const initial=defaultTeammates[slot];
+  const choices=Object.entries(teammateChoices).map(([id,actor])=>`<option value="${id}"${id===initial?' selected':''}>${actor.name}</option>`).join('');
+  return `<div class="card"><div class="agent"><img id="${slot}portrait" alt="" onerror="this.style.display='none'"><div><h3 id="${slot}name"></h3><small id="${slot}role"></small></div></div>
+    <div class="fields" id="${slot}Fields"><label>队友 ${index+1}<select id="${slot}char">${choices}</select></label>
+    <label>意象影画<select id="${slot}">${numericOptions(0,6,' 影')}</select></label>
+    <label>音擎星级<select id="${slot}r">${numericOptions(1,5,' 星')}</select></label>
+    <label class="wide"><span id="${slot}engineLabel">音擎</span><select id="${slot}e"></select></label></div>
+    <div id="${slot}BuffSummary" class="team-buffs"></div></div>`;
+}
+el('cards').innerHTML=`<div class="card"><div class="agent"><img alt="" src="${portraits[0]}" onerror="this.style.display='none'"><div><h3>${sunbringer.name}</h3><small>锋御 · 燎源</small></div></div>
+  <div class="fields"><label>意象影画<select id="w">${numericOptions(0,6,' 影')}</select></label><label>音擎星级<select id="wr">${numericOptions(1,5,' 星')}</select></label>
+  <label class="wide">音擎　·　星之碑 / 荆棘玫瑰<select id="we" disabled>${options(sunbringer.engines)}</select></label></div></div>`+teammateSlots.map(teammateCard).join('');
 const teammateBuilds={};
-const defaultShadows={air:0,jufufu:1,roxy:0,norma:0,robin:0,rina:1};
+const defaultShadows={jufufu:1,rina:1};
 const potentialOptions=options(['未觉醒','I','II','III','IV','V','VI'].map((label,i)=>[i,label]));
 el('fchar').closest('.fields').insertAdjacentHTML('beforeend',
   '<label class="wide" id="potentialLabel">潜能觉醒 · 侠肝义胆<select id="potential">'+
@@ -42,7 +67,8 @@ el('notes').innerHTML=`<p>按 Lv.60 代理人、Lv.60 音擎、核心技 F、基
 <p>轮转按表中次序累计。¹「烬灭扣血」列记在引爆招式上，包含此前储存的烬痕。聚锋、长暗终焉、永昼之炬和两段终结技按实际伤害的 60% 积攒，毁伤为 40%。二影令其余招式按 30% 积攒。默认将各招式积攒量乘 1.35，四影指定的首次引爆改为乘 2。若选择加算假设，各招积攒率加 35 个百分点，该次四影引爆再加 65 个百分点。四影可指定给聚锋后的永昼之炬或第二段终结技。六影另结算第二段终结技自身所积攒烬痕的 80%。未引爆的烬痕不计入总伤害。</p>
 <p>期望直伤 = 战斗防御力 × 招式倍率 ×（通用倍率 ＋ 招式增伤）× 锐化倍率 × 最终倍率 × 目标受伤倍率 × 期望锐暴倍率 × 防御区 × 火抗区 × 失衡倍率。挽昼和蜃炎梦火分别提供 441 和 446 基础防御，武器另加 48% 防御。基础锐暴伤害为 150%，当前生效的加成见上方算例。初始暴伤的 35% 转为暴击率，虎啸的战斗中暴伤不计入此转换。设 M = 1 ＋ 锐暴伤害，单暴乘 M，二次锐暴成功乘 M²。暴击率 100% 至 200% 时，二次锐暴概率为暴击率超出 100% 的部分；达到 200% 时，每次均乘 M²。</p>
 <p>防御区 = 794 ÷ [794 ＋ max(0, 敌防 × (1 − 无视防御) × (1 − 穿透率) − 穿透值)]。火抗区倍率 = 1 − 有效火抗。有效火抗为敌方基础火抗扣除减抗和无视火抗后的数值。例如基础火抗 −20%，挽昼一影再无视 15 个百分点，火抗区倍率为 1.35。敌防 953、火抗 0%、失衡 150% 是可改的示例目标。锐化增伤独立相乘，即 (1 ＋ 通用、火属性及招式增伤之和) × (1 ＋ 锐化增伤之和)。</p>
-<p>极昼及当前队伍满足条件的状态和套装按全程覆盖计算。知更鸟装备雪兔时三层为 18%，赤翼触发为 8% 锐化增伤，两件炎狱为 10% 火伤。橘福福的潜能默认 VI 阶，可单独调整。虎啸下「侠肝义胆」的连携和终结最终倍率独立相乘，两段终结分别生效，烬痕按增幅后的直伤积攒。橘福福额外能力关闭，一影的 35 个百分点失衡易伤单独生效。福虓炉炉与星韵流彩按两层。燃狱齿轮影响击破效率，本页仅统计给定状态下的挽昼输出。</p>
+<p>极昼及当前队伍满足条件的状态和套装按全程覆盖计算。知更鸟装备雪兔时三层为 18%。击破队友默认使用赤翼夜曲，触发后为队伍提供 8% 锐化增伤，同队只计一次。两件炎狱为 10% 火伤。橘福福的潜能默认 VI 阶，可单独调整。虎啸下「侠肝义胆」的连携和终结最终倍率独立相乘，两段终结分别生效，烬痕按增幅后的直伤积攒。橘福福额外能力关闭，一影的 35 个百分点失衡易伤单独生效。福虓炉炉与星韵流彩按两层。燃狱齿轮影响击破效率，本页仅统计给定状态下的挽昼输出。</p>
+<p><a href="https://zzz.gachabase.net/agents/1361/trigger/beta?lang=chs">扳机</a>的核心技 F 提供 35 个百分点失衡易伤，一影额外增加 20 个百分点，两项在未失衡时也计入。<a href="https://zzz.gachabase.net/w-engines/14136/spectral-gaze/beta?lang=chs">索魂影眸</a>由电属性追加攻击触发，1 至 5 星分别降低敌方防御力 25%、28.75%、32.5%、36.25%、40%，计入同一减防区。核心技与专武的 5 秒效果均按持续覆盖计算。二影满层提供 24% 战斗中普通暴伤，对挽昼锐暴的贡献为 0；扳机的自身伤害和击破效率不纳入挽昼轮转。</p>
 <p>知更鸟按 26000 初始生命吃满守护咏叹，重音节拍默认已消耗。消耗重音节拍时，防御增益 = (440 ＋ 特殊技等级 × 30) × 1.25。各音擎方案均按配装达到生命门槛计算。<a href="https://zzz.gachabase.net/w-engines/14107/tusks-of-fury/beta?lang=chs">奔袭獠牙</a>按队友触发破招或极限闪避后的 20 秒增益覆盖本轮计算，1 至 5 星分别提供 18%、22.5%、27%、31.5%、36% 通用增伤。知更鸟六影另提供 15% 锐化增伤。</p>
 <p>自定义词条只作用于当前战斗条件和配置对照。无视防御、穿透率、通用增伤、锐化增伤、火属性增伤、暴击率、锐暴伤害、防御力百分比、固定防御和失衡易伤都可以填写正负百分点。它们会参与驱动盘优化，所以改变后四至六号位和副词条可能重新分配。</p>
 <p>一至三号位主属性固定，四至六号位可指定。自动寻优按词条数上限比较配装。四号位比较暴击率、暴击伤害和防御力，五号位比较火伤、穿透率和防御力，六号位选择防御力。固定轮转的锐化伤害使用防御力，生命、攻击及回复等主属性对本轮输出无直接加成。河豚电音两件提供 8% 穿透率，可与五号位叠至 32%；啄木鸟电音两件提供 8% 暴击率。荆棘玫瑰两件提供 16% 防御力，与星之碑四件搭配时两套合计提供 32% 防御力。六张均为荆棘玫瑰时，该套两件效果计一次。</p>
@@ -82,6 +108,7 @@ function currentAssault(buff,region=assaultRegions[el('regionChoice').value],sta
 }
 function rankAssaultBuffs(config){
   const select=el('assaultBuff'), previous=select.value;
+  const previousBuff=recommendedBuffs.get(previous);
   recommendedBuffs.clear();
   for(const season of activeAssaultSeasons()){
     let best=null, bestScore=-Infinity;
@@ -90,6 +117,7 @@ function rankAssaultBuffs(config){
       if(score!=null && score>bestScore){best=buff;bestScore=score;}
     }
     if(best)recommendedBuffs.set(season.id,best);
+    else if(season.id===previous)recommendedBuffs.set(season.id,previousBuff??season.buffs[0]);
   }
   select.innerHTML=options([['','无'],...Array.from(recommendedBuffs,([id,buff])=>[id,buff.name])]);
   if(recommendedBuffs.has(previous))select.value=previous;
@@ -104,8 +132,9 @@ function getConfig(){
   c.rchar=el('rchar').value;
   for(const k of ['set','two','main4','main5','main6','first','markMode'])c[k]=el(k).value;
   c.counts=skills.map((s,i)=>Number(el('n'+i).value));
+  c.lockedRolls=rollInputs.map((input,i)=>rollLocks[i].checked?input.valueAsNumber:null);
   c.potential=Number(el('potential').value);
-  if(c.rchar==='rina'){
+  if(teammateSlot(c,'rina')){
     c.rinaPotential=Number(el('rinaPotential').value);
     c.rinaBasePen=Number(el('rinaBasePen').value);
   }
@@ -149,21 +178,22 @@ function variants(c){
   const key=el('variants').value;
   if(key==='gear'){
     const items=[];
-    const fEngines=teammateChoices.f[c.fchar].engines, rEngines=teammateChoices.r[c.rchar].engines;
+    const fEngines=teammateChoices[c.fchar].engines, rEngines=teammateChoices[c.rchar].engines;
     for(const set of ['star','rose'])for(const two of Object.keys(twoPieceNames))for(const [fe,fName] of fEngines)for(const [re,rName] of rEngines){
       items.push({changes:{set,two,fe:Number(fe),re:Number(re)},label:[(set==='star'?'星之碑':'荆棘玫瑰')+' 4＋'+twoPieceNames[two]+' 2',fName,rName].join(' / ')});
     }
     return items;
   }
   const rank=key.length===2;
-  const actor=key[0]==='f'?teammateChoices.f[c.fchar||'jufufu']:key[0]==='r'?teammateChoices.r[c.rchar||'robin']:agents.find(([id])=>id===key[0]);
-  const engineId=key==='rr'?(c.re||1):1;
-  const engineName=actor.engines?.find(([id])=>Number(id)===engineId)?.[1]??actor[4]?.[0];
+  const slot=key[0];
+  const actor=slot==='w'?sunbringer:teammateChoices[c[slot+'char']];
+  const engineId=c[slot+'e']||1;
+  const engineName=actor.engines.find(([id])=>Number(id)===engineId)?.[1];
   return Array.from({length:rank?5:7},(_,i)=>{
     const level=rank?i+1:i;
     const changes={[key]:level};
-    if(key==='fr' || key==='rr')changes[key[0]+'e']=engineId;
-    return {changes,label:rank?engineName+' '+level+' 星':actor.name?actor.name+' '+level+' 影':actor[1]+' '+level+' 影'};
+    if(rank && slot!=='w')changes[slot+'e']=engineId;
+    return {changes,label:rank?engineName+' '+level+' 星':actor.name+' '+level+' 影'};
   });
 }
 let revision=0, manualBaseline=null;
@@ -175,7 +205,7 @@ function showComparisons(c,build){
   const [ratio,delta]=percentages(build.score,baselineScore);
   const label=manualBaseline?'手动基线':'全 01';
   el('compare').textContent=`相对${label}　${ratio}　（${delta}）`;
-  el('reference').textContent=`${manualBaseline?.description??'全 01 · 星之碑'}　${baselineScore==null?'该词条总数下无可行分配':fmt(baselineScore)}${baselineScore===0?'　基准伤害为零，百分比无定义':''}`;
+  el('reference').textContent=`${manualBaseline?.description??'全 01 · 星之碑'}　${baselineScore==null?'当前词条限制下无可行分配':fmt(baselineScore)}${baselineScore===0?'　基准伤害为零，百分比无定义':''}`;
   el('defaultBaseline').hidden=!manualBaseline;
 
   const reference=shadowComparison?solve({...c,w:0},build).score:baselineScore;
@@ -250,9 +280,9 @@ function renderRollGains(config,build){
 }
 function renderTeammateBuffs(c,sources){
   const categories={general:'普通增伤',teamDef:'固定防御力',teamPen:'穿透率',sharp:'锐化增伤',critDmg:'锐暴伤害',
-    ignore:'无视防御',resDown:'减抗或无视火抗',received:'目标受伤',stun:'失衡易伤'};
-  for(const slot of ['f','r']){
-    const id=c[slot+'char'], name=teammateChoices[slot][id].name, prefix=name+' · ';
+    ignore:'无视防御／减防',resDown:'减抗或无视火抗',received:'目标受伤',stun:'失衡易伤',stunAlways:'失衡易伤'};
+  for(const slot of teammateSlots){
+    const id=c[slot+'char'], name=teammateChoices[id].name, prefix=name+' · ';
     const lines=[];
     for(const [group,label] of Object.entries(categories)){
       const entries=sources[group].filter(([source])=>source.startsWith(prefix));
@@ -260,20 +290,24 @@ function renderTeammateBuffs(c,sources){
       const format=value=>{
         if(group==='teamDef')return Number(value.toFixed(3))+' 点';
         const amount=Number((value*100).toFixed(4));
-        return amount+(group==='stun'?' 个百分点':'%');
+        return amount+(group.startsWith('stun')?' 个百分点':'%');
       };
       const total=entries.reduce((sum,[,value])=>sum+value,0);
       const detail=entries.map(([source,value])=>source.slice(prefix.length)+(entries.length>1?' +'+format(value):'')).join('、');
-      const condition=group==='stun' && !c.stun?'，当前未失衡':'';
+      const condition=group==='stunAlways'?'，非失衡也生效':group==='stun' && !c.stun?'，当前未失衡':'';
       lines.push('<li><b>'+label+' +'+format(total)+'</b>（'+detail+condition+'）</li>');
     }
     if(id==='jufufu'){
       lines.push('<li><b>虎啸</b>：连携增伤 +'+pct(juChainBonus)+'，终结技增伤 +'+pct(juUltimateBonus)+'。</li>');
       const [chain,ult]=juPotential[c.potential];
       if(chain || ult)lines.push('<li><b>潜能「侠肝义胆」</b>：连携最终伤害 +'+pct(chain)+'，终结技最终伤害 +'+pct(ult)+'。</li>');
-      lines.push('<li>虎啸提供 '+(c.f>=2?72:50)+'% 战斗中普通暴伤，对挽昼锐暴的贡献为 0。此配队关闭橘福福额外能力。</li>');
+      lines.push('<li>虎啸提供 '+(c[slot]>=2?72:50)+'% 战斗中普通暴伤，对挽昼锐暴的贡献为 0。此配队关闭橘福福额外能力。</li>');
     }
     if(id==='rina')lines.push('<li>按丽娜自身 '+Number(rinaBuffs(c).personalPen.toFixed(3))+'% 穿透率、人偶在场且挽昼位于人偶附近计算。</li>');
+    if(id==='trigger'){
+      lines.push('<li>破隙幽瞳及索魂影眸按追加攻击命中后持续覆盖计算。</li>');
+      if(c[slot]>=2)lines.push('<li>二影「猎眸」满层提供 24% 战斗中普通暴伤，对挽昼锐暴的贡献为 0。</li>');
+    }
     const summary=el(slot+'BuffSummary');
     if(id==='air'){summary.textContent='空位，无队友增益。';continue;}
     summary.innerHTML='<h4>对挽昼的增益</h4><ul>'+lines.join('')+'</ul>';
@@ -282,6 +316,18 @@ function renderTeammateBuffs(c,sources){
 function render(saveBaseline=false){
   el('multiplierStatus').textContent='';
   el('discSearchStatus').textContent='';
+  for(const slot of teammateSlots){
+    const actor=teammateChoices[el(slot+'char').value];
+    const engine=actor.engines.find(([value])=>value===(el(slot+'e').value!=='0'?el(slot+'e').value:'1'))??actor.engines[0];
+    el(slot+'r').disabled=el(slot+'e').value==='0';
+    el('variants').querySelector(`[value="${slot}r"]`).textContent=engine[1]+'星级';
+  }
+  for(const slot of tunableSlots){
+    const lock=el('lockMain'+slot);
+    lock.disabled=el('main'+slot).value==='auto';
+    if(lock.disabled)lock.checked=false;
+  }
+  rollInputs.forEach((input,i)=>{input.disabled=!rollLocks[i].checked;});
   const valid=[...document.querySelectorAll('input:not([data-field]):enabled')].every(x=>x.value!=='' && x.checkValidity());
   const c=valid?getConfig():null;
   if(c){
@@ -301,11 +347,12 @@ function render(saveBaseline=false){
     for(const id of ['split','summaryStats','compare','reference','variantRows','best','sourceRows','coreRows','markSummary','multiplierRows','rollGainRows'])el(id).replaceChildren();
     for(let i=0;i<skills.length;i++)for(const prefix of ['m','d','stored','a'])el(prefix+i).textContent='—';
     if(valid){
-      el('discSearchStatus').textContent=`当前主属性无法分配 ${c.rollBudget} 条。可自动选择其他主属性，或减少词条总数。`;
+      el('discSearchStatus').textContent='当前主属性与词条限制下无可行分配。可尝试自动寻优，或调整锁定条数与上限。';
       saveSettings();
     }
     return;
   }
+  rollInputs.forEach((input,i)=>{if(!rollLocks[i].checked)input.value=b.rolls[i];});
   if(c.w>=2){
     const additive=c.markMode==='add';
     const other=solve({...c,markMode:additive?'multiply':'add'},b);
@@ -316,15 +363,11 @@ function render(saveBaseline=false){
   renderUltimateExample(c,b);
   renderRollGains(c,b);
   if(saveBaseline){
-    const team=['挽昼',teammateChoices.f[c.fchar].name,teammateChoices.r[c.rchar].name];
+    const team=['挽昼',...teammateSlots.map(slot=>teammateChoices[c[slot+'char']].name)];
     const label=team.map((name,i)=>name==='空气'?name:name+' '+c[['w','f','r'][i]]+'影').join(' / ');
     manualBaseline={score:b.score,description:'已固定 · '+label};
   }
-  const rEngines=teammateChoices.r[c.rchar].engines;
-  const rankEngine=rEngines.find(([id])=>Number(id)===(c.re||1))??rEngines[0];
   if(el('variants').selectedOptions[0]?.disabled)el('variants').value='w';
-  el('variants').querySelector('[value="rr"]').textContent=rankEngine[1]+'星级';
-  el('rr').disabled=!c.re;el('fr').disabled=!c.fe;
   el('total').textContent=fmt(b.score);
   el('split').textContent=`直接伤害　${fmt(b.direct)}　 /　烬灭　${fmt(b.mark)}`;
   el('summaryStats').innerHTML=[['战斗防御力',fmt(b.combatDef)],['战斗暴击率',pct(b.rate)],['锐暴伤害',pct(b.critDmg)],['无视防御',pct(b.ignore)]].map(([k,v])=>`<span>${k}<b>${v}</b></span>`).join('');
@@ -366,7 +409,9 @@ function render(saveBaseline=false){
   saveSettings();
 }
 function syncTeammate(key){
-  const id=el(key+'char').value, choice=teammateChoices[key][id];
+  const select=el(key+'char');
+  const id=select.value, choice=teammateChoices[id];
+  select.dataset.character=id;
   const empty=id==='air';
   const build=teammateBuilds[id]||{};
   for(const field of [key,key+'r',key+'e']){
@@ -375,14 +420,9 @@ function syncTeammate(key){
     control.disabled=empty;
   }
   for(const field of [key,key+'r'])el('variants').querySelector('[value="'+field+'"]').disabled=empty;
-  el(key).value=defaultShadows[id];
+  el(key).value=defaultShadows[id]??0;
   restoreControl(el(key),build.shadow);
-  el('potentialLabel').hidden=el('fchar').value!=='jufufu';
-  el('rinaControls').hidden=el('rchar').value!=='rina';
-  el('rinaBasePen').disabled=el('rinaControls').hidden;
-  el('beat').disabled=el('rchar').value!=='robin';
   el('variants').querySelector('[value="'+key+'"]').textContent=choice.name+'影画';
-  el('variants').querySelector('[value="'+key+'r"]').textContent=choice.engines[0][1]+'星级';
   el(key+'name').textContent=choice.name;
   el(key+'role').textContent=choice.role;
   const portrait=el(key+'portrait');
@@ -396,11 +436,34 @@ function syncTeammate(key){
   restoreControl(el(key+'r'),build.rank);
   el(key+'engineLabel').textContent=choice.engines.map(([,name])=>name).join(' / ');
 }
+function syncTeamControls(){
+  const config={fchar:el('fchar').value,rchar:el('rchar').value};
+  for(const [id,character] of [['potentialLabel','jufufu'],['rinaControls','rina']]){
+    const control=el(id), slot=teammateSlot(config,character);
+    control.hidden=!slot;
+    if(slot && control.parentElement!==el(slot+'Fields'))el(slot+'Fields').append(control);
+  }
+  el('rinaBasePen').disabled=el('rinaControls').hidden;
+  el('beat').disabled=!teammateSlot(config,'robin');
+}
+function rememberTeammate(slot){
+  const character=el(slot+'char').dataset.character;
+  if(character && character!=='air')teammateBuilds[character]={shadow:el(slot).value,engine:el(slot+'e').value,rank:el(slot+'r').value};
+}
 el('reset').onclick=()=>{defaults.forEach((v,i)=>el('n'+i).value=v);render()};
 document.addEventListener('change',event=>{
-  if(event.target.id==='fchar')syncTeammate('f');
-  if(event.target.id==='rchar')syncTeammate('r');
   const input=event.target;
+  const slot=teammateSlots.find(key=>input.id===key+'char');
+  if(slot){
+    teammateSlots.forEach(rememberTeammate);
+    const other=teammateSlots.find(key=>key!==slot);
+    if(input.value!=='air' && input.value===el(other+'char').value){
+      el(other+'char').value=input.dataset.character;
+      syncTeammate(other);
+    }
+    syncTeammate(slot);
+    syncTeamControls();
+  }
   if(input.id==='boss')syncBoss();
   if(input.id==='boss' || input.id==='regionChoice')syncRegion(true);
   if(input.dataset.field){
@@ -416,12 +479,12 @@ el('optimizeDiscs').onclick=()=>{
   const config=getConfig();
   const current=optimized(config);
   let best=null, bestSet=config.set, bestTwo=config.two;
-  const locked=el('lockDiscSets').checked;
-  const fourPieceSets=locked?[config.set]:Array.from(el('set').options,option=>option.value);
-  const twoPieceSets=Object.keys(twoPieceNames);
+  const fourPieceSets=el('lockDiscSets').checked?[config.set]:Array.from(el('set').options,option=>option.value);
+  const twoPieceSets=el('lockTwo').checked?[config.two]:Object.keys(twoPieceNames);
+  const searchMains=Object.fromEntries(tunableSlots.map(slot=>['main'+slot,!el('lockMain'+slot).checked]));
   for(const set of fourPieceSets){
     for(const two of twoPieceSets){
-      const candidate=solve({...config,set,two},null,true);
+      const candidate=solve({...config,set,two},null,searchMains);
       if(candidate && (!best || candidate.score>best.score)){
         best=candidate;
         bestSet=set;
@@ -429,10 +492,10 @@ el('optimizeDiscs').onclick=()=>{
       }
     }
   }
-  if(!best){el('discSearchStatus').textContent='当前总数和限制下没有可行方案。';return;}
+  if(!best){el('discSearchStatus').textContent='当前锁定与词条限制冲突，未找到可行方案。可调整锁定条数、上限或主属性。';return;}
   el('set').value=bestSet;
   el('two').value=bestTwo;
-  for(let slot=4;slot<=6;slot++)el('main'+slot).value=best.mains[slot-1];
+  for(const slot of tunableSlots)el('main'+slot).value=best.mains[slot-1];
   render();
   if(!current){el('discSearchStatus').textContent='已应用可行的最高期望方案。';return;}
   const change=percentages(best.score,current.score)[1];
@@ -472,7 +535,7 @@ function restoreControl(control,value){
 function saveSettings(){
   const fields={};
   for(const control of settingsControls){
-    if(control.type==='number' && (!Number.isFinite(control.valueAsNumber)||!control.validity.valid))return;
+    if(control.type==='number' && !control.disabled && (!Number.isFinite(control.valueAsNumber)||!control.validity.valid))return;
     fields[control.id]=control.type==='checkbox'?control.checked:control.value;
   }
   const rotation={};
@@ -481,10 +544,9 @@ function saveSettings(){
     if(!Number.isFinite(count.valueAsNumber)||!count.validity.valid)return;
     rotation[skill.name]={count:count.value,overrides:overrides[i]};
   }
-  for(const slot of ['f','r']){
-    const character=el(slot+'char').value;
-    fields[slot+'char']=character;
-    teammateBuilds[character]={shadow:el(slot).value,engine:el(slot+'e').value,rank:el(slot+'r').value};
+  for(const slot of teammateSlots){
+    fields[slot+'char']=el(slot+'char').value;
+    rememberTeammate(slot);
   }
   try{
     localStorage.setItem(settingsKey,JSON.stringify({fields,teammateBuilds,rotation,manualBaseline}));
@@ -496,14 +558,14 @@ function restoreSettings(){
   let saved;
   try{saved=JSON.parse(localStorage.getItem(settingsKey));}catch{}
   const fields=saved?.fields||{};
-  for(const slot of ['f','r']){
-    for(const character of Object.keys(teammateChoices[slot])){
-      const build=saved?.teammateBuilds?.[character];
-      if(build && typeof build==='object')teammateBuilds[character]=build;
-    }
-    restoreControl(el(slot+'char'),fields[slot+'char']);
-    syncTeammate(slot);
+  for(const character of Object.keys(teammateChoices)){
+    const build=saved?.teammateBuilds?.[character];
+    if(build && typeof build==='object')teammateBuilds[character]=build;
   }
+  for(const slot of teammateSlots)restoreControl(el(slot+'char'),fields[slot+'char']);
+  if(el('fchar').value===el('rchar').value)el('rchar').value='air';
+  teammateSlots.forEach(syncTeammate);
+  syncTeamControls();
   restoreControl(el('boss'),fields.boss);
   syncBoss();
   const legacySeason=assaultSeasons.find(s=>s.id===fields.assaultSeason);

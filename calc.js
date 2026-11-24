@@ -11,12 +11,16 @@ function expectedSharpCrit(rate,damage){
 // Potential I unlocks Ju Fufu's kit changes. The team final-damage bonus starts at II.
 const juChainBonus=.20, juUltimateBonus=.40;
 const juPotential = [[0,0],[0,0],[.03,.08],[.047,.12],[.064,.16],[.081,.20],[.10,.25]];
+const teammateSlots=['f','r'];
+const defaultTeammates={f:'jufufu',r:'robin'};
+const teammateSlot=(c,id)=>teammateSlots.find(slot=>(c[slot+'char']??defaultTeammates[slot])===id);
 function rotation(c,stunFinisher=0) {
   let firstReady=c.w>=4, focused=false;
+  const ju=!!teammateSlot(c,'jufufu');
+  const [chainFinal,ultFinal]=juPotential[ju?c.potential:0] || juPotential[0];
   return skills.map((s,i)=>{
     const n=s.name, count=c.counts[i], mult=(s.base+(upgradeLevel(c.w)-1)*s.step)/10000;
-    const ju=c.fchar==='jufufu', chain=n.startsWith('连携'), ult=n.startsWith('终结');
-    const [chainFinal,ultFinal]=juPotential[ju?c.potential:0] || juPotential[0];
+    const chain=n.startsWith('连携'), ult=n.startsWith('终结');
     const final=1+(chain?chainFinal:ult?ultFinal:0);
     const category=ju && chain?juChainBonus:ju && ult?juUltimateBonus:/不灭热忱|虔志如初/.test(n)?.2:0;
     const special=/聚锋|长暗终焉|永昼之炬|此行，共赴前路|此愿，重塑万象/.test(n);
@@ -146,33 +150,38 @@ function rinaBuffs(c){
   const personalPen=(c.rinaBasePen??70.4)+(level>=2?1.6:0);
   const defensePerPercent=[0,0,2.5,3.5,4.5,5.5,6.5][level];
   const defense=Math.min(468,personalPen*defensePerPercent);
-  const teamPen=Math.min(.30,.12+personalPen*.0025)*(c.r>=1?1.3:1);
+  const teamPen=Math.min(.30,.12+personalPen*.0025)*(c[teammateSlot(c,'rina')]>=1?1.3:1);
   return {personalPen,defense,teamPen};
 }
 // Each entry is also displayed in the worked example. Keep unlike multiplier groups separate.
 function partyBonuses(c,custom,assault){
-  const w=c.wr-1,f=c.fr-1,r=c.rr-1;
-  const fchar=c.fchar||'jufufu', rchar=c.rchar||'robin';
-  const robin=rchar==='robin', roxy=fchar==='roxy', norma=fchar==='norma';
-  const stunAlly=fchar!=='air', rina=rchar==='rina'?rinaBuffs(c):null;
-  const fName={jufufu:'橘福福',roxy:'洛克茜',norma:'诺姆'}[fchar];
-  const fEngine={jufufu:'福虓炉炉',roxy:'永夜辗眠',norma:'首席跟班'}[fchar];
+  const w=c.wr-1;
+  const ju=teammateSlot(c,'jufufu'), roxy=teammateSlot(c,'roxy'), norma=teammateSlot(c,'norma');
+  const trigger=teammateSlot(c,'trigger'), robin=teammateSlot(c,'robin'), rina=teammateSlot(c,'rina');
+  const rinaBonus=rina?rinaBuffs(c):null;
+  const shadow=slot=>c[slot]??0;
+  const rank=slot=>(c[slot+'r']??1)-1;
+  const engine=slot=>c[slot+'e']??0;
+  // The squad can only receive one copy of Bloodwing Nocturne's team bonus.
+  const bloodwing=ju?'橘福福':roxy?'洛克茜':norma?'诺姆':trigger?'扳机':null;
   const entries={
-    teamDef:[['知更鸟 · 守护咏叹',robin?(440+30*upgradeLevel(c.r))*(c.beat?1.25:1):0],['丽娜 · 潜能觉醒',rina?.defense]],
-    teamPen:[['丽娜 · 人偶共享穿透率',rina?.teamPen]],
-    sharp:[['挽昼 · 蜃炎梦火',.10+.015*w],[fName+' · 赤翼夜曲',stunAlly?.08:0],['知更鸟 · 六影',robin && c.r>=6?.15:0],['自定义锐化增伤',custom.sharp],['危局效果',assault.sharp]],
-    critDmg:[['挽昼 · 基础锐暴伤害',1.50],['挽昼 · 众愿一心',stunAlly || robin?.25:0],['洛克茜 · 火浸染',roxy?.20:0],['知更鸟 · 星韵流彩',robin && c.re===1?[.15,.173,.195,.218,.24][r]:0],['自定义锐暴伤害',custom.critDmg],['危局效果',assault.critDmg]],
+    teamDef:[['知更鸟 · 守护咏叹',robin?(440+30*upgradeLevel(shadow(robin)))*(c.beat?1.25:1):0],['丽娜 · 潜能觉醒',rinaBonus?.defense]],
+    teamPen:[['丽娜 · 人偶共享穿透率',rinaBonus?.teamPen]],
+    sharp:[['挽昼 · 蜃炎梦火',.10+.015*w],[bloodwing+' · 赤翼夜曲',bloodwing?.08:0],['知更鸟 · 六影',shadow(robin)>=6?.15:0],['自定义锐化增伤',custom.sharp],['危局效果',assault.sharp]],
+    critDmg:[['挽昼 · 基础锐暴伤害',1.50],['挽昼 · 众愿一心',bloodwing || robin?.25:0],['洛克茜 · 火浸染',roxy?.20:0],['知更鸟 · 星韵流彩',engine(robin)===1?[.15,.173,.195,.218,.24][rank(robin)]:0],['自定义锐暴伤害',custom.critDmg],['危局效果',assault.critDmg]],
     general:[['挽昼 · 蜃炎梦火（火伤）',.20+.03*w],['挽昼 · 四影',c.w>=4?.10:0],['挽昼 · 炎狱重金属',c.two==='inferno'?.10:0],['挽昼 · 荆棘玫瑰四件',c.set==='rose'?.15:0],
-      [fName+' · '+fEngine,stunAlly && c.fe?(norma?2*[.125,.144,.163,.181,.20][f]:.20+.03*f):0],['诺姆 · 嗯呢弹幕',norma?.20:0],
+      ['橘福福 · 福虓炉炉',engine(ju)===1?.20+.03*rank(ju):0],['洛克茜 · 永夜辗眠',engine(roxy)===1?.20+.03*rank(roxy):0],
+      ['诺姆 · 首席跟班',engine(norma)===1?2*[.125,.144,.163,.181,.20][rank(norma)]:0],['诺姆 · 嗯呢弹幕',norma?.20:0],
       ['知更鸟 · 核心技「激昂咏叹」',robin?.20:0],['知更鸟 · 雪兔梦游仙境（三层）',robin?.18:0],
-      ['知更鸟 · 星韵流彩',robin && c.re===1?2*[.085,.098,.11,.123,.136][r]:0],['知更鸟 · 奔袭獠牙',robin && c.re===2?[.18,.225,.27,.315,.36][r]:0],
+      ['知更鸟 · 星韵流彩',engine(robin)===1?2*[.085,.098,.11,.123,.136][rank(robin)]:0],['知更鸟 · 奔袭獠牙',engine(robin)===2?[.18,.225,.27,.315,.36][rank(robin)]:0],
       ['丽娜 · 月光骑士颂四件',rina ? .18 : 0],
-      ['丽娜 · 啜泣摇篮',rina && c.re===1?[.202,.245,.30,.355,.398][r]:0],
+      ['丽娜 · 啜泣摇篮',engine(rina)===1?[.202,.245,.30,.355,.398][rank(rina)]:0],
       ['自定义通用增伤',custom.general],['自定义火伤',custom.fire],['危局通用增伤',assault.general],['危局火伤',assault.fire]],
-    ignore:[['挽昼 · 极昼',.20],['挽昼 · 星之碑四件',c.set==='star'?.20:0],['知更鸟 · 一影重音节拍',robin && c.r>=1 && c.beat?.20:0],['挽昼 · 六影',c.w>=6?.15:0],['自定义无视防御',custom.ignore],['危局减防',assault.defDown]],
-    resDown:[['挽昼 · 一影',c.w>=1?.15:0],['知更鸟 · 二影',robin && c.r>=2?.15:0],[fName+' · 一影',(roxy||norma) && c.f>=1?.15:0],['危局减抗／无视抗性',assault.resDown]],
+    ignore:[['挽昼 · 极昼',.20],['挽昼 · 星之碑四件',c.set==='star'?.20:0],['知更鸟 · 一影重音节拍',shadow(robin)>=1 && c.beat?.20:0],['挽昼 · 六影',c.w>=6?.15:0],['扳机 · 索魂影眸',engine(trigger)===1?[.25,.2875,.325,.3625,.40][rank(trigger)]:0],['自定义无视防御',custom.ignore],['危局减防',assault.defDown]],
+    resDown:[['挽昼 · 一影',c.w>=1?.15:0],['知更鸟 · 二影',shadow(robin)>=2?.15:0],['洛克茜 · 一影',shadow(roxy)>=1?.15:0],['诺姆 · 一影',shadow(norma)>=1?.15:0],['危局减抗／无视抗性',assault.resDown]],
     received:[['洛克茜 · 目标受伤',roxy?.08:0],['危局效果',assault.received]],
-    stun:[['橘福福 · 一影',fchar==='jufufu' && c.f>=1?.35:0],[fName+' · 基础失衡易伤',roxy||norma?.30:0],[fName+' · 二影',(roxy||norma) && c.f>=2?.30:0],['危局效果',assault.stun],['自定义失衡易伤',custom.stun]]
+    stun:[['橘福福 · 一影',shadow(ju)>=1?.35:0],['洛克茜 · 基础失衡易伤',roxy?.30:0],['洛克茜 · 二影',shadow(roxy)>=2?.30:0],['诺姆 · 基础失衡易伤',norma?.30:0],['诺姆 · 二影',shadow(norma)>=2?.30:0],['危局效果',assault.stun],['自定义失衡易伤',custom.stun]],
+    stunAlways:[['扳机 · 破隙幽瞳',trigger?.35:0],['扳机 · 一影',shadow(trigger)>=1?.20:0]]
   };
   const totals={};
   for(const key of Object.keys(entries)){
@@ -181,10 +190,13 @@ function partyBonuses(c,custom,assault){
   }
   return {entries,...totals};
 }
-function solve(c,fixedBuild=null,searchMains=false){
+function solve(c,fixedBuild=null,searchMains=null){
   const rollBudget=c.rollBudget??45;
   const tripleLimit=c.tripleRollLimit??45, pairLimit=c.pairRollLimit??30;
   const singleLimit=c.maxRollsPerStat??15;
+  const lockedRolls=c.lockedRolls??[null,null,null,null];
+  const minimumRolls=lockedRolls.map(n=>n??0);
+  const minimumCount=minimumRolls.reduce((sum,n)=>sum+n,0);
   const custom = {
     ignore: (c.customIgnore||0)/100,
     pen: (c.customPen||0)/100,
@@ -205,17 +217,18 @@ function solve(c,fixedBuild=null,searchMains=false){
   const {teamDef,critDmg,ignore}=buffs;
   const resist=1-c.res/100+buffs.resDown;
   const received=1+buffs.received;
-  const stun=c.stun?c.vuln/100+buffs.stun:1;
+  const stun=(c.stun?c.vuln/100+buffs.stun:1)+buffs.stunAlways;
   let best=null;
   const main4=fixedBuild?.mains[3]??c.main4, main5=fixedBuild?.mains[4]??c.main5;
-  const fourth=searchMains || main4==='auto'?['def','crit','cd']:[main4];
-  const fifth=searchMains || main5==='auto'?['def','fire','pen']:[main5];
-  const sixth=searchMains?['def']:[fixedBuild?.mains[5]??c.main6];
+  const fourth=searchMains?.main4 || main4==='auto'?['def','crit','cd']:[main4];
+  const fifth=searchMains?.main5 || main5==='auto'?['def','fire','pen']:[main5];
+  const sixth=searchMains?.main6?['def']:[fixedBuild?.mains[5]??c.main6];
   for(const four of fourth)for(const five of fifth)for(const six of sixth){
     const mains=['flatHp','flatAtk','flatDef',four,five,six];
     const blocked=mains.map(stat=>blockedSubstat[stat]??-1);
-    const caps=statNames.map((_,i)=>Math.min(tripleLimit,pairLimit,singleLimit,6*blocked.filter(x=>x!==i).length));
+    const caps=lockedRolls.map((n,i)=>Math.min(n??Infinity,tripleLimit,pairLimit,singleLimit,6*blocked.filter(x=>x!==i).length));
     const capacity=Math.min(rollBudget,Math.floor(4*tripleLimit/3),2*pairLimit,54-blocked.filter(stat=>stat>=0).length,caps.reduce((sum,n)=>sum+n,0));
+    if(capacity<minimumCount || minimumRolls.some((n,i)=>n>caps[i]))continue;
     const bonus=1+buffs.general+(five==='fire'?.30:0);
     // Each skill is constant, scales with crit, with defense, or with both.
     // Keep the same mark and override weights for disc optimization and the detail table.
@@ -267,17 +280,17 @@ function solve(c,fixedBuild=null,searchMains=false){
       candidates.length=0;
     }
     if(fixedBuild){
-      if(fixedBuild.rolls.some((n,i)=>n>caps[i]))continue;
+      if(fixedBuild.rolls.some((n,i)=>n<minimumRolls[i] || n>caps[i]))continue;
       evaluateRolls(...fixedBuild.rolls);
       chooseFeasible();
       continue;
     }
-    for(let count=capacity;count>=0;count--){
-      for(let d=0;d<=Math.min(caps[0],count);d++){
+    for(let count=capacity;count>=minimumCount;count--){
+      for(let d=minimumRolls[0];d<=Math.min(caps[0],count);d++){
         const remaining=count-d;
-        for(let cr=0;cr<=Math.min(caps[1],remaining);cr++){
-          const minCd=Math.max(0,remaining-cr-caps[3]);
-          for(let cd=minCd;cd<=Math.min(caps[2],remaining-cr);cd++){
+        for(let cr=minimumRolls[1];cr<=Math.min(caps[1],remaining);cr++){
+          const minCd=Math.max(minimumRolls[2],remaining-cr-caps[3]);
+          for(let cd=minCd;cd<=Math.min(caps[2],remaining-cr-minimumRolls[3]);cd++){
             evaluateRolls(d,cr,cd,remaining-cr-cd);
           }
         }

@@ -39,14 +39,17 @@ function renderUltimateExample(c,b){
   add('敌方防御',times(d.defense),'敌防 '+num(c.enemy)+'；无视防御／减防 '+percent(b.ignore)+'（'+list(sources.ignore)+'）；穿透率 '+percent(b.penRate)+(list(pen)?'（'+list(pen)+'）':'')+'；固定穿透 '+num(flat)+'（副词条 '+flatPen+' × 9'+(c.extraFlatPen?'，额外 '+num(c.extraFlatPen):'')+'）。有效敌防 '+num(effectiveDef)+'，倍率 = 794 ÷ (794 ＋ 有效敌防)。','defense',b.defenseFactor);
   const resistance=c.res/100-sum(sources.resDown);
   add('火抗',times(d.resist),'敌方基础火抗 '+percent(c.res/100)+'，减抗／无视抗性合计 '+percent(sum(sources.resDown))+(sources.resDown.length?'（'+list(sources.resDown)+'）':'')+'。有效火抗 '+percent(resistance)+'，倍率 = 1 − 有效火抗。','resist',1-resistance);
-  add('失衡',times(d.stun),c.stun?'敌方基础失衡倍率 '+percent(c.vuln/100)+(sources.stun.length?'，另加'+list(sources.stun):'')+'。':'敌人未失衡，自动倍率为 ×1。','stun',c.stun?c.vuln/100+sum(sources.stun):1);
+  const stunBase=c.stun?c.vuln/100:1;
+  const stunSources=c.stun?[...sources.stun,...sources.stunAlways]:sources.stunAlways;
+  add('失衡',times(d.stun),(c.stun?'敌方基础失衡倍率 ':'敌人未失衡，基础倍率 ')+percent(stunBase)+
+    (stunSources.length?'，另加'+list(stunSources):'')+'。','stun',stunBase+sum(stunSources));
   const ownExtra=row.ultimate && c.w>=6?row.accrued*.8:0;
   const markFormula=c.w<2?'':c.markMode==='add'?' ＋ 35 个百分点（二影加算假设）':' × 1.35（二影）';
   add('烬痕积攒率',percent(d.mark),'挽昼核心 '+percent(natural.mark)+markFormula+'。'+(natural.boosted?'本次命中四影指定的首次引爆，额外积攒 '+percent(natural.firstBonus)+' 的单次直伤。':''),'mark',natural.autoMarkRate,percent);
   const equation=[b.combatDef,d.coefficient,d.generic+d.skill,d.sharp,d.final,d.received,d.crit,d.defense,d.resist,d.stun].map(num).join(' × ');
   const team=['挽昼 '+c.w+' 影 · 蜃炎梦火 '+c.wr+' 星'];
-  for(const slot of ['f','r']){
-    const id=c[slot+'char'], agent=teammateChoices[slot][id];
+  for(const slot of teammateSlots){
+    const id=c[slot+'char'], agent=teammateChoices[id];
     if(id==='air'){team.push(agent.name);continue;}
     const engine=agent.engines.find(([key])=>Number(key)===c[slot+'e']);
     const potential=id==='jufufu'?c.potential:id==='rina'?c.rinaPotential:null;

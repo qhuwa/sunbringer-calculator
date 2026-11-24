@@ -4,8 +4,18 @@
 <section class="summary"><div><p>挽昼单轮期望伤害</p><strong id="total"></strong><div class="split" id="split"></div></div><div class="mini" id="summaryStats"></div></section>
 <div class="benchmark"><strong id="compare" aria-live="polite"></strong><span id="reference"></span>
 <div class="compare-actions"><button id="saveBaseline" type="button">设当前配置为基线</button><button id="defaultBaseline" type="button" hidden>恢复全 01 基线</button><button id="recalculate" type="button">手动重算</button></div><span id="calcStatus" role="status"></span></div>
-<h2>队伍配置</h2><p class="comparison-note" id="storageWarning" role="status" hidden>当前浏览器无法保存配置。请允许本地存储，以便下次打开时恢复选择。</p><section class="cards" id="cards"></section>
-<section class="workspace"><article><h2>挽昼驱动盘</h2><div class="panel"><div class="fields"><label>四件套<select id="set"><option value="star">星之碑</option><option value="rose">荆棘玫瑰</option></select></label><label>两件套<select id="two"></select></label></div><label class="roll-limit"><input type="checkbox" id="lockDiscSets">自动寻优时只固定当前四件套</label><h3 class="disc-title">主属性 · S 级满级</h3><div class="fields" id="mainSlots"></div><div class="fields"><label>有效副词条总上限（0–54）<input type="number" id="rollBudget" value="45" min="0" max="54" step="1" required></label><label>任意三种副词条合计上限 X<input type="number" id="tripleRollLimit" min="0" max="54" step="1" value="45" required></label><label>任意两种副词条合计上限 Y<input type="number" id="pairRollLimit" min="0" max="54" step="1" value="30" required></label><label>单种副词条上限 Z（0–36）<input type="number" id="maxRollsPerStat" min="0" max="36" step="1" value="15" required></label></div><p class="comparison-note">按六张盘合计防御力百分比、暴击率、暴击伤害和穿透值的词条数。数量最多的三种之和须 ≤ X，数量最多的两种之和须 ≤ Y。每一种的数量须 ≤ Z。X、Y 可设为 0–54。</p>
+<h2>队伍配置</h2><p class="comparison-note">两个队友位可自由搭配。选中另一队友位的角色时，两位角色会互换位置。</p><p class="comparison-note" id="storageWarning" role="status" hidden>当前浏览器无法保存配置。请允许本地存储，以便下次打开时恢复选择。</p><section class="cards" id="cards"></section>
+<section class="workspace"><article><h2>挽昼驱动盘</h2><div class="panel">
+<div class="fields">
+  <div class="disc-field"><label>四件套<select id="set"><option value="star">星之碑</option><option value="rose">荆棘玫瑰</option></select></label><label class="disc-lock"><input type="checkbox" id="lockDiscSets" aria-label="锁定四件套">锁定</label></div>
+  <div class="disc-field"><label>两件套<select id="two"></select></label><label class="disc-lock"><input type="checkbox" id="lockTwo" aria-label="锁定两件套">锁定</label></div>
+</div>
+<h3 class="disc-title">主属性 · S 级满级</h3><div class="fields" id="mainSlots"></div>
+<p class="comparison-note disc-lock-note">自动寻优保留锁定的选择。四至六号位可锁定已选的主属性。</p>
+<h3 class="disc-title">副词条分配 · 六盘合计</h3><div class="fields" id="rollLocks"></div>
+<p class="comparison-note disc-lock-note">勾选后可填写固定条数（可填 0），其余副词条继续自动分配。</p>
+<h3 class="disc-title">副词条上限</h3>
+<div class="fields"><label>有效副词条总上限（0–54）<input type="number" id="rollBudget" value="45" min="0" max="54" step="1" required></label><label>任意三种副词条合计上限 X<input type="number" id="tripleRollLimit" min="0" max="54" step="1" value="45" required></label><label>任意两种副词条合计上限 Y<input type="number" id="pairRollLimit" min="0" max="54" step="1" value="30" required></label><label>单种副词条上限 Z（0–36）<input type="number" id="maxRollsPerStat" min="0" max="36" step="1" value="15" required></label></div><p class="comparison-note">数量最多的三种之和须 ≤ X，数量最多的两种之和须 ≤ Y。每一种的数量须 ≤ Z。X、Y 可设为 0–54。</p>
 <button type="button" id="optimizeDiscs">自动计算最优分配</button>
 <p class="comparison-note" id="discSearchStatus" role="status"></p>
 <div id="best"></div></div></article>
