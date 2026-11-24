@@ -8,6 +8,7 @@ bosses.push({id:300082,name:{text:'自律强袭单位·「提丰·破坏者型�
 const bossById=new Map(bosses.map(b=>[String(b.id),b]));
 el('boss').insertAdjacentHTML('beforeend',bosses.map(b=>'<option value="' + b.id + '">' + b.name.text + '</option>').join(''));
 const emptyTeammate={name:'空气',role:'空位',portrait:null,engines:[['0','无音擎']]};
+const supportEngines=signature=>[['1',signature],[String(kaboomEngine),'好斗的阿炮'],['0','其他音擎']];
 const teammateChoices={
   air:emptyTeammate,
   jufufu:{name:'橘福福',role:'击破 · 火',portrait:portraits[1],engines:[['1','福虓炉炉'],['0','燃狱齿轮']]},
@@ -15,7 +16,10 @@ const teammateChoices={
   norma:{name:'诺姆',role:'击破 · 火',portrait:'https://i.gachabase.net/ZCzHYreyZcNjBTh-HiFeXL7mazPZS4lVSvWEcZkklxc/q:50/f:webp/plain/zzz/assets/136be6592f54d191d26e33e3d8cd955c.png',engines:[['1','首席跟班'],['0','其他音擎']]},
   trigger:{name:'扳机',role:'击破 · 电',portrait:'https://i.gachabase.net/3DKa3mJdWQ2VSLRRL2zwqJAmLmYKPbTeLw78m_sltUw/q:50/f:webp/plain/zzz/assets/0f407c34390c90ec495e3b37ab73039a.png',engines:[['1','索魂影眸'],['0','其他音擎']]},
   robin:{name:'知更鸟',role:'防护 · 以太',portrait:portraits[2],engines:[['1','星韵流彩'],['2','奔袭獠牙'],['0','仅生命主词条']]},
-  rina:{name:'丽娜',role:'支援 · 电',portrait:'https://i.gachabase.net/Z_0BPPOC5MxvcyiogXatpCYqOMc4jknjbBs-H2d1m4g/q:50/f:webp/plain/zzz/assets/9da302acd93c121cccd36bc60aff4cf2.png',engines:[['1','啜泣摇篮'],['0','其他音擎']]}
+  rina:{name:'丽娜',role:'支援 · 电',portrait:'https://i.gachabase.net/Z_0BPPOC5MxvcyiogXatpCYqOMc4jknjbBs-H2d1m4g/q:50/f:webp/plain/zzz/assets/9da302acd93c121cccd36bc60aff4cf2.png',engines:supportEngines('啜泣摇篮')},
+  astra:{name:'耀嘉音',role:'支援 · 以太',portrait:'https://i.gachabase.net/G-X2Jjl6nb1Myun1UNE3YztEH262-6Wk55pEAXv_RbQ/q:50/f:webp/plain/zzz/assets/a44d064d8e864a20dbe94ed1cdc344ac.png',engines:supportEngines('玲珑妆匣')},
+  sunna:{name:'千夏',role:'支援 · 物理',portrait:'https://i.gachabase.net/ooILAaJDQfZG5xnwBqwbZ3b-2LkMljqdxa5G7Qg-QFI/q:50/f:webp/plain/zzz/assets/4b4e0e6888e17718b14d7070d6624e58.png',engines:supportEngines('思络成歌')},
+  dialyn:{name:'琉音',role:'击破 · 物理',portrait:'https://i.gachabase.net/Eg7PbgpfnGWXdlOthq6G9Kkq2SOy7rpHNqRvasLHp6A/q:50/f:webp/plain/zzz/assets/0343c4645bf6564394a5f8e263bfca1c.png',engines:[['1','昨夜来电'],['0','其他音擎']]}
 };
 el('two').innerHTML=options(Object.entries(twoPieceNames));
 const tunableSlots=[4,5,6];
@@ -28,12 +32,26 @@ el('mainSlots').innerHTML=mainPools.map((pool,i)=>{
 }).join('');
 el('main4').value='crit';
 el('rollLocks').innerHTML=statNames.map((name,i)=>`<div class="disc-field">
-  <label>${name}条数<input id="discRoll${i}" type="number" min="0" max="36" step="1" value="0" required disabled></label>
+  <label><span id="rollLabel${i}">${name}条数</span><input id="discRoll${i}" type="number" min="0" max="36" step="1" value="0" required disabled></label>
   <label class="disc-lock"><input type="checkbox" id="lockDiscRoll${i}" aria-label="锁定${name}条数">锁定</label>
 </div>`).join('');
 const rollInputs=statNames.map((_,i)=>el('discRoll'+i));
 const rollLocks=statNames.map((_,i)=>el('lockDiscRoll'+i));
-const sunbringer={name:'挽昼',engines:[['1','蜃炎梦火']]};
+const sunbringer={name:'挽昼',role:'锋御 · 燎源',element:201,ultimate:'此愿，重塑万象',portrait:portraits[0],engines:[['1','蜃炎梦火']]};
+const leadChoices={sunbringer,nekomata,anby};
+const sunInitial={set:'star',two:'inferno',main4:'crit',main5:'auto',main6:'def'};
+const sunFour={star:'星之碑',rose:'荆棘玫瑰'};
+let main='sunbringer';
+const lead=()=>leadChoices[main];
+const leadSetup={
+  sunbringer:{skills,four:sunFour,two:twoPieceNames,initial:sunInitial},
+  nekomata:{skills:nekomataSkills,four:nekoFour,two:nekoTwo,initial:nekoInitial},
+  anby:{skills:anbySkills,four:anbyFour,two:anbyTwo,initial:anbyInitial}
+};
+const activeSkills=()=>leadSetup[main].skills;
+const fourPieces=()=>leadSetup[main].four;
+const twoPieces=()=>leadSetup[main].two;
+const defaultDiscs=()=>leadSetup[main].initial;
 function teammateCard(slot,index){
   const initial=defaultTeammates[slot];
   const choices=Object.entries(teammateChoices).map(([id,actor])=>`<option value="${id}"${id===initial?' selected':''}>${actor.name}</option>`).join('');
@@ -41,15 +59,28 @@ function teammateCard(slot,index){
     <div class="fields" id="${slot}Fields"><label>队友 ${index+1}<select id="${slot}char">${choices}</select></label>
     <label>意象影画<select id="${slot}">${numericOptions(0,6,' 影')}</select></label>
     <label>音擎星级<select id="${slot}r">${numericOptions(1,5,' 星')}</select></label>
-    <label class="wide"><span id="${slot}engineLabel">音擎</span><select id="${slot}e"></select></label></div>
+    <label class="wide"><span id="${slot}engineLabel">音擎</span><select id="${slot}e"></select></label>
+    <label class="wide" hidden>队友驱动套装<select id="${slot}d" disabled></select></label>
+    <label class="wide roll-limit" hidden><input id="${slot}MountainFull" type="checkbox" checked disabled>山大王装备者暴击率达 50%</label></div>
     <div id="${slot}BuffSummary" class="team-buffs"></div></div>`;
 }
-el('cards').innerHTML=`<div class="card"><div class="agent"><img alt="" src="${portraits[0]}" onerror="this.style.display='none'"><div><h3>${sunbringer.name}</h3><small>锋御 · 燎源</small></div></div>
+el('cards').innerHTML=`<div class="card"><div class="agent"><img id="mainPortrait" alt="" src="${portraits[0]}" onerror="this.style.display='none'"><div><h3 id="mainName">挽昼</h3><small id="mainRole">锋御 · 燎源</small></div></div>
   <div class="fields"><label>意象影画<select id="w">${numericOptions(0,6,' 影')}</select></label><label>音擎星级<select id="wr">${numericOptions(1,5,' 星')}</select></label>
-  <label class="wide">音擎　·　星之碑 / 荆棘玫瑰<select id="we" disabled>${options(sunbringer.engines)}</select></label></div></div>`+teammateSlots.map(teammateCard).join('');
+  <label class="wide">主 C<select id="mainAgent">${options(Object.entries(leadChoices).map(([id,agent])=>[id,agent.name]))}</select></label>
+  <label class="wide">音擎<select id="we" disabled>${options(sunbringer.engines)}</select></label>
+  <label class="wide" data-neko hidden>潜能觉醒 · 猫的报恩<select id="nekoPotential"></select></label>
+  <label class="wide" data-anby hidden>潜能觉醒 · 银白色的心<select id="anbyPotential"></select></label></div></div>`+teammateSlots.map(teammateCard).join('');
 const teammateBuilds={};
+el('kaboomStacks').innerHTML=numericOptions(0,4,' 层');
+el('kaboomStacks').value='4';
+el('astralStacks').innerHTML=numericOptions(0,3,' 层');
+el('astralStacks').value='3';
 const defaultShadows={jufufu:1,rina:1};
 const potentialOptions=options(['未觉醒','I','II','III','IV','V','VI'].map((label,i)=>[i,label]));
+for(const id of ['nekoPotential','anbyPotential']){
+  el(id).innerHTML=potentialOptions;
+  el(id).value=6;
+}
 el('fchar').closest('.fields').insertAdjacentHTML('beforeend',
   '<label class="wide" id="potentialLabel">潜能觉醒 · 侠肝义胆<select id="potential">'+
   potentialOptions+'</select></label>');
@@ -58,11 +89,15 @@ el('rchar').closest('.fields').insertAdjacentHTML('beforeend',
   '<div class="wide fields" id="rinaControls" hidden><label>潜能觉醒 · 完美侍奉<select id="rinaPotential">'+potentialOptions+
   '</select></label><label>丽娜觉醒前穿透率 %<input id="rinaBasePen" type="number" min="0" max="100" step="any" value="70.4"></label></div>');
 el('rinaPotential').value=6;
-const defaults=skills.map(s=>s.defaultCount);
-const firstOptionalSkill=defaults.indexOf(0);
 const multiplierFields=['coefficient','generic','skill','final','received','sharp','crit','defense','resist','stun','mark'];
-let overrides=skills.map(()=>({}));
-el('rows').innerHTML=skills.map((s,i)=>`${i===firstOptionalSkill?'<tr class="skill-group"><th colspan="6" scope="colgroup">补充招式 · 默认 0 次</th></tr>':''}<tr><td>${s.name}</td><td id="m${i}"></td><td><input aria-label="${s.name}次数" type="number" id="n${i}" value="${defaults[i]}" step="1" min="0" max="99"></td><td id="d${i}"></td><td id="stored${i}"></td><td id="a${i}"></td></tr>`).join('');
+const activeMultiplierFields=()=>main==='sunbringer'?multiplierFields:multiplierFields.filter(f=>f!=='sharp' && f!=='mark');
+let overrides=[];
+function buildRotation(){
+  const roster=activeSkills(), normal=main!=='sunbringer';
+  const firstOptional=roster.findIndex(s=>!s.defaultCount && !s.automatic);
+  overrides=roster.map(()=>({}));
+  el('rows').innerHTML=roster.map((s,i)=>`${i===firstOptional?`<tr class="skill-group"><th colspan="${normal?4:6}" scope="colgroup">补充招式 · 默认 0 次</th></tr>`:''}<tr><td id="skillName${i}">${s.name}</td><td id="m${i}"></td><td>${s.automatic?`<output id="n${i}">0</output>`:`<input aria-label="${s.name}次数" type="number" id="n${i}" value="${s.defaultCount??0}" step="1" min="0" max="99">`}</td><td id="d${i}"></td><td id="stored${i}" ${normal?'hidden':''}></td><td id="a${i}" ${normal?'hidden':''}></td></tr>`).join('');
+}
 el('notes').innerHTML=`<p>按 Lv.60 代理人、Lv.60 音擎、核心技 F、基础技能 Lv.12 计算。影画三、五各提升两级。默认按招式明细从上到下结算。默认轮转中毁伤 3 次，不灭热忱 2 次，其余已启用招式各 1 次。下方补充招式默认 0 次，「斩棘」和「执旌」的一至四段可分别计次。「以挽昼之名」和「筑万众之梦」依次在两段终结技之前释放。消耗残痕触发的毁伤统一在「毁伤」行填写次数。毁伤沿用普攻技能等级，每消耗一层残痕触发一次。单次倍率为 80.5% ＋ (普攻等级 − 1) × 7.4%。同一招式多次发动时，表中直伤、烬痕和烬灭均为该行合计。</p>
 <p>轮转按表中次序累计。¹「烬灭扣血」列记在引爆招式上，包含此前储存的烬痕。聚锋、长暗终焉、永昼之炬和两段终结技按实际伤害的 60% 积攒，毁伤为 40%。二影令其余招式按 30% 积攒。默认将各招式积攒量乘 1.35，四影指定的首次引爆改为乘 2。若选择加算假设，各招积攒率加 35 个百分点，该次四影引爆再加 65 个百分点。四影可指定给聚锋后的永昼之炬或第二段终结技。六影另结算第二段终结技自身所积攒烬痕的 80%。未引爆的烬痕不计入总伤害。</p>
 <p>期望直伤 = 战斗防御力 × 招式倍率 ×（通用倍率 ＋ 招式增伤）× 锐化倍率 × 最终倍率 × 目标受伤倍率 × 期望锐暴倍率 × 防御区 × 火抗区 × 失衡倍率。挽昼和蜃炎梦火分别提供 441 和 446 基础防御，武器另加 48% 防御。基础锐暴伤害为 150%，当前生效的加成见上方算例。初始暴伤的 35% 转为暴击率，虎啸的战斗中暴伤不计入此转换。设 M = 1 ＋ 锐暴伤害，单暴乘 M，二次锐暴成功乘 M²。暴击率 100% 至 200% 时，二次锐暴概率为暴击率超出 100% 的部分；达到 200% 时，每次均乘 M²。</p>
@@ -73,7 +108,7 @@ el('notes').innerHTML=`<p>按 Lv.60 代理人、Lv.60 音擎、核心技 F、基
 <p>自定义词条只作用于当前战斗条件和配置对照。无视防御、穿透率、通用增伤、锐化增伤、火属性增伤、暴击率、锐暴伤害、防御力百分比、固定防御和失衡易伤都可以填写正负百分点。它们会参与驱动盘优化，所以改变后四至六号位和副词条可能重新分配。</p>
 <p>一至三号位主属性固定，四至六号位可指定。自动寻优按词条数上限比较配装。四号位比较暴击率、暴击伤害和防御力，五号位比较火伤、穿透率和防御力，六号位选择防御力。固定轮转的锐化伤害使用防御力，生命、攻击及回复等主属性对本轮输出无直接加成。河豚电音两件提供 8% 穿透率，可与五号位叠至 32%；啄木鸟电音两件提供 8% 暴击率。荆棘玫瑰两件提供 16% 防御力，与星之碑四件搭配时两套合计提供 32% 防御力。六张均为荆棘玫瑰时，该套两件效果计一次。</p>
 <p>所选数量的有效副词条在防御力 ${pct(discRoll.def)}、暴击率 2.4%、暴击伤害 4.8%（折合暴击率 1.68 个百分点）和固定穿透值 9 之间分配。每张盘有四种初始副词条与五次强化机会，主属性与同盘副词条互斥。其余位置由无效词条补足。面板先确定伤害最高的主属性和副词条总数，再优先均分各盘的有效词条数，并尽量分散同类词条。任意三种副词条的数量之和最多为 X，任意两种的数量之和最多为 Y，每一种最多为 Z。总预算为上限，组合限制较紧时允许使用更少的有效词条。副词条 ×6 表示初始 1 次加上强化 5 次。</p>
-<p>任一队友位可选「空气」。只有队伍中有击破或防护队友时，本页才计入挽昼「众愿一心」的 25% 锐暴伤害。队友可切换为洛克茜、诺姆或丽娜。洛克茜按火浸染、风化及专武满覆盖计算，计入锐暴伤害、受伤倍率与失衡易伤。诺姆与挽昼同阵营，技术鸿沟与首席跟班按满层计算。丽娜默认觉醒 VI 阶，觉醒前自身穿透率可改。按人偶在场、挽昼位于人偶附近计算。II 至 VI 阶增加丽娜自身穿透率 1.6 个百分点，并按各阶系数为队友提供防御力，上限 468 点。1 影的 130% 按技能归属应用于核心被动的穿透率共享。啜泣摇篮按满层普通增伤计算，与火属性和招式增伤相加。<a href="https://zzz.gachabase.net/agents/1211/rina/beta?lang=chs#potential">丽娜潜能与影画说明</a>。雪兔四件的防护职业效果仅在知更鸟上场时生效。对应角色的专属音擎星级仍可单独调节，未装备专属音擎时不计该专属效果。</p>
+<p>任一队友位可选「空气」。只有队伍中有击破或防护队友时，本页才计入挽昼「众愿一心」的 25% 锐暴伤害。队友可切换为洛克茜、诺姆或丽娜。洛克茜按火浸染、风化及专武满覆盖计算，计入锐暴伤害、受伤倍率与失衡易伤。诺姆与挽昼同阵营，技术鸿沟与首席跟班按满层计算。丽娜默认觉醒 VI 阶，觉醒前自身穿透率可改。按人偶在场、挽昼位于人偶附近计算。II 至 VI 阶增加丽娜自身穿透率 1.6 个百分点，并按各阶系数为队友提供防御力，上限 468 点。1 影的 130% 按技能归属应用于核心被动的穿透率共享。啜泣摇篮按满层普通增伤计算，与火属性和招式增伤相加。<a href="https://zzz.gachabase.net/agents/1211/rina/beta?lang=chs#potential">丽娜潜能与影画说明</a>。防护队友装备雪兔四件时，按三层覆盖本轮。对应角色的专属音擎星级仍可单独调节，未装备专属音擎时不计该专属效果。</p>
 <p>危局强袭战使用 2026-11-23 的 Nanoka 中文快照，仅展示有效期内的期次。每个进行中的正式服或测试服期次各取一项轮转期望总伤害最高的增益。所有候选沿用同一组配装限制、Boss 区域层数和条件触发设置。条件勾选及区域层数代表整轮战斗处在该窗口。防御百分比作用于挽昼初始防御，队友固定防御另加。失衡易伤仅在失衡状态生效。固定轮转只计算挽昼输出，能量、喧响值、异常积蓄和操作得分不折算为额外招式。</p>
 <p>Boss 列表和弱点、抗性取自 <a href="https://zzz.gachabase.net/enemies/notorious-boss/beta?lang=chs">GachaBase 测试服首领页</a>，首领详情中的 DEF 也会随选择同步到敌方防御力。未提供 DEF 的条目暂用 953。页面将首领列表中的火弱点映射为 −20% 火抗，将火抗性映射为 +20% 火抗，防御力仍可手动修改。数据快照取自 <a href="https://zzz.gachabase.net/agents/1601/sunbringer/beta?lang=chs">挽昼</a>、<a href="https://zzz.gachabase.net/agents/1391/ju-fufu/beta?lang=chs">橘福福</a>、<a href="https://zzz.gachabase.net/agents/1661/robin/beta?lang=chs">知更鸟</a>、<a href="https://zzz.gachabase.net/w-engines/beta?lang=chs">音擎</a>及<a href="https://zzz.gachabase.net/drive-discs/beta?lang=chs">驱动盘</a>。页面使用本地快照计算。</p>`;
 
@@ -126,12 +161,27 @@ function rankAssaultBuffs(config){
   el('assaultSource').href='https://zzz.nanoka.cc/boss'+(selected?'/'+select.value:'');
 }
 function getConfig(){
-  const c={};
+  const c={main};
   for(const k of ['rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat','w','f','r','wr','fr','rr','fe','re','stun','vuln','enemy','res','beat','customIgnore','customPen','customGeneral','customSharp','customFire','customCrit','customCritDmg','customDefPct','customFlatDef','customStun'])c[k]=Number(el(k).value);
   c.fchar=el('fchar').value;
   c.rchar=el('rchar').value;
+  c.kaboomStacks=Number(el('kaboomStacks').value);
+  c.astralStacks=Number(el('astralStacks').value);
+  for(const slot of teammateSlots){
+    c[slot+'d']=el(slot+'d').value;
+    c[slot+'MountainFull']=el(slot+'MountainFull').checked;
+  }
   for(const k of ['set','two','main4','main5','main6','first','markMode'])c[k]=el(k).value;
-  c.counts=skills.map((s,i)=>Number(el('n'+i).value));
+  c.counts=activeSkills().map((s,i)=>s.automatic?0:Number(el('n'+i).value));
+  if(usesAttack(c))for(const k of ['customAtkPct','customFlatAtk','customNormalCd'])c[k]=Number(el(k).value);
+  if(main==='nekomata'){
+    for(const k of ['nekoPotential','nekoExtraStacks','nekoM4Stacks','nekoM6Stacks','nekoWoodStacks'])c[k]=Number(el(k).value);
+    for(const k of ['nekoCore','nekoProwl','nekoBack','nekoDiscProc','nekoRoxy'])c[k]=el(k).checked;
+  }
+  if(isAnby(c)){
+    for(const k of ['anbyPotential','anbyWeaponStacks','anbySetStacks','anbyWoodStacks'])c[k]=Number(el(k).value);
+    for(const k of ['anbyMarked','anbyShock','anbyDiscProc','anbyRoxy'])c[k]=el(k).checked;
+  }
   c.lockedRolls=rollInputs.map((input,i)=>rollLocks[i].checked?input.valueAsNumber:null);
   c.potential=Number(el('potential').value);
   if(teammateSlot(c,'rina')){
@@ -144,20 +194,22 @@ function getConfig(){
 }
 function bossResistance(boss){
   if(!boss)return 0;
-  if(boss.weakness_ids?.includes(201))return -20;
-  if(boss.resistance_ids?.includes(201))return 20;
+  const attribute=lead().element;
+  if(boss.weakness_ids?.includes(attribute))return -20;
+  if(boss.resistance_ids?.includes(attribute))return 20;
   return 0;
 }
 function syncBoss(){
   const boss=bossById.get(el('boss').value);
-  if(!boss){el('res').value=0;el('bossInfo').textContent='自定义敌人。防御力和火抗可直接编辑。';return;}
+  const attribute=elementNames[lead().element];
+  if(!boss){el('res').value=0;el('bossInfo').textContent='自定义敌人。防御力和'+attribute+'抗可直接编辑。';return;}
   const weakness=(boss.weakness_ids||[]).map(id=>elementNames[id]||id).join('、')||'无';
   const resistance=(boss.resistance_ids||[]).map(id=>elementNames[id]||id).join('、')||'无';
   el('res').value=bossResistance(boss);
   const defense=Number.isFinite(boss.def)?boss.def:953;
   el('enemy').value=defense;
   const defenseText=Number.isFinite(boss.def)?'防御力 '+defense:'未提供防御力，暂用 953';
-  el('bossInfo').textContent='弱点：'+weakness+'　抗性：'+resistance+'　'+defenseText+'　火属性抗性按列表映射为 '+bossResistance(boss)+'%。防御力仍可手动修改。';
+  el('bossInfo').textContent='弱点：'+weakness+'　抗性：'+resistance+'　'+defenseText+'　'+attribute+'抗性按列表映射为 '+bossResistance(boss)+'%。防御力仍可手动修改。';
 }
 const solved = new Map();
 function optimized(c){
@@ -179,14 +231,14 @@ function variants(c){
   if(key==='gear'){
     const items=[];
     const fEngines=teammateChoices[c.fchar].engines, rEngines=teammateChoices[c.rchar].engines;
-    for(const set of ['star','rose'])for(const two of Object.keys(twoPieceNames))for(const [fe,fName] of fEngines)for(const [re,rName] of rEngines){
-      items.push({changes:{set,two,fe:Number(fe),re:Number(re)},label:[(set==='star'?'星之碑':'荆棘玫瑰')+' 4＋'+twoPieceNames[two]+' 2',fName,rName].join(' / ')});
+    for(const [set,setName] of Object.entries(fourPieces()))for(const [two,twoName] of Object.entries(twoPieces()))for(const [fe,fName] of fEngines)for(const [re,rName] of rEngines){
+      items.push({changes:{set,two,fe:Number(fe),re:Number(re)},label:[setName+' 4＋'+twoName+' 2',fName,rName].join(' / ')});
     }
     return items;
   }
   const rank=key.length===2;
   const slot=key[0];
-  const actor=slot==='w'?sunbringer:teammateChoices[c[slot+'char']];
+  const actor=slot==='w'?lead():teammateChoices[c[slot+'char']];
   const engineId=c[slot+'e']||1;
   const engineName=actor.engines.find(([id])=>Number(id)===engineId)?.[1];
   return Array.from({length:rank?5:7},(_,i)=>{
@@ -201,11 +253,12 @@ function showComparisons(c,build){
   const version=++revision;
   const shadowComparison=el('variants').value==='w';
   const items=variants(c);
-  const baselineScore=manualBaseline?.score??optimized({...c,w:0,f:0,r:0,wr:1,fr:1,rr:1,fe:c.fchar==='air'?0:1,re:c.rchar==='air'?0:1,set:'star',two:'inferno',main4:'crit',main5:'auto',main6:'def'})?.score;
+  const discs=defaultDiscs();
+  const baselineScore=manualBaseline?.score??optimized({...c,w:0,f:0,r:0,wr:1,fr:1,rr:1,fe:c.fchar==='air'?0:1,re:c.rchar==='air'?0:1,...discs})?.score;
   const [ratio,delta]=percentages(build.score,baselineScore);
   const label=manualBaseline?'手动基线':'全 01';
   el('compare').textContent=`相对${label}　${ratio}　（${delta}）`;
-  el('reference').textContent=`${manualBaseline?.description??'全 01 · 星之碑'}　${baselineScore==null?'当前词条限制下无可行分配':fmt(baselineScore)}${baselineScore===0?'　基准伤害为零，百分比无定义':''}`;
+  el('reference').textContent=`${manualBaseline?.description??'全 01 · '+fourPieces()[discs.set]}　${baselineScore==null?'当前词条限制下无可行分配':fmt(baselineScore)}${baselineScore===0?'　基准伤害为零，百分比无定义':''}`;
   el('defaultBaseline').hidden=!manualBaseline;
 
   const reference=shadowComparison?solve({...c,w:0},build).score:baselineScore;
@@ -213,7 +266,7 @@ function showComparisons(c,build){
   el('baselineNote').hidden=shadowComparison || !!manualBaseline;
   el('deltaHeading').hidden=shadowComparison;
   el('previousShadowHeading').hidden=!shadowComparison;
-  el('ratioHeading').textContent=shadowComparison?'较挽昼 0 影提升':'相对'+label;
+  el('ratioHeading').textContent=shadowComparison?'较'+lead().name+' 0 影提升':'相对'+label;
   const rows=el('variantRows');
   rows.innerHTML=items.map(({changes,label})=>{
     const selected=Object.entries(changes).every(([k,v])=>c[k]===v);
@@ -270,7 +323,12 @@ const singleRolls=[
   ['失衡易伤','customStun',3,'%']
 ];
 function renderRollGains(config,build){
-  el('rollGainRows').innerHTML=singleRolls.map(([label,key,step,unit])=>{
+  const rolls=usesAttack(config)?[
+    ['攻击力百分比','customAtkPct',3,'%'],['固定攻击力','customFlatAtk',19,' 点'],['普通暴击伤害','customNormalCd',4.8,'%'],
+    ...singleRolls.filter(([,key])=>!['customDefPct','customFlatDef','customSharp','customCritDmg','extraInitialCritDmg'].includes(key))
+      .map(row=>row[1]==='customFire'?[elementNames[lead().element]+'属性增伤',...row.slice(1)]:row)
+  ]:singleRolls;
+  el('rollGainRows').innerHTML=rolls.map(([label,key,step,unit])=>{
     const modified={...config,[key]:(config[key]??0)+step};
     const added=solve(modified,build).score-build.score;
     const damage=Math.round(added);
@@ -279,16 +337,19 @@ function renderRollGains(config,build){
   }).join('');
 }
 function renderTeammateBuffs(c,sources){
-  const categories={general:'普通增伤',teamDef:'固定防御力',teamPen:'穿透率',sharp:'锐化增伤',critDmg:'锐暴伤害',
-    ignore:'无视防御／减防',resDown:'减抗或无视火抗',received:'目标受伤',stun:'失衡易伤',stunAlways:'失衡易伤'};
+  const normal=usesAttack(c);
+  const categories={general:'普通增伤',teamPen:'穿透率',ignore:'无视防御／减防',resDown:'减抗或无视抗性',received:'目标受伤',
+    stun:'失衡易伤',stunAlways:'失衡易伤',...(normal?{teamAtk:'固定攻击力',teamAtkPct:'攻击力百分比',normalCritDmg:'普通暴击伤害'}:
+      {teamDef:'固定防御力',sharp:'锐化增伤',critDmg:'锐暴伤害'})};
   for(const slot of teammateSlots){
     const id=c[slot+'char'], name=teammateChoices[id].name, prefix=name+' · ';
+    const drive=equippedTeammateDrive(c,slot,id);
     const lines=[];
     for(const [group,label] of Object.entries(categories)){
       const entries=sources[group].filter(([source])=>source.startsWith(prefix));
       if(!entries.length)continue;
       const format=value=>{
-        if(group==='teamDef')return Number(value.toFixed(3))+' 点';
+        if(group==='teamDef' || group==='teamAtk')return Number(value.toFixed(3))+' 点';
         const amount=Number((value*100).toFixed(4));
         return amount+(group.startsWith('stun')?' 个百分点':'%');
       };
@@ -301,26 +362,60 @@ function renderTeammateBuffs(c,sources){
       lines.push('<li><b>虎啸</b>：连携增伤 +'+pct(juChainBonus)+'，终结技增伤 +'+pct(juUltimateBonus)+'。</li>');
       const [chain,ult]=juPotential[c.potential];
       if(chain || ult)lines.push('<li><b>潜能「侠肝义胆」</b>：连携最终伤害 +'+pct(chain)+'，终结技最终伤害 +'+pct(ult)+'。</li>');
-      lines.push('<li>虎啸提供 '+(c[slot]>=2?72:50)+'% 战斗中普通暴伤，对挽昼锐暴的贡献为 0。此配队关闭橘福福额外能力。</li>');
+      if(!normal)lines.push('<li>虎啸提供 '+(c[slot]>=2?72:50)+'% 战斗中普通暴伤，对挽昼锐暴的贡献为 0。此配队关闭橘福福额外能力。</li>');
     }
-    if(id==='rina')lines.push('<li>按丽娜自身 '+Number(rinaBuffs(c).personalPen.toFixed(3))+'% 穿透率、人偶在场且挽昼位于人偶附近计算。</li>');
+    if(id==='rina')lines.push('<li>按丽娜自身 '+Number(rinaBuffs(c).personalPen.toFixed(3))+'% 穿透率、人偶在场且'+lead().name+'位于人偶附近计算。</li>');
     if(id==='trigger'){
       lines.push('<li>破隙幽瞳及索魂影眸按追加攻击命中后持续覆盖计算。</li>');
-      if(c[slot]>=2)lines.push('<li>二影「猎眸」满层提供 24% 战斗中普通暴伤，对挽昼锐暴的贡献为 0。</li>');
+      if(!normal && c[slot]>=2)lines.push('<li>二影「猎眸」满层提供 24% 战斗中普通暴伤，对挽昼锐暴的贡献为 0。</li>');
+    }
+    if(id==='astra')lines.push('<li>按咏叹华彩在场、核心攻击力增益达上限计算。</li>');
+    if(id==='sunna')lines.push('<li>'+ (normal?'攻击增益与帷幕按覆盖本轮计算。猫的凝视可在补充招式单独填写。':'天使协律的攻击力和猫的凝视不参与挽昼结算。')+'</li>');
+    if(id==='dialyn')lines.push('<li>恶意投诉按覆盖本轮计算。替换成终结技的次数由招式明细指定。</li>');
+    const moonlight=sources.general.find(([label])=>label.endsWith(' · 月光骑士颂四件'));
+    if(drive==='moonlight' && moonlight && !moonlight[0].startsWith(prefix)){
+      lines.push('<li>月光骑士颂四件效果由'+moonlight[0].split(' · ')[0]+'提供。</li>');
+    }
+    if(drive==='astral'){
+      const astral=sources.general.find(([label])=>label.endsWith(' · 静听嘉音四件'));
+      if(astral && !astral[0].startsWith(prefix))lines.push('<li>静听嘉音四件效果由'+astral[0].split(' · ')[0]+'提供。</li>');
+      else if(!astral)lines.push('<li>静听嘉音当前为 0 层。</li>');
+    }
+    if(drive==='mountain'){
+      const mountain=sources.normalCritDmg.find(([label])=>label.endsWith(' · 山大王四件'));
+      if(mountain && !mountain[0].startsWith(prefix))lines.push('<li>山大王四件效果由'+mountain[0].split(' · ')[0]+'提供。</li>');
+      else if(mountain && !normal)lines.push('<li>山大王四件提供 '+pct(mountain[1])+' 全队普通暴伤。挽昼终结技使用锐暴伤害。</li>');
+    }
+    if(c[slot+'e']===kaboomEngine){
+      const cannon=sources.teamAtkPct.find(([label])=>label.endsWith(' · 好斗的阿炮'));
+      if(cannon && !cannon[0].startsWith(prefix))lines.push('<li>好斗的阿炮增益由'+cannon[0].split(' · ')[0]+'提供。</li>');
+      else if(cannon && !normal)lines.push('<li>好斗的阿炮提供 '+pct(cannon[1])+' 全队攻击力。挽昼按防御力结算。</li>');
     }
     const summary=el(slot+'BuffSummary');
     if(id==='air'){summary.textContent='空位，无队友增益。';continue;}
-    summary.innerHTML='<h4>对挽昼的增益</h4><ul>'+lines.join('')+'</ul>';
+    summary.innerHTML='<h4>对'+lead().name+'的增益</h4><ul>'+lines.join('')+'</ul>';
   }
 }
 function render(saveBaseline=false){
+  const silver=main==='anby', normal=main!=='sunbringer';
+  const roster=activeSkills();
+  const statTitle=normal?'攻击力':'防御力';
+  const critCap=normal?1:2;
+  const critTitle=normal?'暴击伤害':'锐暴伤害';
   el('multiplierStatus').textContent='';
   el('discSearchStatus').textContent='';
+  el('kaboomOptions').hidden=!teammateSlots.some(slot=>Number(el(slot+'e').value)===kaboomEngine);
+  el('astralOptions').hidden=!teammateSlots.some(slot=>el(slot+'d').value==='astral');
   for(const slot of teammateSlots){
     const actor=teammateChoices[el(slot+'char').value];
     const engine=actor.engines.find(([value])=>value===(el(slot+'e').value!=='0'?el(slot+'e').value:'1'))??actor.engines[0];
     el(slot+'r').disabled=el(slot+'e').value==='0';
     el('variants').querySelector(`[value="${slot}r"]`).textContent=engine[1]+'星级';
+    const drive=el(slot+'d'), auto=drive.querySelector('option[value="auto"]');
+    if(auto)auto.textContent='自动 · '+(automaticStunDrive({main})==='mountain'?'山大王':'赤翼夜曲')+'四件套';
+    const mountain=el(slot+'MountainFull');
+    mountain.disabled=equippedTeammateDrive({main,[slot+'d']:drive.value},slot,el(slot+'char').value)!=='mountain';
+    mountain.closest('label').hidden=mountain.disabled;
   }
   for(const slot of tunableSlots){
     const lock=el('lockMain'+slot);
@@ -345,7 +440,7 @@ function render(saveBaseline=false){
     revision++;
     el('total').textContent=valid?'无可行分配':'请检查输入';
     for(const id of ['split','summaryStats','compare','reference','variantRows','best','sourceRows','coreRows','markSummary','multiplierRows','rollGainRows'])el(id).replaceChildren();
-    for(let i=0;i<skills.length;i++)for(const prefix of ['m','d','stored','a'])el(prefix+i).textContent='—';
+    for(let i=0;i<roster.length;i++)for(const prefix of ['m','d','stored','a'])el(prefix+i).textContent='—';
     if(valid){
       el('discSearchStatus').textContent='当前主属性与词条限制下无可行分配。可尝试自动寻优，或调整锁定条数与上限。';
       saveSettings();
@@ -353,38 +448,52 @@ function render(saveBaseline=false){
     return;
   }
   rollInputs.forEach((input,i)=>{if(!rollLocks[i].checked)input.value=b.rolls[i];});
-  if(c.w>=2){
+  if(!normal && c.w>=2){
     const additive=c.markMode==='add';
     const other=solve({...c,markMode:additive?'multiply':'add'},b);
     const [mult,add]=additive?[other,b]:[b,other];
     el('markModeCompare').textContent='固定当前驱动，加算相比乘算：烬灭 '+percentages(add.mark,mult.mark)[1]+'，整轮总伤害 '+percentages(add.score,mult.score)[1]+'。';
   }else el('markModeCompare').textContent='两种算法从挽昼二影起生效。';
   renderTeammateBuffs(c,b.buffSources);
-  renderUltimateExample(c,b);
+  if(normal)renderAttackExample(c,b,elementNames[lead().element]);
+  else renderUltimateExample(c,b);
   renderRollGains(c,b);
   if(saveBaseline){
-    const team=['挽昼',...teammateSlots.map(slot=>teammateChoices[c[slot+'char']].name)];
+    const team=[lead().name,...teammateSlots.map(slot=>teammateChoices[c[slot+'char']].name)];
     const label=team.map((name,i)=>name==='空气'?name:name+' '+c[['w','f','r'][i]]+'影').join(' / ');
     manualBaseline={score:b.score,description:'已固定 · '+label};
   }
   if(el('variants').selectedOptions[0]?.disabled)el('variants').value='w';
   el('total').textContent=fmt(b.score);
-  el('split').textContent=`直接伤害　${fmt(b.direct)}　 /　烬灭　${fmt(b.mark)}`;
-  el('summaryStats').innerHTML=[['战斗防御力',fmt(b.combatDef)],['战斗暴击率',pct(b.rate)],['锐暴伤害',pct(b.critDmg)],['无视防御',pct(b.ignore)]].map(([k,v])=>`<span>${k}<b>${v}</b></span>`).join('');
+  const aftershock= silver?b.rows.reduce((sum,row)=>sum+(row.aftershock?row.direct:0),0):0;
+  el('split').textContent=normal?'直接伤害　'+fmt(b.direct)+(silver?'　 /　其中追加攻击　'+fmt(aftershock):''):`直接伤害　${fmt(b.direct)}　 /　烬灭　${fmt(b.mark)}`;
+  el('summaryStats').innerHTML=[['战斗'+statTitle,fmt(b.combatStat)],['战斗暴击率',pct(normal?Math.min(1,Math.max(0,b.rate)):b.rate)],[critTitle,pct(b.critDmg)],['无视防御／减防',pct(b.ignore)]].map(([k,v])=>`<span>${k}<b>${v}</b></span>`).join('');
   const line=(k,v)=>`<div class="metricline"><span>${k}</span><b>${v}</b></div>`;
-  const balanced=makeDiscs(b.rolls,b.mains.map(stat=>blockedSubstat[stat]??-1),b.discs);
-  const rollsText=rolls=>rolls.map((v,i)=>v?statNames[i]+' ×'+v:'').filter(Boolean).join('　') || '—';
+  const blocked=normal?{atk:0,crit:1,cd:2}:blockedSubstat;
+  const balanced=makeDiscs(b.rolls,b.mains.map(stat=>blocked[stat]??-1),b.discs);
+  const names=normal?['攻击 %',...statNames.slice(1)]:statNames;
+  const rollsText=rolls=>rolls.map((v,i)=>v?names[i]+' ×'+v:'').filter(Boolean).join('　') || '—';
   const rankedRolls=b.rolls.slice().sort((a,b)=>b-a);
   const topTwo=rankedRolls[0]+rankedRolls[1];
-  el('best').innerHTML=line('有效副词条　'+b.rolls.reduce((sum,n)=>sum+n,0)+' / '+c.rollBudget,rollsText(b.rolls))+line('最多三种合计 / X',(topTwo+rankedRolls[2])+' / '+c.tripleRollLimit)+line('最多两种合计 / Y',topTwo+' / '+c.pairRollLimit)+line('单种最多 / Z',rankedRolls[0]+' / '+c.maxRollsPerStat)+line('副词条暴伤折合暴击率',pct(b.rolls[2]*discRoll.cd)+' × 0.35 = '+Number((b.rolls[2]*discRoll.cd*35).toFixed(2))+'%')+line('初始防御 ＋ 战斗加成',fmt(b.initial)+' ＋ '+fmt(b.combatDef-b.initial))+line('穿透率',pct(b.penRate))+
+  el('best').innerHTML=line('有效副词条　'+b.rolls.reduce((sum,n)=>sum+n,0)+' / '+c.rollBudget,rollsText(b.rolls))+line('最多三种合计 / X',(topTwo+rankedRolls[2])+' / '+c.tripleRollLimit)+line('最多两种合计 / Y',topTwo+' / '+c.pairRollLimit)+line('单种最多 / Z',rankedRolls[0]+' / '+c.maxRollsPerStat)+(normal?'':line('副词条暴伤折合暴击率',pct(b.rolls[2]*discRoll.cd)+' × 0.35 = '+Number((b.rolls[2]*discRoll.cd*35).toFixed(2))+'%'))+line('初始'+statTitle+' ＋ 战斗加成',fmt(b.initial)+' ＋ '+fmt(b.combatStat-b.initial))+line('穿透率',pct(b.penRate))+
     `<details open><summary>每盘主属性与有效副词条</summary>${balanced.map((rolls,i)=>line((i+1)+' 号 · '+mainLabels[b.mains[i]],rolls.reduce((sum,n)=>sum+n,0)+' 条｜'+rollsText(rolls))).join('')}</details>`;
-  const capped=b.rate>=2-1e-10?b:optimized({...c,requireFullCrit:true});
-  el('best').insertAdjacentHTML('beforeend','<h3 class="disc-title">同条件下的 200% 暴击率对照</h3>'+
-    (capped?line('最高期望方案',pct(b.rate)+' 暴击率 · '+fmt(b.score))+line('达到 200% 的最优方案',pct(capped.rate)+' 暴击率 · '+fmt(capped.score))+
+  const capped=b.rate>=critCap-1e-10?b:optimized({...c,requireFullCrit:true});
+  el('best').insertAdjacentHTML('beforeend','<h3 class="disc-title">同条件下的 '+pct(critCap)+' 暴击率对照</h3>'+
+    (capped?line('最高期望方案',pct(Math.min(critCap,b.rate))+' 暴击率 · '+fmt(b.score))+line('达到 '+pct(critCap)+' 的最优方案',pct(Math.min(critCap,capped.rate))+' 暴击率 · '+fmt(capped.score))+
       line('满暴方案词条',rollsText(capped.rolls))+line('满暴方案相对最高期望',percentages(capped.score,b.score)[1]):
-      `<p>当前主属性在 ${c.rollBudget} 条预算内无法达到 200% 暴击率。</p>`));
+      `<p>当前主属性在 ${c.rollBudget} 条预算内无法达到 ${pct(critCap)} 暴击率。</p>`));
   const groups={core:{label:'核心五招',direct:0,accrued:0},other:{label:'二影其余招式',direct:0,accrued:0},rupture:{label:'毁伤',direct:0,accrued:0}};
   b.rows.forEach((r,i)=>{
+    el('skillName'+i).textContent=r.name;
+    const count=el('n'+i);
+    if(roster[i].automatic){
+      count.value=r.count;
+      count.title='根据三连组数与当前影画、潜能自动计算';
+    }else{
+      count.setAttribute('aria-label',r.name+(roster[i].type==='triple'?'手动组数':'次数'));
+      count.disabled=r.available===false;
+      count.title=count.disabled?'当前配置未满足触发条件':'';
+    }
     el('m'+i).textContent=pct(r.mult)+' / '+pct(r.base);
     el('d'+i).textContent=fmt(r.direct);
     el('stored'+i).textContent=r.accrued?fmt(r.accrued)+' · '+pct(r.accrued/r.direct):'—';
@@ -397,14 +506,18 @@ function render(saveBaseline=false){
   el('coreRows').innerHTML=b.rows.filter(r=>r.source==='core').map(r=>
     `<tr><td>${r.name}</td><td>${pct(r.mult)}</td><td>${r.count}</td><td>${fmt(r.direct)}</td><td>${fmt(r.accrued)}</td></tr>`).join('');
   el('multiplierRows').innerHTML=b.rows.map((row,i)=>{
-    const cells=multiplierFields.map(field=>{
+    const cells=activeMultiplierFields().map(field=>{
       const edited=Object.hasOwn(overrides[i],field);
       const value=edited?Number((100*overrides[i][field]).toPrecision(14)):Number((100*row.display[field]).toFixed(2));
       return `<td><input data-field="${field}" data-skill-row="${i}" class="${edited?'overridden':''}" aria-label="${row.name} ${field}" type="number" step="any" value="${value}"></td>`;
     });
     return '<tr><td>'+row.name+'</td>'+cells.join('')+'</tr>';
   }).join('');
-  el('markSummary').textContent='从上到下结算。补充招式排在两段终结技之后，其直伤计入总伤害，最后一次引爆后新增的烬痕只计积攒。纯闪避、切换主控和招架支援的直伤为 0。';
+  if(silver){
+    const {manual,m1,m2,groups}=anbyCircuit(c);
+    el('markSummary').textContent=`三连组数 ${groups} 组 · 手动 ${manual} ＋ 一影强化特殊技 ${m1} ＋ 二影终结技 ${m2}。苍光的输入框只填手动组数。白雷、雷殛、苍光·临界和六影跟随组数自动结算。`;
+  }else el('markSummary').textContent=normal?'次数按发动次数填写。赤色之刃、猫猫爪刺五段的重复斩击已计入单次倍率。超凶爪印与猫的凝视可按实际触发次数单独填写。':
+    '从上到下结算。补充招式排在两段终结技之后，其直伤计入总伤害，最后一次引爆后新增的烬痕只计积攒。纯闪避、切换主控和招架支援的直伤为 0。';
   showComparisons(c,b);
   saveSettings();
 }
@@ -435,6 +548,23 @@ function syncTeammate(key){
   el(key+'r').value='1';
   restoreControl(el(key+'r'),build.rank);
   el(key+'engineLabel').textContent=choice.engines.map(([,name])=>name).join(' / ');
+  const drive=el(key+'d');
+  const defaultDrive=defaultTeammateDrive(id);
+  const driveOptions={
+    moonlight:[['moonlight','月光骑士颂 · 四件套'],['astral','静听嘉音 · 四件套'],['none','无队伍增益']],
+    auto:[['auto','自动'],['bloodwing','赤翼夜曲 · 四件套'],['mountain','山大王 · 四件套']],
+    snowbunny:[['snowbunny','雪兔梦游仙境 · 四件套'],['noSetBonus','无队伍增益']],
+    none:[['none','无队伍增益']]
+  };
+  drive.innerHTML=options(driveOptions[defaultDrive]);
+  drive.disabled=defaultDrive==='none';
+  drive.closest('label').hidden=drive.disabled;
+  drive.value=defaultDrive;
+  // Older defense builds used a disabled placeholder value, which is absent from their new options.
+  restoreControl(drive,build.driveMode??(id==='rina' && build.drive==='none'?'none':undefined));
+  const mountain=el(key+'MountainFull');
+  mountain.checked=mountain.defaultChecked;
+  restoreControl(mountain,build.mountainFull);
 }
 function syncTeamControls(){
   const config={fchar:el('fchar').value,rchar:el('rchar').value};
@@ -448,11 +578,23 @@ function syncTeamControls(){
 }
 function rememberTeammate(slot){
   const character=el(slot+'char').dataset.character;
-  if(character && character!=='air')teammateBuilds[character]={shadow:el(slot).value,engine:el(slot+'e').value,rank:el(slot+'r').value};
+  if(character && character!=='air')teammateBuilds[character]={
+    shadow:el(slot).value,engine:el(slot+'e').value,rank:el(slot+'r').value,driveMode:el(slot+'d').value,
+    mountainFull:el(slot+'MountainFull').checked
+  };
 }
-el('reset').onclick=()=>{defaults.forEach((v,i)=>el('n'+i).value=v);render()};
+el('reset').onclick=()=>{
+  activeSkills().forEach((s,i)=>{if(!s.automatic)el('n'+i).value=s.defaultCount??0;});
+  render();
+};
 document.addEventListener('change',event=>{
   const input=event.target;
+  if(input.id==='mainAgent'){
+    saveSettings();
+    configureLead(input.value);
+    syncBoss();
+    restoreLeadProfile(leadProfiles[main]);
+  }
   const slot=teammateSlots.find(key=>input.id===key+'char');
   if(slot){
     teammateSlots.forEach(rememberTeammate);
@@ -480,7 +622,7 @@ el('optimizeDiscs').onclick=()=>{
   const current=optimized(config);
   let best=null, bestSet=config.set, bestTwo=config.two;
   const fourPieceSets=el('lockDiscSets').checked?[config.set]:Array.from(el('set').options,option=>option.value);
-  const twoPieceSets=el('lockTwo').checked?[config.two]:Object.keys(twoPieceNames);
+  const twoPieceSets=el('lockTwo').checked?[config.two]:Object.keys(twoPieces());
   const searchMains=Object.fromEntries(tunableSlots.map(slot=>['main'+slot,!el('lockMain'+slot).checked]));
   for(const set of fourPieceSets){
     for(const two of twoPieceSets){
@@ -503,7 +645,7 @@ el('optimizeDiscs').onclick=()=>{
     `已应用最高期望方案。单轮伤害 ${fmt(current.score)} → ${fmt(best.score)}（${change}）。`;
 };
 el('refreshMultipliers').onclick=()=>{
-  overrides=skills.map(()=>({}));
+  overrides=activeSkills().map(()=>({}));
   solved.clear();
   render();
   el('multiplierStatus').textContent='已按当前配置刷新。';
@@ -515,9 +657,57 @@ el('recalculate').onclick=()=>{
   el('calcStatus').textContent=el('saveBaseline').disabled?el('total').textContent:'已重新计算';
 };
 const settingsKey='sunbringer-calculator.settings.v1';
-const teamFields=new Set(['fchar','rchar','f','r','fe','re','fr','rr']);
+const teamFields=new Set(['fchar','rchar','f','r','fe','re','fr','rr','fd','rd','fMountainFull','rMountainFull']);
 const settingsControls=Array.from(document.querySelectorAll('select[id],input[id]'))
-  .filter(control=>!teamFields.has(control.id) && !control.closest('#rows'));
+  .filter(control=>!teamFields.has(control.id) && control.id!=='mainAgent');
+const leadProfiles={};
+const leadFields=new Set(['w','wr','set','two','main4','main5','main6','res','rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat',
+  'lockDiscSets','lockTwo','lockMain4','lockMain5','lockMain6','customFire','customCritDmg','customDefPct','customFlatDef','customSharp',
+  ...rollInputs.map(x=>x.id),...rollLocks.map(x=>x.id),
+  ...settingsControls.filter(x=>x.closest('[data-neko],[data-anby],[data-normal]')).map(x=>x.id)]);
+
+function configureLead(id){
+  main=id;
+  document.body.dataset.main=id;
+  const normal=id!=='sunbringer', actor=lead(), element=elementNames[actor.element];
+  el('mainAgent').value=id;
+  el('mainPortrait').style.display='';
+  el('mainPortrait').src=actor.portrait;
+  el('mainName').textContent=actor.name;
+  el('mainRole').textContent=actor.role;
+  el('leadTitle').textContent=actor.name;
+  document.title=actor.name+' · 配队伤害计算器';
+  for(const [id,text] of Object.entries({
+    summaryTitle:actor.name+'单轮期望伤害',discHeading:actor.name+'驱动盘',skillHeading:actor.name+'招式',
+    resLabel:'敌方'+element+'抗性 %',resColumn:(element==='物理'?'物':element)+'抗区',critColumn:normal?'期望暴击倍率':'锐暴倍率',
+    customElementLabel:element+'属性增伤',exampleHeading:'终结技「'+actor.ultimate+'」乘区拆解'
+  }))el(id).textContent=text;
+  for(const [selector,shown] of [['[data-sun]',!normal],['[data-normal]',normal],['[data-neko]',id==='nekomata'],['[data-anby]',id==='anby']]){
+    for(const node of document.querySelectorAll(selector)){
+      node.hidden=!shown;
+      for(const input of node.querySelectorAll('input'))input.disabled=!shown;
+    }
+  }
+  el('we').innerHTML=options(actor.engines);
+  el('variants').querySelector('[value="w"]').textContent=actor.name+'影画';
+  el('variants').querySelector('[value="wr"]').textContent=actor.engines[0][1]+'星级';
+  el('shadowNote').textContent='仅改变'+actor.name+'影画。各档沿用当前队友、音擎、驱动主副词条、轮转和战斗条件，分别与 0 影及上一影比较整轮期望伤害。';
+  const discs=defaultDiscs();
+  el('baselineNote').textContent='全 01 基准沿用当前队伍和空位，出战角色均为 0 影、各带 1 星专武。'+actor.name+'使用 4 '+fourPieces()[discs.set]+'＋2 '+twoPieces()[discs.two]+'，四号位暴击率、五号位自动择优、六号位'+(normal?'攻击力':'防御力')+'。各配置沿用相同战斗条件和手动招式次数，在所选词条预算内独立优化。';
+  el('set').innerHTML=options(Object.entries(fourPieces()));
+  el('two').innerHTML=options(Object.entries(twoPieces()));
+  const firstRoll=normal?'攻击 %':'防御 %';
+  el('rollLabel0').textContent=firstRoll+'条数';
+  rollLocks[0].setAttribute('aria-label','锁定'+firstRoll+'条数');
+  for(const control of settingsControls){
+    if(!leadFields.has(control.id) || control.id==='res')continue;
+    if(control.type==='checkbox')control.checked=control.defaultChecked;
+    else if(control.tagName==='SELECT')control.value=discs[control.id]??(control.id.endsWith('Potential')?'6':control.options[0].value);
+    else control.value=control.defaultValue;
+  }
+  manualBaseline=null;
+  buildRotation();
+}
 
 function restoreControl(control,value){
   if(control.type==='checkbox'){
@@ -539,25 +729,49 @@ function saveSettings(){
     fields[control.id]=control.type==='checkbox'?control.checked:control.value;
   }
   const rotation={};
-  for(const [i,skill] of skills.entries()){
+  for(const [i,skill] of activeSkills().entries()){
     const count=el('n'+i);
-    if(!Number.isFinite(count.valueAsNumber)||!count.validity.valid)return;
-    rotation[skill.name]={count:count.value,overrides:overrides[i]};
+    if(!skill.automatic && (!Number.isFinite(count.valueAsNumber)||!count.validity.valid))return;
+    rotation[skill.name]={count:skill.automatic?undefined:count.value,overrides:overrides[i]};
   }
+  leadProfiles[main]={fields:Object.fromEntries(Object.entries(fields).filter(([id])=>leadFields.has(id))),
+    rotation,manualBaseline,boss:fields.boss};
   for(const slot of teammateSlots){
     fields[slot+'char']=el(slot+'char').value;
     rememberTeammate(slot);
   }
   try{
-    localStorage.setItem(settingsKey,JSON.stringify({fields,teammateBuilds,rotation,manualBaseline}));
+    localStorage.setItem(settingsKey,JSON.stringify({fields,teammateBuilds,main,leadProfiles}));
   }catch{
     el('storageWarning').hidden=false;
   }
+}
+function restoreLeadProfile(profile){
+  for(const control of settingsControls){
+    if(!leadFields.has(control.id) || (control.id==='res' && profile?.boss!==el('boss').value))continue;
+    restoreControl(control,profile?.fields?.[control.id]);
+  }
+  activeSkills().forEach((skill,i)=>{
+    const row=profile?.rotation?.[skill.name];
+    if(!skill.automatic)restoreControl(el('n'+i),row?.count);
+    for(const field of activeMultiplierFields()){
+      const value=row?.overrides?.[field];
+      if(Number.isFinite(value))overrides[i][field]=value;
+    }
+  });
+  const baseline=profile?.manualBaseline;
+  if(Number.isFinite(baseline?.score) && typeof baseline.description==='string')manualBaseline=baseline;
 }
 function restoreSettings(){
   let saved;
   try{saved=JSON.parse(localStorage.getItem(settingsKey));}catch{}
   const fields=saved?.fields||{};
+  for(const id of Object.keys(leadChoices)){
+    const profile=saved?.leadProfiles?.[id];
+    if(profile && typeof profile==='object')leadProfiles[id]=profile;
+  }
+  if(saved && !saved.leadProfiles)leadProfiles.sunbringer={fields,rotation:saved.rotation,manualBaseline:saved.manualBaseline,boss:fields.boss};
+  configureLead(Object.hasOwn(leadChoices,saved?.main)?saved.main:'sunbringer');
   for(const character of Object.keys(teammateChoices)){
     const build=saved?.teammateBuilds?.[character];
     if(build && typeof build==='object')teammateBuilds[character]=build;
@@ -577,21 +791,12 @@ function restoreSettings(){
   const selectedId=fields.assaultSeason!==undefined?(fields.assaultBuff?fields.assaultSeason:''):fields.assaultBuff;
   restoreControl(el('assaultBuff'),selectedId);
   for(const control of settingsControls){
-    if(['assaultBuff','regionChoice'].includes(control.id))continue;
+    if(leadFields.has(control.id) || ['assaultBuff','regionChoice'].includes(control.id))continue;
     if((control.id==='regionStacks' || control.id==='regionExtra') &&
       (fields.boss!==el('boss').value || preferredRegion!==el('regionChoice').value))continue;
     restoreControl(control,fields[control.id]);
   }
-  skills.forEach((skill,i)=>{
-    const row=saved?.rotation?.[skill.name];
-    restoreControl(el('n'+i),row?.count);
-    for(const field of multiplierFields){
-      const value=row?.overrides?.[field];
-      if(Number.isFinite(value))overrides[i][field]=value;
-    }
-  });
-  const baseline=saved?.manualBaseline;
-  if(Number.isFinite(baseline?.score) && typeof baseline.description==='string')manualBaseline=baseline;
+  restoreLeadProfile(leadProfiles[main]);
 }
 // A valid numeric edit may still have focus when the user closes the tab.
 document.addEventListener('input',({target})=>{

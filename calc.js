@@ -1,5 +1,6 @@
 // All rates are fractions. Skill coefficients use the source's 1/10000 units.
 const pct = x => (100*x).toFixed(1).replace(/\.0$/,'')+'%';
+const sumBonuses=entries=>entries.reduce((sum,[,value])=>sum+value,0);
 const upgradeLevel = m => 12 + 2*Number(m>=3) + 2*Number(m>=5);
 // Rates above 100% determine the probability of applying the same critical multiplier twice.
 function expectedSharpCrit(rate,damage){
@@ -149,48 +150,107 @@ function rinaBuffs(c){
   const level=c.rinaPotential??6;
   const personalPen=(c.rinaBasePen??70.4)+(level>=2?1.6:0);
   const defensePerPercent=[0,0,2.5,3.5,4.5,5.5,6.5][level];
+  const attackPerPercent=[0,0,3,4.2,5.5,6.7,8][level];
   const defense=Math.min(468,personalPen*defensePerPercent);
+  const attack=Math.min(576,personalPen*attackPerPercent);
   const teamPen=Math.min(.30,.12+personalPen*.0025)*(c[teammateSlot(c,'rina')]>=1?1.3:1);
-  return {personalPen,defense,teamPen};
+  return {personalPen,defense,attack,teamPen};
 }
+const supportNames={rina:'丽娜',astra:'耀嘉音',sunna:'千夏'};
+const stunNames={jufufu:'橘福福',roxy:'洛克茜',norma:'诺姆',trigger:'扳机',dialyn:'琉音'};
+const defenseNames={robin:'知更鸟'};
+const kaboomEngine=3;
+const kaboomPerStack=[.025,.028,.032,.036,.04];
+const defaultTeammateDrive=id=>{
+  if(Object.hasOwn(stunNames,id))return 'auto';
+  if(Object.hasOwn(supportNames,id))return 'moonlight';
+  return Object.hasOwn(defenseNames,id)?'snowbunny':'none';
+};
+const automaticStunDrive=c=>(c.main??'sunbringer')==='sunbringer'?'bloodwing':'mountain';
+function equippedTeammateDrive(c,slot,id){
+  const selected=c[slot+'d']??defaultTeammateDrive(id);
+  return selected==='auto'?automaticStunDrive(c):selected;
+}
+
 // Each entry is also displayed in the worked example. Keep unlike multiplier groups separate.
 function partyBonuses(c,custom,assault){
   const w=c.wr-1;
+  const cat=isNekomata(c), silver=isAnby(c), normal=usesAttack(c);
   const ju=teammateSlot(c,'jufufu'), roxy=teammateSlot(c,'roxy'), norma=teammateSlot(c,'norma');
   const trigger=teammateSlot(c,'trigger'), robin=teammateSlot(c,'robin'), rina=teammateSlot(c,'rina');
+  const astra=teammateSlot(c,'astra'), sunna=teammateSlot(c,'sunna'), dialyn=teammateSlot(c,'dialyn');
   const rinaBonus=rina?rinaBuffs(c):null;
   const shadow=slot=>c[slot]??0;
   const rank=slot=>(c[slot+'r']??1)-1;
   const engine=slot=>c[slot+'e']??0;
-  // The squad can only receive one copy of Bloodwing Nocturne's team bonus.
-  const bloodwing=ju?'橘福福':roxy?'洛克茜':norma?'诺姆':trigger?'扳机':null;
+  const equipped=(slot,id)=>equippedTeammateDrive(c,slot,id);
+  const stunners=Object.entries(stunNames).map(([id,name])=>({name,id,slot:teammateSlot(c,id)})).filter(s=>s.slot);
+  const bloodwing=stunners.find(({slot,id})=>equipped(slot,id)==='bloodwing');
+  const mountain=stunners.filter(({slot,id})=>equipped(slot,id)==='mountain')
+    .map(({name,slot})=>({name,bonus:(c[slot+'MountainFull']??true)?.30:.15}))
+    .sort((a,b)=>b.bonus-a.bonus)[0];
+  const roxyCoverage=roxy && (cat?c.nekoRoxy:silver?c.anbyRoxy:true);
+  const sunnaEngine=engine(sunna)===1;
+  const back=cat && nekoBack(c);
+  const supports=Object.entries(supportNames).map(([id,name])=>({id,name,slot:teammateSlot(c,id)})).filter(s=>s.slot);
+  const moonlight=supports.find(({slot,id})=>equipped(slot,id)==='moonlight');
+  const astral=supports.find(({slot,id})=>equipped(slot,id)==='astral');
+  const snowbunny=Object.entries(defenseNames).find(([id])=>{
+    const slot=teammateSlot(c,id);
+    return slot && equipped(slot,id)==='snowbunny';
+  });
+  const cannon=supports.filter(({slot})=>engine(slot)===kaboomEngine).sort((a,b)=>rank(b.slot)-rank(a.slot))[0];
+  const cannonBonus=cannon?kaboomPerStack[rank(cannon.slot)]*(c.kaboomStacks??4):0;
   const entries={
     teamDef:[['知更鸟 · 守护咏叹',robin?(440+30*upgradeLevel(shadow(robin)))*(c.beat?1.25:1):0],['丽娜 · 潜能觉醒',rinaBonus?.defense]],
     teamPen:[['丽娜 · 人偶共享穿透率',rinaBonus?.teamPen]],
-    sharp:[['挽昼 · 蜃炎梦火',.10+.015*w],[bloodwing+' · 赤翼夜曲',bloodwing?.08:0],['知更鸟 · 六影',shadow(robin)>=6?.15:0],['自定义锐化增伤',custom.sharp],['危局效果',assault.sharp]],
-    critDmg:[['挽昼 · 基础锐暴伤害',1.50],['挽昼 · 众愿一心',bloodwing || robin?.25:0],['洛克茜 · 火浸染',roxy?.20:0],['知更鸟 · 星韵流彩',engine(robin)===1?[.15,.173,.195,.218,.24][rank(robin)]:0],['自定义锐暴伤害',custom.critDmg],['危局效果',assault.critDmg]],
-    general:[['挽昼 · 蜃炎梦火（火伤）',.20+.03*w],['挽昼 · 四影',c.w>=4?.10:0],['挽昼 · 炎狱重金属',c.two==='inferno'?.10:0],['挽昼 · 荆棘玫瑰四件',c.set==='rose'?.15:0],
+    teamAtk:[['耀嘉音 · 如歌的行板',astra?(shadow(astra)>=2?1600:1200):0],['千夏 · 天使协律',sunna?1050:0],['丽娜 · 潜能觉醒',rinaBonus?.attack]],
+    teamAtkPct:[['千夏 · 二影帷幕',shadow(sunna)>=2?.10:0],['千夏 · 思络成歌',sunnaEngine?[.10,.115,.13,.145,.16][rank(sunna)]:0],
+      [cannon?.name+' · 好斗的阿炮',cannonBonus]],
+    normalCritDmg:[['橘福福 · 虎啸',ju?(shadow(ju)>=2?.72:.50):0],['扳机 · 二影',shadow(trigger)>=2?.24:0],
+      [mountain?.name+' · 山大王四件',mountain?.bonus],
+      [silver?'洛克茜 · 电浸染':'洛克茜 · 物理浸染',normal && roxyCoverage?.40:0],['耀嘉音 · 咏叹华彩',astra?.07+upgradeLevel(shadow(astra))*.015:0],
+      ['琉音 · 昨夜来电',engine(dialyn)===1?[.30,.345,.39,.435,.48][rank(dialyn)]:0]],
+    sharp:[['挽昼 · 蜃炎梦火',.10+.015*w],[bloodwing?.name+' · 赤翼夜曲',bloodwing?.08:0],['知更鸟 · 六影',shadow(robin)>=6?.15:0],['自定义锐化增伤',custom.sharp],['危局效果',assault.sharp]],
+    critDmg:[['挽昼 · 基础锐暴伤害',1.50],['挽昼 · 众愿一心',stunners.length || robin?.25:0],['洛克茜 · 火浸染',roxy?.20:0],['知更鸟 · 星韵流彩',engine(robin)===1?[.15,.173,.195,.218,.24][rank(robin)]:0],['自定义锐暴伤害',custom.critDmg],['危局效果',assault.critDmg]],
+    general:[['挽昼 · 蜃炎梦火（火伤）',normal?0:.20+.03*w],['挽昼 · 四影',!normal && c.w>=4?.10:0],['挽昼 · 炎狱重金属',c.two==='inferno'?.10:0],['挽昼 · 荆棘玫瑰四件',c.set==='rose'?.15:0],
+      ['猫又 · 钢铁肉垫（物伤）',cat?.20+.05*w:0,'element'],['猫又 · 钢铁肉垫（背击）',back?[.25,.315,.38,.44,.50][w]:0],
+      ['猫又 · 猫步迷影',cat && c.nekoCore?.60:0],['猫又 · 獠牙重金属两件',c.set==='fanged' || c.two==='fanged'?.10:0,'element'],
+      ['猫又 · 獠牙重金属四件',c.set==='fanged' && c.nekoDiscProc?.35:0],
+      ['零号·安比 · 电位差',silver && c.anbyMarked?.25:0],
+      ['零号·安比 · 牺牲洁纯（三层电伤）',silver && c.anbyWeaponStacks===3?anbyWeaponElectric[w]:0],
+      ['零号·安比 · 雷暴重金属两件',c.set==='thunder' || c.two==='thunder'?.10:0],
       ['橘福福 · 福虓炉炉',engine(ju)===1?.20+.03*rank(ju):0],['洛克茜 · 永夜辗眠',engine(roxy)===1?.20+.03*rank(roxy):0],
       ['诺姆 · 首席跟班',engine(norma)===1?2*[.125,.144,.163,.181,.20][rank(norma)]:0],['诺姆 · 嗯呢弹幕',norma?.20:0],
-      ['知更鸟 · 核心技「激昂咏叹」',robin?.20:0],['知更鸟 · 雪兔梦游仙境（三层）',robin?.18:0],
+      ['知更鸟 · 核心技「激昂咏叹」',robin?.20:0],[snowbunny?.[1]+' · 雪兔梦游仙境（三层）',snowbunny?.18:0],
       ['知更鸟 · 星韵流彩',engine(robin)===1?2*[.085,.098,.11,.123,.136][rank(robin)]:0],['知更鸟 · 奔袭獠牙',engine(robin)===2?[.18,.225,.27,.315,.36][rank(robin)]:0],
-      ['丽娜 · 月光骑士颂四件',rina ? .18 : 0],
+      [moonlight?.name+' · 月光骑士颂四件',moonlight?.18:0],
+      [astral?.name+' · 静听嘉音四件',astral?.08*(c.astralStacks??3):0],
       ['丽娜 · 啜泣摇篮',engine(rina)===1?[.202,.245,.30,.355,.398][rank(rina)]:0],
-      ['自定义通用增伤',custom.general],['自定义火伤',custom.fire],['危局通用增伤',assault.general],['危局火伤',assault.fire]],
-    ignore:[['挽昼 · 极昼',.20],['挽昼 · 星之碑四件',c.set==='star'?.20:0],['知更鸟 · 一影重音节拍',shadow(robin)>=1 && c.beat?.20:0],['挽昼 · 六影',c.w>=6?.15:0],['扳机 · 索魂影眸',engine(trigger)===1?[.25,.2875,.325,.3625,.40][rank(trigger)]:0],['自定义无视防御',custom.ignore],['危局减防',assault.defDown]],
-    resDown:[['挽昼 · 一影',c.w>=1?.15:0],['知更鸟 · 二影',shadow(robin)>=2?.15:0],['洛克茜 · 一影',shadow(roxy)>=1?.15:0],['诺姆 · 一影',shadow(norma)>=1?.15:0],['危局减抗／无视抗性',assault.resDown]],
-    received:[['洛克茜 · 目标受伤',roxy?.08:0],['危局效果',assault.received]],
-    stun:[['橘福福 · 一影',shadow(ju)>=1?.35:0],['洛克茜 · 基础失衡易伤',roxy?.30:0],['洛克茜 · 二影',shadow(roxy)>=2?.30:0],['诺姆 · 基础失衡易伤',norma?.30:0],['诺姆 · 二影',shadow(norma)>=2?.30:0],['危局效果',assault.stun],['自定义失衡易伤',custom.stun]],
+      ['耀嘉音 · 咏叹华彩',astra?.08+upgradeLevel(shadow(astra))*.01:0],
+      ['耀嘉音 · 玲珑妆匣',engine(astra)===1?[.20,.23,.26,.29,.32][rank(astra)]:0],
+      ['千夏 · 思络成歌',sunnaEngine?[.25,.286,.322,.358,.40][rank(sunna)]:0],['千夏 · 四影',shadow(sunna)>=4?.18:0],
+      ['琉音 · 好评如潮',dialyn && normal?.40:0],
+      ['自定义通用增伤',custom.general],[silver?'自定义电伤':cat?'自定义物伤':'自定义火伤',custom.fire,'element'],['危局通用增伤',assault.general],['危局火伤',normal?0:assault.fire]],
+    ignore:[['挽昼 · 极昼',normal?0:.20],['挽昼 · 星之碑四件',c.set==='star'?.20:0],['知更鸟 · 一影重音节拍',shadow(robin)>=1 && c.beat?.20:0],['挽昼 · 六影',!normal && c.w>=6?.15:0],['扳机 · 索魂影眸',engine(trigger)===1?[.25,.2875,.325,.3625,.40][rank(trigger)]:0],
+      ['千夏 · 一影（猫的凝视）',normal && shadow(sunna)>=1?.21:0],['自定义无视防御',custom.ignore],['危局减防',assault.defDown]],
+    resDown:[['挽昼 · 一影',!normal && c.w>=1?.15:0],['猫又 · 一影背击',back && c.w>=1?.16:0],['零号·安比 · 四影银白残响',silver && c.anbyMarked && c.w>=4?.12:0],['知更鸟 · 二影',shadow(robin)>=2?.15:0],['洛克茜 · 一影',shadow(roxy)>=1?.15:0],['诺姆 · 一影',shadow(norma)>=1?.15:0],
+      ['耀嘉音 · 一影（三层）',shadow(astra)>=1?.18:0],['琉音 · 一影好评如潮',normal && shadow(dialyn)>=1?.15:0],['危局减抗／无视抗性',assault.resDown]],
+    received:[['洛克茜 · 目标受伤',roxyCoverage?.08:0],['琉音 · 二影恶意投诉',shadow(dialyn)>=2?.15:0],['危局效果',assault.received]],
+    stun:[['橘福福 · 一影',shadow(ju)>=1?.35:0],['橘福福 · 额外能力',normal && ju?.20:0],['洛克茜 · 基础失衡易伤',roxy?.30:0],['洛克茜 · 二影',shadow(roxy)>=2?.30:0],['诺姆 · 基础失衡易伤',norma?.30:0],['诺姆 · 二影',shadow(norma)>=2?.30:0],
+      ['千夏 · 额外能力',normal && sunna?.30:0],['琉音 · 恶意投诉',dialyn?(shadow(dialyn)>=2?.50:.30):0],
+      ['危局效果',assault.stun],['自定义失衡易伤',custom.stun]],
     stunAlways:[['扳机 · 破隙幽瞳',trigger?.35:0],['扳机 · 一影',shadow(trigger)>=1?.20:0]]
   };
   const totals={};
   for(const key of Object.keys(entries)){
     entries[key]=entries[key].filter(([,value])=>value);
-    totals[key]=entries[key].reduce((sum,[,value])=>sum+value,0);
+    totals[key]=sumBonuses(entries[key]);
   }
   return {entries,...totals};
 }
 function solve(c,fixedBuild=null,searchMains=null){
+  const cat=isNekomata(c), silver=isAnby(c), normal=usesAttack(c);
   const rollBudget=c.rollBudget??45;
   const tripleLimit=c.tripleRollLimit??45, pairLimit=c.pairRollLimit??30;
   const singleLimit=c.maxRollsPerStat??15;
@@ -210,7 +270,8 @@ function solve(c,fixedBuild=null,searchMains=null){
     stun: (c.customStun||0)/100
   };
   const assault=c.assault??assaultEffects(null);
-  const rows=rotation(c,assault.stunFinisher);
+  const makeRotation=silver?anbyRotation:cat?nekomataRotation:rotation;
+  const rows=makeRotation(c,assault.stunFinisher);
   const lastRelease=rows.findLastIndex(row=>row.settle && row.count);
   const w=c.wr-1;
   const buffs=partyBonuses(c,custom,assault);
@@ -220,33 +281,42 @@ function solve(c,fixedBuild=null,searchMains=null){
   const stun=(c.stun?c.vuln/100+buffs.stun:1)+buffs.stunAlways;
   let best=null;
   const main4=fixedBuild?.mains[3]??c.main4, main5=fixedBuild?.mains[4]??c.main5;
-  const fourth=searchMains?.main4 || main4==='auto'?['def','crit','cd']:[main4];
-  const fifth=searchMains?.main5 || main5==='auto'?['def','fire','pen']:[main5];
-  const sixth=searchMains?.main6?['def']:[fixedBuild?.mains[5]??c.main6];
+  const scalingStat=normal?'atk':'def';
+  const fourth=searchMains?.main4 || main4==='auto'?[scalingStat,'crit','cd']:[main4];
+  const fifth=searchMains?.main5 || main5==='auto'?[scalingStat,damageElement(c),'pen']:[main5];
+  const sixth=searchMains?.main6?[scalingStat]:[fixedBuild?.mains[5]??c.main6];
+  const blockedStats=normal?{atk:0,crit:1,cd:2}:blockedSubstat;
   for(const four of fourth)for(const five of fifth)for(const six of sixth){
     const mains=['flatHp','flatAtk','flatDef',four,five,six];
-    const blocked=mains.map(stat=>blockedSubstat[stat]??-1);
+    const blocked=mains.map(stat=>blockedStats[stat]??-1);
     const caps=lockedRolls.map((n,i)=>Math.min(n??Infinity,tripleLimit,pairLimit,singleLimit,6*blocked.filter(x=>x!==i).length));
     const capacity=Math.min(rollBudget,Math.floor(4*tripleLimit/3),2*pairLimit,54-blocked.filter(stat=>stat>=0).length,caps.reduce((sum,n)=>sum+n,0));
     if(capacity<minimumCount || minimumRolls.some((n,i)=>n>caps[i]))continue;
-    const bonus=1+buffs.general+(five==='fire'?.30:0);
+    const attackStats=silver?anbyStats(c,buffs,mains,custom):cat?nekomataStats(c,buffs,mains,custom):null;
+    const bonus=attackStats?.bonus??1+buffs.general+(five==='fire'?.30:0);
+    const aftershockShare=attackStats?.aftershockCritShare??0;
     // Each skill is constant, scales with crit, with defense, or with both.
     // Keep the same mark and override weights for disc optimization and the detail table.
     const weights=[0,0,0,0];
+    // Aftershocks have separate crit damage. Store just the weights affected by the difference.
+    const aftershockWeights=[0,0];
     const factors=rows.map((row,i)=>{
-      const generic=skillOverride(c,i,'generic',bonus), sharpFactor=skillOverride(c,i,'sharp',1+buffs.sharp);
+      const generic=skillOverride(c,i,'generic',bonus), sharpFactor=normal?1:skillOverride(c,i,'sharp',1+buffs.sharp);
       const resistFactor=skillOverride(c,i,'resist',resist), stunFactor=skillOverride(c,i,'stun',stun);
       const receivedFactor=skillOverride(c,i,'received',received);
       const fixed=row.mult*(generic+row.category)*row.final*receivedFactor*sharpFactor*resistFactor*stunFactor;
       const critOverride=c.skillOverrides?.[i]?.crit, defOverride=c.skillOverrides?.[i]?.defense;
       const settled=i<=lastRelease?row.markWeight*(row.ultimate && c.w>=6?1.8:1):0;
-      weights[(critOverride==null?1:0)+(defOverride==null?2:0)]+=fixed*(row.count+settled)*(critOverride??1)*(defOverride??1);
+      const damageWeight=fixed*(row.count+settled)*(critOverride??1)*(defOverride??1);
+      weights[(critOverride==null?1:0)+(defOverride==null?2:0)]+=damageWeight;
+      if(row.aftershock && critOverride==null)aftershockWeights[Number(defOverride==null)]+=damageWeight;
       return {fixed,generic,sharp:sharpFactor,resist:resistFactor,stun:stunFactor,received:receivedFactor};
     });
     const defMains=mains.filter(stat=>stat==='def').length;
     const setDefense=.16+(c.two==='rose' && c.set!=='rose'?.16:0);
-    const initialBase=887*(1+.48+setDefense+.48*defMains+custom.defPct)+184+custom.flatDef;
-    const critBase=.338+.40+.20+.02*w+(four==='crit'?.24:0)+.35*(.50+(four==='cd'?.48:0)+(c.extraInitialCritDmg??0)/100)+(c.two==='woodpecker'?.08:0)+custom.crit;
+    const initialBase=attackStats?.initialBase??887*(1+.48+setDefense+.48*defMains+custom.defPct)+184+custom.flatDef;
+    const critBase=attackStats?.rate??.338+.40+.20+.02*w+(four==='crit'?.24:0)+.35*(.50+(four==='cd'?.48:0)+(c.extraInitialCritDmg??0)/100)+(c.two==='woodpecker'?.08:0)+custom.crit;
+    const critDamage=attackStats?.critDmg??critDmg;
     const penRate=(five==='pen'?.24:0)+(c.two==='puffer'?.08:0)+buffs.teamPen+custom.pen;
     const remainingDef=c.enemy*(1-ignore)*(1-penRate);
     const candidates=[];
@@ -256,15 +326,18 @@ function solve(c,fixedBuild=null,searchMains=null){
         const total=d+cr+cd+pen;
         if(total>capacity || total-Math.min(d,cr,cd,pen)>tripleLimit)return;
         if(Math.max(d+cr,cd+pen,Math.max(d,cr)+Math.max(cd,pen))>pairLimit)return;
-        const initial=initialBase+887*discRoll.def*d;
-        const rate=critBase+discRoll.crit*cr+.35*discRoll.cd*cd+(c.set==='star'?.12:initial>=1800?.16:initial>=1000?.08:0);
-        if(c.requireFullCrit && rate<2-1e-10)return;
-        const crit=expectedSharpCrit(rate,critDmg);
+        const initial=initialBase+(normal?attackStats.baseAtk*atkRoll:887*discRoll.def)*d;
+        const rate=critBase+discRoll.crit*cr+(normal?0:.35*discRoll.cd*cd+(c.set==='star'?.12:initial>=1800?.16:initial>=1000?.08:0));
+        if(c.requireFullCrit && rate<(normal?1:2)-1e-10)return;
+        const cdValue=critDamage+(normal?discRoll.cd*cd:0);
+        const crit=normal?1+Math.max(0,Math.min(1,rate))*cdValue:expectedSharpCrit(rate,cdValue);
+        const aftershockExtra=(crit-1)*aftershockShare;
         const defenseFactor=794/(794+Math.max(0,remainingDef-discRoll.pen*pen-(c.extraFlatPen??0)));
-        const combatDef=initial*(1+assault.def)+teamDef;
-        const score=combatDef*(weights[0]+weights[1]*crit+weights[2]*defenseFactor+weights[3]*crit*defenseFactor);
+        const combatStat=normal?initial+attackStats.baseAtk*attackStats.attackPct+buffs.teamAtk:initial*(1+assault.def)+teamDef;
+        const score=combatStat*(weights[0]+weights[1]*crit+weights[2]*defenseFactor+weights[3]*crit*defenseFactor+
+          aftershockExtra*(aftershockWeights[0]+aftershockWeights[1]*defenseFactor));
         if(best && score<=best.score)return;
-        candidates.push({score,rolls:[d,cr,cd,pen],initial,combatDef,rate,critFactor:crit,defenseFactor});
+        candidates.push({score,rolls:[d,cr,cd,pen],initial,combatStat,rate,critFactor:crit,aftershockExtra,aftershockShare,critDmg:cdValue,defenseFactor});
     }
     // Visit fuller builds first. A lower roll count can win if main/substat
     // exclusions prevent extending the best allocation to the next count.
@@ -273,7 +346,7 @@ function solve(c,fixedBuild=null,searchMains=null){
       for(const candidate of candidates){
         const discs=fixedBuild?.discs??makeDiscs(candidate.rolls,blocked);
         if(discs){
-          best={...candidate,discs,mains,penRate,bonus,critDmg,teamDef,ignore,factors};
+          best={...candidate,discs,mains,penRate,bonus,teamDef,ignore,factors,statSources:attackStats?.statSources};
           break;
         }
       }
@@ -302,8 +375,9 @@ function solve(c,fixedBuild=null,searchMains=null){
   let pendingMark=0;
   const details=rows.map((r,i)=>{
     const factors=best.factors[i];
-    const crit=skillOverride(c,i,'crit',best.critFactor), defense=skillOverride(c,i,'defense',best.defenseFactor);
-    const unit=best.combatDef*factors.fixed*crit*defense;
+    const crit=skillOverride(c,i,'crit',best.critFactor+(r.aftershock?best.aftershockExtra:0));
+    const defense=skillOverride(c,i,'defense',best.defenseFactor);
+    const unit=best.combatStat*factors.fixed*crit*defense;
     const direct=unit*r.count, accrued=unit*r.markWeight;
     pendingMark+=accrued;
     let mark=0;
@@ -311,6 +385,6 @@ function solve(c,fixedBuild=null,searchMains=null){
     return {...r,unit,base:r.mult*r.count,direct,accrued,mark,display:{...factors,coefficient:r.mult,skill:r.category,final:r.final,crit,defense,mark:r.markRate}};
   });
   const direct=details.reduce((a,x)=>a+x.direct,0), mark=details.reduce((a,x)=>a+x.mark,0);
-  return {...best,buffSources:buffs.entries,rows:details,direct,mark,score:direct+mark};
+  return {...best,combatDef:normal?0:best.combatStat,buffSources:buffs.entries,rows:details,direct,mark,score:direct+mark};
 }
 

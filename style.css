@@ -2,7 +2,7 @@
 .benchmark{display:flex;align-items:baseline;gap:8px 20px;flex-wrap:wrap;margin:12px 0;color:var(--dim);font-size:13px}.benchmark strong,.selected td{color:var(--hot)}.benchmark strong{font-size:16px}.comparison-note{color:var(--dim);font-size:13px;margin:0 0 12px}.sectionhead label{margin:12px 0}.selected{background:#212d39}
 .disc-title{margin:16px 0 8px;font-size:14px}.fields select:disabled{opacity:.8}#best details .metricline span{flex-shrink:0}
 .custom-help{margin:8px 0;font-size:12px}.custom-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px;margin-top:12px}.custom-grid label{position:relative}.custom-grid .unit{position:absolute;right:9px;bottom:9px;color:var(--dim);font-size:11px;pointer-events:none}@media(max-width:600px){.custom-grid{grid-template-columns:1fr}}
-.multiplier-table{min-width:1180px}.multiplier-table input{width:82px;margin:0;padding:5px 6px;text-align:right}.multiplier-table td:first-child{min-width:190px}.multiplier-table th{white-space:nowrap}
+.multiplier-table{min-width:1180px}body:is([data-main="nekomata"],[data-main="anby"]) .multiplier-table{min-width:1040px}.multiplier-table input{width:82px;margin:0;padding:5px 6px;text-align:right}.multiplier-table td:first-child{min-width:190px}.multiplier-table th{white-space:nowrap}
 
 .compare-actions{display:flex;gap:8px;flex-wrap:wrap}.multiplier-table input.overridden{border-color:var(--hot);color:var(--hot)}[hidden]{display:none!important}
 
