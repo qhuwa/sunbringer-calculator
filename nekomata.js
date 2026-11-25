@@ -32,7 +32,7 @@ const nekoFour={fanged:'獠牙重金属',woodpecker:'啄木鸟电音',hormone:'�
 const nekoTwo={...nekoFour,puffer:'河豚电音',astral:'静听嘉音'};
 const nekoInitial={set:'fanged',two:'woodpecker',main4:'crit',main5:'auto',main6:'atk'};
 const nekoBack=c=>c.nekoBack || (c.nekoPotential>=1 && c.nekoProwl) || (c.stun && c.w>=1);
-const nekoExtra=c=>['rina','astra','sunna','dialyn'].some(id=>teammateSlot(c,id));
+const nekoExtra=c=>[...Object.keys(supportNames),'dialyn'].some(id=>teammateSlot(c,id));
 
 function nekomataRotation(c,stunFinisher){
   const ju=teammateSlot(c,'jufufu'), sunna=teammateSlot(c,'sunna');

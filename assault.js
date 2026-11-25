@@ -16,7 +16,7 @@ const assaultSeasons=[
     {name:'逆涌',note:'影响异常队伍攻击及异常触发后的能量；本轮收益为零。'}
   ],regions:{40014:'erosion',40013:'core',30042:'sacrifice',40006:'wound'}},
   {id:'690531',server:'测试服',begin:'2026-10-21',end:'2026-12-18',buffs:[
-    {name:'尖峰',note:'防御力 +10%，命中时无视 10% 火抗。锋御暴击后 15 秒内锐化伤害再提升 10%。',base:{def:.10,resDown:.10},condition:'锋御暴击后 15 秒',proc:{sharp:.10}},
+    {name:'尖峰',note:'防御力 +10%，命中时无视 10% 火抗。锋御暴击后 15 秒内锐化伤害再提升 10%。',base:{def:.10,fireResDown:.10},condition:'锋御暴击后 15 秒',proc:{sharp:.10}},
     {name:'电离',note:'施加电属性异常后的 15 秒内，目标减防 25%、全属性减抗 10%。',condition:'已施加电属性异常且在 15 秒内',proc:{defDown:.25,resDown:.10}},
     {name:'焰绽',note:'影响异常积蓄、异常伤害和能量；本轮收益为零。'}
   ],regions:{40014:'erosion',40010:'insight15',300082:'assist',40012:'noDirect'}}
@@ -24,7 +24,7 @@ const assaultSeasons=[
 
 const assaultRegions={
   noDirect:{note:'该区域效果仅影响操作得分、异常、普通暴伤或资源，当前轮转无直接增益。'},
-  chaos:{name:'紊相',max:1,note:'积累 10 点紊相值进入 10 秒窗口，目标受到的锐化伤害 +65%，锐暴伤害 +25%。',effect:{received:.65,critDmg:.25}},
+  chaos:{name:'紊相',max:1,note:'积累 10 点紊相值进入 10 秒窗口，目标受到的锐化伤害 +65%，锐暴伤害 +25%。',effect:{sharpReceived:.65,critDmg:.25}},
   insight20:{name:'识破',max:4,note:'招架指定攻击或使目标失衡叠层，每层目标受到的锐暴伤害 +20%。',effect:{critDmg:.20}},
   insight5:{name:'识破',max:4,note:'招架指定攻击或使目标失衡叠层，每层锐化伤害 +15%、锐暴伤害 +5%。',effect:{sharp:.15,critDmg:.05}},
   insight15:{name:'识破',max:4,note:'招架指定攻击或使目标失衡叠层，每层目标受到的锐暴伤害 +15%。',effect:{critDmg:.15}},
@@ -38,7 +38,7 @@ function activeAssaultSeasons(now=Date.now()){
   return assaultSeasons.filter(s=>Date.parse(s.begin+'T04:00:00+08:00')<=now && now<Date.parse(s.end+'T04:00:00+08:00'));
 }
 function assaultEffects(optional,area,triggered,stacks,extra){
-  const rates={def:0,fire:0,sharp:0,critDmg:0,stun:0,general:0,resDown:0,defDown:0,received:0,stunFinisher:0};
+  const rates={def:0,fire:0,sharp:0,critDmg:0,stun:0,general:0,resDown:0,fireResDown:0,defDown:0,received:0,sharpReceived:0,stunFinisher:0};
   function add(effect,count=1){
     for(const [key,value] of Object.entries(effect||{}))rates[key]+=value*count;
   }

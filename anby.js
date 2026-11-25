@@ -29,13 +29,11 @@ const anbySkills=[
 ];
 
 const isAnby=c=>c.main==='anby';
-const usesAttack=c=>isNekomata(c)||isAnby(c);
-const damageElement=c=>isAnby(c)?'electric':isNekomata(c)?'physical':'fire';
 const anbyFour={shadow:'如影相随',thunder:'雷暴重金属',woodpecker:'啄木鸟电音',hormone:'激素朋克'};
 const anbyTwo={...anbyFour,puffer:'河豚电音',astral:'静听嘉音'};
 const anbyInitial={set:'shadow',two:'thunder',main4:'crit',main5:'auto',main6:'atk'};
 const anbyWeaponElectric=[.20,.23,.26,.29,.32];
-const anbyExtra=c=>['jufufu','roxy','norma','trigger','dialyn','rina','astra','sunna'].some(id=>teammateSlot(c,id));
+const anbyExtra=c=>['jufufu','roxy','norma','trigger','dialyn',...Object.keys(supportNames)].some(id=>teammateSlot(c,id));
 
 function anbyCircuit(c){
   const ex=c.counts[anbySkills.findIndex(s=>s.type==='ex')];
@@ -80,10 +78,20 @@ function anbyStats(c,buffs,mains,custom){
   const shadowStacks=c.set==='shadow'?c.anbySetStacks:0;
   const attackPct=buffs.teamAtkPct+.04*shadowStacks+
     (c.set==='thunder' && c.anbyShock?.28:0)+(c.set==='woodpecker'?.09*c.anbyWoodStacks:0)+(c.set==='hormone' && c.anbyDiscProc?.25:0);
-  const rate=.194+(fourth==='crit'?.24:0)+(has('woodpecker')?.08:0)+custom.crit+.04*shadowStacks+
-    (c.w>=2?.12:0)+(anbyExtra(c)?.10:0);
-  const weaponCrit=[.10,.115,.13,.145,.16][c.wr-1]*(3+c.anbyWeaponStacks);
-  const critDmg=.50+.48+weaponCrit+(fourth==='cd'?.48:0)+(c.customNormalCd||0)/100+buffs.normalCritDmg;
-  return {baseAtk,initialBase,attackPct,rate,critDmg,bonus:1+buffs.general+(fifth==='electric'?.30:0),
+  const weaponCritPerStack=[.10,.115,.13,.145,.16][c.wr-1];
+  const statSources={
+    panelRate:[['零号·安比基础暴击率',.05],['核心技强化',.144],
+      ['四号位主属性',fourth==='crit'?.24:0],['啄木鸟电音两件',has('woodpecker')?.08:0]],
+    ownCombatRate:[['如影相随四件 · '+shadowStacks+' 层',.04*shadowStacks],
+      ['二影「冗余协议」',c.w>=2?.12:0],['额外能力「电极化」',anbyExtra(c)?.10:0]],
+    rateAdjustment:[['自定义暴击率',custom.crit]],
+    panelCd:[['基础暴伤',.50],['牺牲洁纯副属性',.48],['四号位主属性',fourth==='cd'?.48:0]],
+    ownCombatCd:[['牺牲洁纯 · 固定暴伤',3*weaponCritPerStack],
+      ['牺牲洁纯 · '+c.anbyWeaponStacks+' 层',c.anbyWeaponStacks*weaponCritPerStack]],
+    cdAdjustment:[['自定义普通暴伤',(c.customNormalCd||0)/100]]
+  };
+  const rate=sumBonuses(statSources.panelRate)+sumBonuses(statSources.ownCombatRate)+sumBonuses(statSources.rateAdjustment);
+  const critDmg=sumBonuses(statSources.panelCd)+sumBonuses(statSources.ownCombatCd)+sumBonuses(statSources.cdAdjustment)+buffs.normalCritDmg;
+  return {baseAtk,initialBase,attackPct,rate,critDmg,statSources,bonus:1+buffs.general+(fifth==='electric'?.30:0),
     aftershockCritShare:c.anbyMarked?(c.anbyPotential>=1?.35:.30):0};
 }
