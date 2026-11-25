@@ -1,4 +1,4 @@
-const expandedLeads={cissia,seed,sigrid,banyue,yidhari,pyrois,severian,claret};
+const expandedLeads={cissia,seed,sigrid,banyue,yidhari,pyrois,severian,claret,...classicLeads};
 const expandedLead=c=>expandedLeads[c.main];
 const isSunbringer=c=>(c.main??'sunbringer')==='sunbringer';
 const partyHas=(c,ids)=>ids.some(id=>teammateSlot(c,id));
@@ -6,7 +6,7 @@ const hasSupportOrStun=c=>partyHas(c,[...Object.keys(supportNames),...Object.key
 const hasElectricAlly=c=>partyHas(c,['rina','trigger','cissia']);
 const hasAttackAlly=c=>partyHas(c,['orphie','cissia']);
 const elementSet={
-  201:['inferno','炎狱重金属'],202:['polar','极地重金属'],203:['thunder','雷暴重金属'],
+  200:['fanged','獠牙重金属'],201:['inferno','炎狱重金属'],202:['polar','极地重金属'],203:['thunder','雷暴重金属'],
   204:['windMetal','呼啸沙龙'],205:['chaoticMetal','混沌重金属']
 };
 
@@ -18,11 +18,12 @@ function expandedDriveSetup(actor){
   if(actor.kind==='rupture')return {skills:actor.skills,four:yiFour,two:{...yiTwo,...elemental},
     initial:{...yiInitial}};
   const attackFour={dawn:'拂晓生花',woodpecker:'啄木鸟电音',hormone:'激素朋克'};
-  const four=actor===pyrois?{chronicle:'拂晓行纪',...attackFour}:attackFour;
+  const keyForGear=actor.slug.replaceAll('-','');
+  const four={...(actor===pyrois?{chronicle:'拂晓行纪'}:classicGear[keyForGear]),...attackFour};
   const two={...four,...elemental,puffer:'河豚电音',branch:'折枝剑歌',astral:'静听嘉音'};
   if(actor===cissia)two.swing='摇摆爵士';
   return {skills:actor.skills,four,two,initial:{
-    set:actor===pyrois?'chronicle':'dawn',two:actor===sigrid || actor===severian?'puffer':'woodpecker',
+    set:actor===pyrois?'chronicle':classicDefaults[keyForGear]??'dawn',two:actor===sigrid || actor===severian?'puffer':'woodpecker',
     main4:'auto',main5:'auto',main6:'atk'
   }};
 }
@@ -36,7 +37,8 @@ const expandedControls={
   yidhari:[['low','低于 50% 生命的满额增益覆盖'],['veil','以太帷幕·涌泉覆盖'],['weapon','海妖摇篮层数',0,3,3],['m6','六影启谛覆盖'],['followup','蓄力后衔接碎惘沉击第三段 +30%',false]],
   pyrois:[['flare','耀斑覆盖',false],['sun','阳炎覆盖',false],['infusion','浸染覆盖',false],['weapon','日蚀覆盖'],['m6','六影曜锋覆盖次数',0,99,1]],
   severian:[['weapon','禁罪囚笼普攻触发效果覆盖'],['m1','一影登场技换成连携'],['m2','二影穿透率覆盖']],
-  claret:[['core','猩红铭刻覆盖'],['blade','残锋覆盖（需满足额外能力）'],['weapon','猩红渴望锐化增伤覆盖'],['dodge','锻星／伏钺极限闪避后增伤覆盖',false]]
+  claret:[['core','猩红铭刻覆盖'],['blade','残锋覆盖（需满足额外能力）'],['weapon','猩红渴望锐化增伤覆盖'],['dodge','锻星／伏钺极限闪避后增伤覆盖',false]],
+  ...classicControls
 };
 for(const [id,fields] of Object.entries(expandedControls)){
   if(id!=='severian')fields.push(['roxy','洛克茜同属性浸染与风化覆盖',false]);
@@ -54,6 +56,7 @@ function expandedRotation(c,stunFinisher){
   const option=key=>expandedOption(c,key);
   const weapon=c.wr-1;
   const counts=new Map(actor.skills.map((skill,i)=>[skill.id,c.counts[i]]));
+  const classic=Object.hasOwn(classicLeads,c.main)?classicRotationRules(c,actor,counts):null;
   const pyroInfusion=actor===pyrois && (option('infusion') || option('roxy') && partyHas(c,['roxy']));
   let sigridOverflow=actor===sigrid && m>=1?option('m1'):0;
   let pyroBlade=actor===pyrois && m>=6?option('m6'):0;
@@ -61,7 +64,7 @@ function expandedRotation(c,stunFinisher){
     const {id,type,name}=skill;
     const chain=type==='chain', ult=type==='ult', basic=type==='basic', ex=type==='ex';
     let count=c.counts[i], available=true, extraIgnore=0, extraRes=0, extraPen=0, extraStun=0, critDamageBonus=0, critRateBonus=0;
-    let bonusMult=0, coeffScalar=1;
+    let bonusMult=0, coeffScalar=1, critThreshold=0, thresholdScale=1;
     const categorySources=[
       ['橘福福 · 虎啸',ju?(chain?juChainBonus:ult?juUltimateBonus:0):0],
       ['危局招式增伤',c.stun && (chain || ult)?stunFinisher:0]
@@ -71,6 +74,7 @@ function expandedRotation(c,stunFinisher){
     if(c.set==='dawn' || c.two==='dawn'){
       categorySources.push(['拂晓生花两件',basic?.15:0],['拂晓生花四件',basic && c.set==='dawn'?.40:0]);
     }
+    if(classic)({count,available,bonusMult,extraRes,extraIgnore,critDamageBonus,critRateBonus,critThreshold,thresholdScale}=classic(skill,count,categorySources));
     if(actor===cissia){
       if(id===1521019){
         bonusMult=3.35;
@@ -144,11 +148,11 @@ function expandedRotation(c,stunFinisher){
         ['克拉蕾 · 极限闪避余段',option('dodge') && [1611005,1611006,1611007,1611029,1611008].includes(id)?.15:0]);
     }
     if(!available)count=0;
-    const baseMult=(skill.base+(upgradeLevel(m)-1)*skill.step)/10000;
+    const baseMult=(skill.base+(upgradeLevel(m)-1)*skill.step)/10000*(skill.split??1);
     const mult=(baseMult+bonusMult)*coeffScalar;
     const category=sumBonuses(categorySources), final=1+sumBonuses(finalSources);
     return {name,count,available,element:skill.element,ultimate:id===actor.ultId,source:'other',markRate:0,markWeight:0,settle:false,
-      extraIgnore,extraRes,extraPen,extraStun,critDamageBonus,critRateBonus,
+      extraIgnore,extraRes,extraPen,extraStun,critDamageBonus,critRateBonus,critThreshold,thresholdScale,
       natural:{mult,baseMult,category,final,categorySources,sheerSources,finalSources},
       mult:skillOverride(c,i,'coefficient',mult),category:skillOverride(c,i,'skill',category),final:skillOverride(c,i,'final',final)};
   });
@@ -169,11 +173,11 @@ function expandedStats(c,buffs,mains,custom){
   const bloom=actor===seed && hasAttackAlly(c) && option('core');
   const element=damageElement(c);
   const ownElement=[['五号位主属性',fifth===element?.30:0],
-    [elementSet[actor.element][1]+'两件',has(elementSet[actor.element][0])?.10:0],
+    [elementSet[actor.element][1]+'两件',actor.element!==200 && has(elementSet[actor.element][0])?.10:0],
     ['拂晓行纪两件',has('chronicle')?.10:0]];
   const statSources={
-    baseAtk:[[name,actor.stat],[weapon,713]],
-    panelAtkPct:[['驱动盘主属性',.30*count('atk')],[weapon,actor===pyrois?.30:0],
+    baseAtk:[[name,actor.stat],[weapon,actor.weaponAtk??713]],
+    panelAtkPct:[['驱动盘主属性',.30*count('atk')],[weapon,actor.weaponAtkPct??(actor===pyrois?.30:0)],
       ['激素朋克两件',has('hormone')?.10:0],['静听嘉音两件',has('astral')?.10:0]],
     panelAtkFlat:[['二号位主属性',316]],
     atkPctAdjustment:[['手动攻击力百分比',(c.customAtkPct??0)/100]],
@@ -183,9 +187,9 @@ function expandedStats(c,buffs,mains,custom){
       ['拂晓行纪四件',c.set==='chronicle'?.10:0],[weapon,actor===severian && option('weapon')?rank(.10,.015):0]],
     ownCombatAtkFlat:[[name+' · 核心被动',bloom?1000:0],[name+' · 额外能力',actor===sigrid && supportOrStun?840:0]],
     panelRate:[['角色面板（含核心技强化）',actor.crit],['四号位主属性',fourth==='crit'?.24:0],
-      ['啄木鸟电音两件',has('woodpecker')?.08:0],[weapon,actor===seed || actor===severian?.24:0]],
+      ['啄木鸟电音两件',has('woodpecker')?.08:0],[weapon,actor.weaponCrit??(actor===seed || actor===severian?.24:0)]],
     panelCd:[['角色面板（含核心技强化）',actor.cd],['四号位主属性',fourth==='cd'?.48:0],
-      ['折枝剑歌两件',has('branch')?.16:0],[weapon,actor===sigrid?.48:0]],
+      ['折枝剑歌两件',has('branch')?.16:0],[weapon,actor.weaponCd??(actor===sigrid?.48:0)]],
     ownCombatRate:[['云岿如我四件',.04*yunkui],['折枝剑歌四件',branch?.12:0],
       [name+' · 核心被动',actor===sigrid && option('core')?.66:0],[name+' · 一影',actor===pyrois && m>=1?.08:0]],
     ownCombatCd:[['折枝剑歌四件',c.set==='branch' && actor===banyue && mains[5]==='mastery'?.30:0],['拂晓行纪四件',c.set==='chronicle'?.30:0]],
@@ -199,6 +203,7 @@ function expandedStats(c,buffs,mains,custom){
     ownIgnore:[]
   };
   const {ownCombatRate,ownCombatCd,ownGeneral,ownSheer,ownRes,ownPen,ownCombatAtkFlat}=statSources;
+  if(Object.hasOwn(classicLeads,c.main))classicStatSources(c,actor,statSources);
   if(actor===cissia){
     const regen=1.56*(1+.60+(has('swing')?.20:0)+(mains[5]==='energy'?.60:0));
     ownCombatRate.push([weapon,[.25,.288,.325,.363,.40][r]]);
@@ -249,7 +254,8 @@ function expandedStats(c,buffs,mains,custom){
   }
   if(rupture){
     statSources.baseHp=[[name,actor.hp]];
-    statSources.panelHpPct=[[weapon,.30],['驱动盘主属性',.30*count('hp')],
+    statSources.panelHpPct=[[weapon,actor.weaponHp??.30],[name+' · 核心技强化',actor.coreHp??0],
+      [name+' · 四影',actor===manato && m>=4?.08:0],['驱动盘主属性',.30*count('hp')],
       ['云岿如我两件',has('yunkui')?.10:0],['雪兔梦游仙境两件',has('snowbunny')?.10:0],
       ['手动生命值百分比',(c.customHpPct??0)/100]];
     statSources.panelHpFlat=[['一号位主属性',2200],['手动固定生命值',c.customFlatHp??0]];

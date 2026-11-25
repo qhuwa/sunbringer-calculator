@@ -10,16 +10,17 @@ function factorSourceGroup(label,entries,format){
   return details?'<div><b>'+label+' '+format(sumBonuses(active))+'</b>（'+details+'）</div>':'';
 }
 
-function attackCritRows(b,percent,extraCrit=0,extraLabel='电位差'){
+function attackCritRows(b,percent,extraCrit=0,extraLabel='电位差',extraRate=0){
   const stats=b.statSources, [,cr,cd]=b.rolls;
-  const effectiveRate=Math.min(1,Math.max(0,b.rate));
+  const rate=b.rate+extraRate, effectiveRate=effectiveCritRate(rate);
   const panelRate=[...stats.panelRate,['暴击率副词条 ×'+cr,discRoll.crit*cr]];
   const panelCd=[...stats.panelCd,['暴伤副词条 ×'+cd,discRoll.cd*cd]];
   const group=(label,entries)=>factorSourceGroup(label,entries,percent);
   return [
     ['暴击率',percent(effectiveRate),group('面板暴击率',panelRate)+group('自身战斗暴击率',stats.ownCombatRate)+
       group('对目标暴击率',b.buffSources.teamCritRate)+
-      group('手动暴击率',stats.rateAdjustment)+(b.rate!==effectiveRate?'<div>封顶前战斗暴击率 '+percent(b.rate)+'。</div>':'')],
+      group('手动暴击率',stats.rateAdjustment)+group('本招额外暴击率',[[extraLabel,extraRate]])+
+      (rate!==effectiveRate?'<div>封顶前战斗暴击率 '+percent(rate)+'。</div>':'')],
     ['暴击伤害',percent(b.critDmg+extraCrit),group('面板暴伤',panelCd)+group('自身战斗暴伤',stats.ownCombatCd)+
       group('队友战斗暴伤',b.buffSources.normalCritDmg)+group('手动暴伤',stats.cdAdjustment)+
       group('本招额外暴伤',[[extraLabel,extraCrit]])]
@@ -76,7 +77,8 @@ function renderRuptureExample(c,b){
 
 function renderDetailedAttackBreakdown(c,b){
   const ye=isYeShunguang(c), actor=expandedLead(c), element=elementNames[lead().element];
-  const index=b.rows.findIndex(row=>row.ultimate);
+  const chosen=b.rows.findIndex(row=>row.ultimate && row.count);
+  const index=chosen<0?b.rows.findIndex(row=>row.ultimate):chosen;
   const row=b.rows[index], d=row.display, sources=b.buffSources, stats=b.statSources;
   const [atk,,,pen]=b.rolls, fifth=b.mains[4];
   const num=x=>x.toLocaleString('zh-CN',{maximumFractionDigits:4});
@@ -107,8 +109,9 @@ function renderDetailedAttackBreakdown(c,b){
   const skill=(actor?.skills??(ye?yeSkills:nekomataSkills))[index], level=upgradeLevel(c.w);
   const extraMult=actor?row.natural.mult-row.natural.baseMult:row.natural.m6;
   const extra=extraMult?'<div>本招附属倍率 '+percent(extraMult)+'。</div>':'';
-  add('终结技倍率',percent(d.coefficient),skill.name.split('：')[1]+' Lv.'+level+'，'+percent(skill.base/10000)+' ＋ '+(level-1)+' × '+percent(skill.step/10000)+'。'+extra,
-    'coefficient',row.natural.mult,percent);
+  const threshold=row.critThreshold?'<div>自身战斗暴击率达到 '+percent(row.critThreshold)+' 时，倍率 ×'+row.thresholdScale+'。</div>':'';
+  add('终结技倍率',percent(d.coefficient),skill.name.split('：')[1]+' Lv.'+level+'，'+percent(skill.base/10000*(skill.split??1))+' ＋ '+
+    (level-1)+' × '+percent(skill.step/10000*(skill.split??1))+'。'+extra+threshold,'coefficient',row.automaticCoefficient,percent);
   const elemental=[...sources.general.filter(([, ,type])=>type==='element'),...(stats.ownElement??[['五号位物理伤害',fifth==='physical'?.30:0]])];
   const ordinary=[...sources.general.filter(([, ,type])=>type!=='element'),...(stats.ownGeneral??[])];
   add('通用与'+element+'增伤',times(d.generic),'<div>基础 ×1，以下加成相加。</div>'+group('普通增伤',ordinary)+group(element+'增伤',elemental),'generic',b.bonus);
@@ -116,9 +119,9 @@ function renderDetailedAttackBreakdown(c,b){
     '<div>与其他普通增伤合计 '+times(d.generic+d.skill)+'。</div>','skill',row.natural.category,percent);
   add('最终倍率',times(d.final),'<div>基础 ×1。</div>'+group('最终伤害加成',row.natural.finalSources),'final',row.natural.final);
 
-  const critRows=attackCritRows(b,percent,row.critDamageBonus,actor?.name+' · 本招');
+  const critRows=attackCritRows(b,percent,row.critDamageBonus,actor?.name+' · 本招',row.critRateBonus);
   critRows.forEach(row=>add(...row));
-  add('期望暴击倍率',times(d.crit),'1 ＋ '+critRows[0][1]+' × '+critRows[1][1]+'。','crit',b.critFactor+Math.max(0,Math.min(1,b.rate))*(row.critDamageBonus??0));
+  add('期望暴击倍率',times(d.crit),'1 ＋ '+critRows[0][1]+' × '+critRows[1][1]+'。','crit',row.naturalCrit);
   add('关卡受伤倍率',times(d.received),'<div>基础 ×1。</div>'+group('关卡受伤提升',sources.received),'received',1+sumBonuses(sources.received));
 
   const penetration=[['五号位穿透率',fifth==='pen'?.24:0],['河豚电音两件',c.two==='puffer'?.08:0],...sources.teamPen,
@@ -280,11 +283,12 @@ const expandedRotationNote={
   yidhari:'蓄力下砸、旋转和触手各自计次。涌泉与低生命增益按所选状态覆盖；关闭涌泉后，默认连携行回到普通倍率。',
   pyrois:'四条终结技分支独立计次。浸染、耀斑与阳炎按本轮状态设置，六影曜锋额外伤害默认只计一次。',
   severian:'极限闪避成功的第四段与普通第四段分开计次。一影开启时，每轮第一次清场时刻换为连携技。',
-  claret:'两种派生的毁伤次数按实际触发填写。葬血强袭最多连续触发三次毁伤。六影连携技和终结技的单体毁伤自动追加，按同一毁伤倍率计算。'
+  claret:'两种派生的毁伤次数按实际触发填写。葬血强袭最多连续触发三次毁伤。六影连携技和终结技的单体毁伤自动追加，按同一毁伤倍率计算。',
+  ...classicRotationNote
 };
 function renderExpandedNotes(actor){
   const source='https://zzz.gachabase.net';
-  el('expandedNotes').innerHTML='<p>'+expandedRotationNote[actor.slug]+'</p>'+
+  el('expandedNotes').innerHTML='<p>'+expandedRotationNote[actor.slug.replaceAll('-','')]+'</p>'+
     '<p>按 60 级角色、60 级专属音擎、核心技 F 和默认 12 级主动技能计算。三、五影各增加 2 级。默认轴用于比较同条件下的伤害，消耗、冷却和触发间隔由技能次数与覆盖选项体现。</p>'+
     '<p>角色对目标造成伤害提升与通用及属性增伤相加。关卡受伤、明确的失衡易伤和锐化伤害按各自区域结算。</p>'+
     '<p><a href="'+source+'/agents/'+actor.agentId+'/'+actor.slug+'/beta?lang=chs">角色技能数据</a> · '+

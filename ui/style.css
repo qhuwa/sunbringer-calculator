@@ -30,6 +30,9 @@ button:enabled:hover{background:var(--surface-hover)}
 #optimizeDiscs{background:var(--leaf);border-color:var(--leaf);color:var(--bg);font-weight:650}
 #optimizeDiscs:enabled:hover{background:var(--hot);border-color:var(--hot)}
 #optimizeDiscs:disabled{opacity:.52;cursor:default}
+.disc-actions{display:flex;gap:8px;flex-wrap:wrap}
+#toggleDiscLock[aria-pressed=true]{background:var(--surface-hover);border-color:var(--hot)}
+#toggleDiscLock:disabled{opacity:.52;cursor:default}
 .panel,.card{background-color:color-mix(in srgb,var(--card) calc(100% - var(--background-opacity) * 22%),transparent)}
 .header-options{display:grid;justify-items:end;gap:7px}
 .background-control{display:grid;grid-template-columns:auto 86px 4ch;align-items:center;gap:8px}

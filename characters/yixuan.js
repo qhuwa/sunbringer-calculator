@@ -127,6 +127,7 @@ function ruptureStats(buffs,statSources){
   return {initialBase,hpRollForce,atkRollForce,rate,critDmg,statSources:{...statSources,combatAtkPct,combatAtkFlat},
     bonus:1+buffs.general+sumBonuses(statSources.ownElement),
     sheerBonus:buffs.sheer+sumBonuses(statSources.ownSheer),
+    combatAttackWithRolls:atk=>combatAtk+baseAtk*atkRoll*atk,
     combatWithRolls:(hp,atk)=>(yiHpConversion*panelHp+hpRollForce*hp)*hpMultiplier+
       yiAtkConversion*combatAtk+atkRollForce*atk+fixedForce};
 }

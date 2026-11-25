@@ -11,6 +11,7 @@ const emptyTeammate={name:'空气',role:'空位',portrait:null,engines:[['0','�
 const supportEngines=signature=>[['1',signature],[String(kaboomEngine),'好斗的阿炮'],['0','其他音擎']];
 const teammateChoices={
   air:emptyTeammate,
+  ...classicTeammates,
   cissia:{...cissia,engines:[...cissia.engines,['0','其他音擎']]},
   jufufu:{name:'橘福福',role:'击破 · 火',portrait:portraits[1],engines:[['1','福虓炉炉'],['0','燃狱齿轮']]},
   roxy:{name:'洛克茜',role:'击破 · 风',portrait:'https://i.gachabase.net/DijdTpaLWeJmg39VwoMIkRzIVyKh8cy96PpISuBx68c/q:50/f:webp/plain/zzz/assets/386b80141590c07add669b27246d96df.png',engines:[['1','永夜辗眠'],['0','其他音擎']]},
@@ -318,7 +319,7 @@ function variants(c){
 }
 let revision=0, manualBaseline=null;
 const baselineVersion=()=>usesRupture({main})?5:3;
-function showComparisons(c,build){
+function showComparisons(c,build,discLocked){
   const version=++revision;
   const shadowComparison=el('variants').value==='w';
   const items=variants(c);
@@ -344,7 +345,8 @@ function showComparisons(c,build){
   function fill(i,previousScore){
     if(version!==revision)return;
     const variant={...c,...items[i].changes};
-    const value=shadowComparison?(variant.w===0?reference:solve(variant,build).score):optimized(variant)?.score;
+    const value=shadowComparison && variant.w===0?reference:
+      (shadowComparison || discLocked?solve(variant,build):optimized(variant))?.score;
     const cells=rows.children[i].cells;
     const [ratio,delta]=percentages(value,reference);
     cells[1].textContent=value==null?'无可行分配':fmt(value);
@@ -508,7 +510,9 @@ function renderTeammateBuffs(c,sources){
     summary.innerHTML='<h4>对'+lead().name+'的增益</h4><ul>'+lines.join('')+'</ul>';
   }
 }
-function render(saveBaseline=false){
+const discLimitFields=['rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat'];
+let renderedDiscBuild=null;
+function render(saveBaseline=false,tuneDiscs=false){
   const silver=main==='anby', ye=main==='yeShunguang', yi=main==='yixuan', billy=main==='starlightBilly';
   const sun=main==='sunbringer', normal=!usesSharp({main}), rupture=usesRupture({main});
   el('yeM6Replacements').disabled=!ye || Number(el('w').value)<6;
@@ -517,7 +521,8 @@ function render(saveBaseline=false){
   const critCap=normal?1:2;
   const critTitle=normal?'暴击伤害':'锐暴伤害';
   el('multiplierStatus').textContent='';
-  el('discSearchStatus').textContent='';
+  const discLocked=el('lockEntireBuild').checked;
+  el('discSearchStatus').textContent=discLocked?'整套驱动盘已锁定。':'';
   el('kaboomOptions').hidden=!teammateSlots.some(slot=>Number(el(slot+'e').value)===kaboomEngine);
   el('astralOptions').hidden=!teammateSlots.some(slot=>el(slot+'d').value==='astral');
   for(const slot of teammateSlots){
@@ -533,21 +538,32 @@ function render(saveBaseline=false){
     mountain.disabled=equippedTeammateDrive({main,[slot+'d']:drive.value},slot,el(slot+'char').value)!=='mountain';
     mountain.closest('label').hidden=mountain.disabled;
   }
+  for(const id of ['set','two','lockDiscSets','lockTwo',...discLimitFields])el(id).disabled=discLocked;
   for(const slot of tunableSlots){
-    const lock=el('lockMain'+slot);
-    lock.disabled=el('main'+slot).value==='auto';
-    if(lock.disabled)lock.checked=false;
+    const input=el('main'+slot), lock=el('lockMain'+slot);
+    input.disabled=discLocked;
+    lock.disabled=discLocked || input.value==='auto';
+    if(input.value==='auto')lock.checked=false;
   }
-  rollInputs.forEach((input,i)=>{input.disabled=!rollLocks[i].checked;});
+  rollInputs.forEach((input,i)=>{
+    rollLocks[i].disabled=discLocked;
+    input.disabled=discLocked || !rollLocks[i].checked;
+  });
   const valid=[...document.querySelectorAll('input:not([data-field]):enabled')].every(x=>x.value!=='' && x.checkValidity());
   const c=valid?getConfig():null;
+  let b=null;
   if(c){
-    rankAssaultBuffs(c);
+    const active={...c,lockedRolls:discLocked?rollInputs.map(input=>input.valueAsNumber):c.lockedRolls};
+    rankAssaultBuffs(active);
     c.assault=currentAssault(recommendedBuffs.get(el('assaultBuff').value));
+    active.assault=c.assault;
+    b=tuneDiscs && !discLocked?optimizeDiscSelection(c):optimized(active);
   }
-  const b=c?optimized(c):null;
+  renderedDiscBuild=b;
   showBuffGains(c,b);
-  el('optimizeDiscs').disabled=!valid;
+  el('optimizeDiscs').disabled=discLocked || !valid;
+  el('toggleDiscLock').disabled=!discLocked && !b;
+  el('toggleDiscLock').setAttribute('aria-pressed',String(discLocked));
   el('saveBaseline').disabled=!b;
   el('refreshMultipliers').disabled=!b;
   if(!b){
@@ -561,12 +577,12 @@ function render(saveBaseline=false){
       if(!roster[i].automatic)el('extraCast'+i).hidden=true;
     }
     if(valid){
-      el('discSearchStatus').textContent='当前主属性与词条限制下无可行分配。可尝试自动寻优，或调整锁定条数与上限。';
+      if(!tuneDiscs && !discLocked)el('discSearchStatus').textContent='当前主属性与词条限制下无可行分配。可尝试自动寻优，或调整锁定条数与上限。';
       saveSettings();
     }
     return;
   }
-  rollInputs.forEach((input,i)=>{if(!rollLocks[i].checked)input.value=b.rolls[i];});
+  rollInputs.forEach((input,i)=>{if(!discLocked && !rollLocks[i].checked)input.value=b.rolls[i];});
   if(sun && c.w>=2){
     const additive=c.markMode==='add';
     const other=solve({...c,markMode:additive?'multiply':'add'},b);
@@ -607,8 +623,8 @@ function render(saveBaseline=false){
     `<details open><summary>每盘主属性与有效副词条</summary>${balanced.map((rolls,i)=>line((i+1)+' 号 · '+mainLabels[b.mains[i]],rolls.reduce((sum,n)=>sum+n,0)+' 条｜'+rollsText(rolls))).join('')}</details>`;
   const capped=b.rate>=critCap-1e-10?b:optimized({...c,requireFullCrit:true});
   el('best').insertAdjacentHTML('beforeend','<h3 class="disc-title">同条件下的 '+pct(critCap)+' 暴击率对照</h3>'+
-    (capped?line('最高期望方案',pct(Math.min(critCap,b.rate))+' 暴击率 · '+fmt(b.score))+line('达到 '+pct(critCap)+' 的最优方案',pct(Math.min(critCap,capped.rate))+' 暴击率 · '+fmt(capped.score))+
-      line('满暴方案词条',rollsText(capped.rolls))+line('满暴方案相对最高期望',percentages(capped.score,b.score)[1]):
+    (capped?line(discLocked?'当前锁定配装':'最高期望方案',pct(Math.min(critCap,b.rate))+' 暴击率 · '+fmt(b.score))+line('达到 '+pct(critCap)+' 的最优方案',pct(Math.min(critCap,capped.rate))+' 暴击率 · '+fmt(capped.score))+
+      line('满暴方案词条',rollsText(capped.rolls))+line(discLocked?'满暴方案相对锁定配装':'满暴方案相对最高期望',percentages(capped.score,b.score)[1]):
       `<p>当前主属性在 ${c.rollBudget} 条预算内无法达到 ${pct(critCap)} 暴击率。</p>`));
   const groups={core:{label:'核心五招',direct:0,accrued:0},other:{label:'二影其余招式',direct:0,accrued:0},rupture:{label:'毁伤',direct:0,accrued:0}};
   b.rows.forEach((r,i)=>{
@@ -616,7 +632,8 @@ function render(saveBaseline=false){
     const count=el('n'+i);
     if(roster[i].automatic){
       count.value=r.count;
-      count.title=main==='claret'?'六影每次连携技或终结技自动追加一次':yi?'根据符法千重次数与当前影画自动计算':'根据三连组数与当前影画、潜能自动计算';
+      count.title=main==='claret'?'六影每次连携技或终结技自动追加一次':yi?'根据符法千重次数与当前影画自动计算':
+        Object.hasOwn(classicLeads,main)?'按前置招式次数与当前条件自动计算':'根据三连组数与当前影画、潜能自动计算';
     }else{
       count.setAttribute('aria-label',r.name+(roster[i].type==='triple'?'手动组数':'次数'));
       count.disabled=r.available===false;
@@ -626,7 +643,7 @@ function render(saveBaseline=false){
       if(r.extraCast)extra.textContent='+'+r.extraCast.count+' '+teammateRotationLabels[r.extraCast.id]+' · 共 '+r.count;
       else if(r.extraM6)extra.textContent='+1 六影调息 · 共 '+r.count;
     }
-    el('m'+i).textContent=pct(r.mult)+' / '+pct(r.base);
+    el('m'+i).textContent=pct(r.display.coefficient)+' / '+pct(r.base);
     el('d'+i).textContent=fmt(r.direct);
     el('stored'+i).textContent=r.accrued?fmt(r.accrued)+' · '+pct(r.accrued/r.direct):'—';
     el('a'+i).textContent=r.mark?fmt(r.mark):'—';
@@ -640,6 +657,7 @@ function render(saveBaseline=false){
     `<tr><td>${r.name}</td><td>${pct(r.mult)}</td><td>${r.count}</td><td>${fmt(r.direct)}</td><td>${fmt(r.accrued)}</td></tr>`).join('');
   el('multiplierRows').innerHTML=b.rows.map((row,i)=>{
     const cells=activeMultiplierFields().map(field=>{
+      if(field==='sheer' && !row.display.sheerDamage)return '<td>—</td>';
       const edited=Object.hasOwn(overrides[i],field);
       const value=edited?Number((100*overrides[i][field]).toPrecision(14)):Number((100*row.display[field]).toFixed(2));
       return `<td><input data-field="${field}" data-skill-row="${i}" class="${edited?'overridden':''}" aria-label="${row.name} ${field}" type="number" step="any" value="${value}"></td>`;
@@ -662,7 +680,7 @@ function render(saveBaseline=false){
     '从上到下结算。伤害占比包含该招式的直伤和引爆结算的烬灭。最后一次引爆后新增的烬痕只计积攒。纯闪避、切换主控和招架支援的直伤为 0。';
   if(b.rows.some(row=>row.extraCast))el('markSummary').append(' 输入框填写基础次数，旁边的队友次数自动叠加。');
   if(hasTeammateDamage)el('markSummary').append(' 伤害占比以全队总伤为分母。');
-  showComparisons(c,b);
+  showComparisons(c,b,discLocked);
   saveSettings();
 }
 function syncTeammate(key){
@@ -765,6 +783,7 @@ document.addEventListener('change',event=>{
     syncTeamControls();
   }
   const slot=teammateSlots.find(key=>input.id===key+'char');
+  const changedTeammate=Boolean(slot && input.value!==input.dataset.character);
   if(slot){
     teammateSlots.forEach(rememberTeammate);
     const other=teammateSlots.find(key=>key!==slot);
@@ -787,11 +806,16 @@ document.addEventListener('change',event=>{
     else row[input.dataset.field]=input.valueAsNumber/100;
   }
   el('calcStatus').textContent='';
-  render();
+  render(false,changedTeammate);
 });
 el('saveBaseline').onclick=()=>render(true);
-el('optimizeDiscs').onclick=()=>{
-  const config=getConfig();
+function useDiscMains(build){
+  for(const slot of tunableSlots){
+    el('main'+slot).value=build.mains[slot-1];
+    el('lockMain'+slot).disabled=false;
+  }
+}
+function optimizeDiscSelection(config){
   const current=optimized(config);
   let best=null, bestSet=config.set, bestTwo=config.two;
   const fourPieceSets=el('lockDiscSets').checked?[config.set]:Array.from(el('set').options,option=>option.value);
@@ -807,15 +831,29 @@ el('optimizeDiscs').onclick=()=>{
       }
     }
   }
-  if(!best){el('discSearchStatus').textContent='当前锁定与词条限制冲突，未找到可行方案。可调整锁定条数、上限或主属性。';return;}
-  el('set').value=bestSet;
-  el('two').value=bestTwo;
-  for(const slot of tunableSlots)el('main'+slot).value=best.mains[slot-1];
+  if(!best){
+    el('discSearchStatus').textContent='当前锁定与词条限制冲突，未找到可行方案。可调整锁定条数、上限或主属性。';
+    return current;
+  }
+  el('set').value=config.set=bestSet;
+  el('two').value=config.two=bestTwo;
+  useDiscMains(best);
+  for(const slot of tunableSlots)config['main'+slot]=best.mains[slot-1];
+  el('discSearchStatus').textContent=current && best.score>current.score?
+    `已应用最高期望方案。单轮伤害 ${fmt(current.score)} → ${fmt(best.score)}（${percentages(best.score,current.score)[1]}）。`:
+    '已应用当前预算内的最高期望配装。';
+  return best;
+}
+el('optimizeDiscs').onclick=()=>render(false,true);
+el('toggleDiscLock').onclick=()=>{
+  const lock=el('lockEntireBuild');
+  if(!lock.checked){
+    if(!renderedDiscBuild)return;
+    useDiscMains(renderedDiscBuild);
+    rollInputs.forEach((input,i)=>{input.value=renderedDiscBuild.rolls[i];});
+  }
+  lock.checked=!lock.checked;
   render();
-  if(!current){el('discSearchStatus').textContent='已应用可行的最高期望方案。';return;}
-  const change=percentages(best.score,current.score)[1];
-  el('discSearchStatus').textContent=best.score===current.score?'已应用当前预算内的最高期望配装。':
-    `已应用最高期望方案。单轮伤害 ${fmt(current.score)} → ${fmt(best.score)}（${change}）。`;
 };
 el('refreshMultipliers').onclick=()=>{
   overrides=activeSkills().map(()=>({}));
@@ -835,7 +873,7 @@ const settingsControls=Array.from(document.querySelectorAll('select[id],input[id
   .filter(control=>!teamFields.has(control.id) && !['mainAgent','backgroundOpacity'].includes(control.id));
 const leadProfiles={};
 const leadFields=new Set(['w','wr','set','two','main4','main5','main6','res','physicalRes','rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat',
-  'lockDiscSets','lockTwo','lockMain4','lockMain5','lockMain6','customFire','customCritDmg','customDefPct','customFlatDef','customSharp',
+  'lockDiscSets','lockTwo','lockMain4','lockMain5','lockMain6','lockEntireBuild','customFire','customCritDmg','customDefPct','customFlatDef','customSharp',
   ...rollInputs.map(x=>x.id),...rollLocks.map(x=>x.id),
   ...settingsControls.filter(x=>x.closest('[data-neko],[data-anby],[data-ye],[data-yi],[data-billy],[data-rupture],[data-normal],[data-expanded]')).map(x=>x.id)]);
 

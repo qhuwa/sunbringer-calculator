@@ -9,8 +9,9 @@ function rinaBuffs(c){
   return {personalPen,defense,attack,teamPen};
 }
 const supportNames={rina:'丽娜',astra:'耀嘉音',sunna:'千夏',lucia:'卢西娅',nicole:'妮可'};
-const stunNames={jufufu:'橘福福',roxy:'洛克茜',norma:'诺姆',trigger:'扳机',dialyn:'琉音'};
-const defenseNames={robin:'知更鸟',zhao:'照',panYinhu:'潘引壶'};
+const stunNames={jufufu:'橘福福',roxy:'洛克茜',norma:'诺姆',trigger:'扳机',dialyn:'琉音',qingyi:'青衣'};
+const defenseNames={robin:'知更鸟',zhao:'照',panYinhu:'潘引壶',caesar:'凯撒'};
+const evasiveAgents=new Set(['zhuyuan','billy','rina','astra','air']);
 const kaboomEngine=3;
 const kaboomPerStack=[.025,.028,.032,.036,.04];
 const defaultTeammateDrive=id=>{
@@ -34,10 +35,16 @@ function partyBonuses(c,custom,assault){
   const zhao=teammateSlot(c,'zhao'), orphie=teammateSlot(c,'orphie');
   const lucia=teammateSlot(c,'lucia'), pan=teammateSlot(c,'panYinhu');
   const nicole=teammateSlot(c,'nicole'), cissiaSlot=c.main==='cissia'?null:teammateSlot(c,'cissia');
+  const qingyi=teammateSlot(c,'qingyi'), caesar=teammateSlot(c,'caesar');
   const rinaBonus=rina?rinaBuffs(c):null;
   const shadow=slot=>c[slot]??0;
   const rank=slot=>(c[slot+'r']??1)-1;
   const engine=slot=>c[slot+'e']??0;
+  const caesarWeapon=engine(caesar)===1?rank(caesar):-1, robinWeapon=engine(robin)===2?rank(robin):-1;
+  const shieldEngineRank=Math.max(caesarWeapon,robinWeapon);
+  const shieldEngineOwner=caesarWeapon===shieldEngineRank?'凯撒':'知更鸟';
+  const caesarExtra=caesar && (!evasiveAgents.has(c.main) ||
+    teammateSlots.some(slot=>slot!==caesar && !evasiveAgents.has(c[slot+'char']??defaultTeammates[slot])));
   const equipped=(slot,id)=>equippedTeammateDrive(c,slot,id);
   const stunners=Object.entries(stunNames).map(([id,name])=>({name,id,slot:teammateSlot(c,id)})).filter(s=>s.slot);
   const bloodwing=stunners.find(({slot,id})=>equipped(slot,id)==='bloodwing');
@@ -70,7 +77,7 @@ function partyBonuses(c,custom,assault){
     teamDef:[['知更鸟 · 守护咏叹',robin?(440+30*upgradeLevel(shadow(robin)))*(c.beat?1.25:1):0],['丽娜 · 潜能觉醒',rinaBonus?.defense]],
     teamPen:[['丽娜 · 人偶共享穿透率',rinaBonus?.teamPen]],
     teamAtk:[['耀嘉音 · 如歌的行板',astra?(shadow(astra)>=2?1600:1200):0],['千夏 · 天使协律',sunna?1050:0],['丽娜 · 潜能觉醒',rinaBonus?.attack],
-      ['照 · 涌泉',zhao?1000:0],['奥菲丝&「鬼火」 · 准星聚焦',orphie?700:0]],
+      ['照 · 涌泉',zhao?1000:0],['奥菲丝&「鬼火」 · 准星聚焦',orphie?700:0],['凯撒 · 荣光之盾',caesar?(shadow(caesar)>=2?1500:1000):0]],
     teamAtkPct:[['千夏 · 二影帷幕',shadow(sunna)>=2?.10:0],['千夏 · 思络成歌',sunnaEngine?[.10,.115,.13,.145,.16][rank(sunna)]:0],
       [cannon?.name+' · 好斗的阿炮',cannonBonus],['照 · 二影',shadow(zhao)>=2?.15:0],['照 · 半糖雪兔',zhaoEngineAtk]],
     teamHp:[zhao?['照 · 涌泉',.05]:['卢西娅 · 涌泉',lucia?.05:0],['照 · 半糖雪兔',zhaoEngineAtk],
@@ -100,7 +107,9 @@ function partyBonuses(c,custom,assault){
       ['橘福福 · 福虓炉炉',engine(ju)===1?.20+.03*rank(ju):0],['洛克茜 · 永夜辗眠',engine(roxy)===1?.20+.03*rank(roxy):0],
       ['诺姆 · 首席跟班',engine(norma)===1?2*[.125,.144,.163,.181,.20][rank(norma)]:0],['诺姆 · 嗯呢弹幕',norma?.20:0],
       ['知更鸟 · 核心技「激昂咏叹」',robin?.20:0],[snowbunny?.[1]+' · 雪兔梦游仙境（三层）',snowbunny?.18:0],
-      ['知更鸟 · 星韵流彩',engine(robin)===1?2*[.085,.098,.11,.123,.136][rank(robin)]:0],['知更鸟 · 奔袭獠牙',engine(robin)===2?[.18,.225,.27,.315,.36][rank(robin)]:0],
+      ['知更鸟 · 星韵流彩',engine(robin)===1?2*[.085,.098,.11,.123,.136][rank(robin)]:0],
+      [shieldEngineOwner+' · 奔袭獠牙',[.18,.225,.27,.315,.36][shieldEngineRank]],
+      ['凯撒 · 战意激昂',caesarExtra?.25:0],['青衣 · 玉壶青冰',engine(qingyi)===1?.20+.03*rank(qingyi):0],
       [moonlight?.name+' · 月光骑士颂四件',moonlight?.18:0],
       [astral?.name+' · 静听嘉音四件',astral?.08*(c.astralStacks??3):0],
       ['丽娜 · 啜泣摇篮',engine(rina)===1?[.202,.245,.30,.355,.398][rank(rina)]:0],
@@ -118,17 +127,19 @@ function partyBonuses(c,custom,assault){
       ['危局通用增伤',assault.general],['危局火伤',element==='fire'?assault.fire:0,'element']],
     ignore:[['挽昼 · 极昼',sun?.20:0],['挽昼 · 星之碑四件',sun && c.set==='star'?.20:0],['知更鸟 · 一影重音节拍',shadow(robin)>=1 && c.beat?.20:0],['挽昼 · 六影',sun && c.w>=6?.15:0],
       ['希希芙 · 生物毒素',cissiaSlot && element==='electric'?cissiaDefenseIgnore(c.cissiaRegen??3.68,shadow(cissiaSlot)):0,'element'],['扳机 · 索魂影眸',engine(trigger)===1?[.25,.2875,.325,.3625,.40][rank(trigger)]:0],
-      ['妮可 · 机关箱',nicole?.40:0],
+      ['妮可 · 机关箱',nicole?.40:0],['青衣 · 一影',shadow(qingyi)>=1?.15:0],
       ['叶瞬光 · 一影',ye && c.w>=1?.20:0],['千夏 · 一影（猫的凝视）',normal && shadow(sunna)>=1?.21:0],['自定义无视防御',custom.ignore],['危局减防',assault.defDown]],
     aftershockIgnore:[['奥菲丝&「鬼火」 · 熔炉所铸',orphieExtra?.25:0]],
     resDown:[['挽昼 · 一影',sun && c.w>=1?.15:0],['希希芙 · 一影',cissiaSlot && element==='electric' && shadow(cissiaSlot)>=1?.05:0,'element'],['猫又 · 一影背击',back && c.w>=1?.16:0],['零号·安比 · 四影银白残响',silver && c.anbyMarked && c.w>=4?.12:0],['星徽·比利 · 一影英雄登场',billy && c.w>=1 && c.billyM1Active!==false?.18:0],['知更鸟 · 二影',shadow(robin)>=2?.15:0],['洛克茜 · 一影',shadow(roxy)>=1?.15:0],['诺姆 · 一影',shadow(norma)>=1?.15:0],
       ['叶瞬光 · 云霓孤光',ye?yeWeaponRes[w]:0],['耀嘉音 · 一影（三层）',shadow(astra)>=1?.18:0],
       ['琉音 · 一影好评如潮',dialynExtra && shadow(dialyn)>=1?.15:0],['照 · 一影',shadow(zhao)>=1?.15:0],
-      ['卢西娅 · 一影巡梦童谣',shadow(lucia)>=1?.18:0],['危局减抗／无视抗性',assault.resDown],
+      ['卢西娅 · 一影巡梦童谣',shadow(lucia)>=1?.18:0],['青衣 · 六影',shadow(qingyi)>=6?.20:0],
+      ['凯撒 · 一影荣光之盾',shadow(caesar)>=1?.15:0],['危局减抗／无视抗性',assault.resDown],
       ['危局无视火抗',element==='fire'?assault.fireResDown:0,'element']],
     received:[['危局效果',assault.received],['危局锐化受伤',sharp?assault.sharpReceived:0]],
     stun:[['橘福福 · 一影',shadow(ju)>=1?.35:0],['橘福福 · 额外能力',(normal || rupture || orphie || cissiaSlot) && ju?.20:0],['洛克茜 · 基础失衡易伤',roxy?.30:0],['洛克茜 · 二影',shadow(roxy)>=2?.30:0],['诺姆 · 基础失衡易伤',norma?.30:0],['诺姆 · 二影',shadow(norma)>=2?.30:0],
       ['千夏 · 额外能力',normal && sunna?.30:0],['琉音 · 恶意投诉',dialyn?(shadow(dialyn)>=2?.50:.30):0],
+      ['青衣 · 羁服',qingyi?(shadow(qingyi)>=2?1.08:.80):0],
       ['危局效果',assault.stun],['自定义失衡易伤',custom.stun]],
     stunAlways:[['扳机 · 破隙幽瞳',trigger?.35:0],['扳机 · 一影',shadow(trigger)>=1?.20:0]]
   };
