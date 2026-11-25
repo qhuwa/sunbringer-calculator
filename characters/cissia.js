@@ -3,7 +3,7 @@ const cissia={
   name:"希希芙", role:"强攻 · 电", kind:"attack", element:203,
   stat:938, crit:0.05, cd:0.5, ultimate:"爬行恐惧",
   agentId:1521, weaponId:14152, weaponSlug:"serpentine-seeker", slug:"cissia", ultId:1521013, chainId:1521012,
-  portrait:"https://i.gachabase.net/YgOqifSPZGzjnbjdVMjp0QMl00tiAmwUcuP2CqH4O5U/q:50/f:webp/plain/zzz/assets/f978c720e4dbe3a3560c8d42f1eb9fc6.png",
+  portrait:"https://i.gachabase.net/nqbSdCM887FxoHqELBO8L8gjpiEvD9zDV64vyAdLnjU/q:50/f:webp/plain/zzz/assets/0804993e19ea636bdcfbfb779a0c32f3.png",
   engines:[['1',"鳞齿寻踪"]],
   skills:[
     {id:1521006, name:"普通攻击：蛇吻", type:"basic", base:50420, step:4590, defaultCount:3},

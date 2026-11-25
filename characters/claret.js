@@ -3,7 +3,7 @@ const claret={
   name:"克拉蕾", role:"锋御 · 电", kind:"sharp", element:203,
   stat:441, crit:0.338, cd:0.5, ultimate:"血华誓·千锤百炼",
   agentId:1611, weaponId:14161, weaponSlug:"crimson-thirst", slug:"claret", ultId:1611021, chainId:1611020,
-  portrait:"https://i.gachabase.net/CoCf-mIBACFwat799rAPKgCA6aXHZOqLwq9KJuV98YM/q:50/f:webp/plain/zzz/assets/acd5ab623b4e6919d0b3ef7557b207cd.png",
+  portrait:"https://i.gachabase.net/Bd91jfgZYAaVra0xkd3Hl3xAc7qR6qOjiL9KSF3oel0/q:50/f:webp/plain/zzz/assets/88b4f7d2baf88a63d792ba6d78e13fe8.png",
   engines:[['1',"猩红渴望"]],
   skills:[
     {id:1611005, name:"普通攻击：血华誓·锻星（一段）", type:"basic", base:10770, step:980, defaultCount:1},

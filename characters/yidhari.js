@@ -3,7 +3,7 @@ const yidhari={
   name:"伊德海莉", role:"命破 · 冰", kind:"rupture", element:202,
   stat:859, crit:0.194, cd:0.5, hp:8497, ultimate:"终幕·惘事渡却",
   agentId:1051, weaponId:14105, weaponSlug:"krakens-cradle", slug:"yidhari", ultId:1051016, chainId:1051025,
-  portrait:"https://i.gachabase.net/549DRcC_7DV5a3T0GmV8le50u5Rk3WH8X_-tkuJhaCg/q:50/f:webp/plain/zzz/assets/c5fcc31b7483b2e128853ee343793d92.png",
+  portrait:"https://i.gachabase.net/qSnE-JaHXzZSjKASMkK975RYF5Bf-an1bBDFqyUEIio/q:50/f:webp/plain/zzz/assets/f0bce0b50ac08705a1e13c8d42da8fdc.png",
   engines:[['1',"海妖摇篮"]],
   skills:[
     {id:1051007, name:"普通攻击：霜寒拥覆（三级蓄力下砸）", type:"basic", base:34590, step:3150, defaultCount:2},

@@ -1,6 +1,6 @@
 // Agent 1531, W-Engine 14153. Skill values use 1/10000 units.
 const starlightBilly={name:'星徽·比利',role:'命破 · 物理',element:200,ultimate:'骑士飞踢',
-  portrait:'https://i.gachabase.net/8yWlwtOTH4oVVI-HxsMMDplQXg1_sI-AseW228upbWs/q:50/f:webp/plain/zzz/assets/119a2c0e2bb0eed8f241e7d763229fad.png',
+  portrait:'https://i.gachabase.net/jth79Fitbamyy-AehqnC_SL0w9RtbFR8H1O9En7F7Bw/q:50/f:webp/plain/zzz/assets/42114d964bff0b5dcea4ff6f71594b85.png',
   engines:[['1','辉骑面铠']]};
 const isStarlightBilly=c=>c.main==='starlightBilly';
 const billyFour=yiFour;

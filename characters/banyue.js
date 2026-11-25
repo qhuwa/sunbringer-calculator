@@ -3,7 +3,7 @@ const banyue={
   name:"般岳", role:"命破 · 火", kind:"rupture", element:201,
   stat:859, crit:0.194, cd:0.5, hp:8497, ultimate:"撼天动地",
   agentId:1471, weaponId:14147, weaponSlug:"wrathful-vajra", slug:"banyue", ultId:1471021, chainId:1471020,
-  portrait:"https://i.gachabase.net/o6PVI4XpqBaLTlmFNeivpv6hQAZQq-zN2Le-30vU4hM/q:50/f:webp/plain/zzz/assets/fab7da6947418da20fa500e638a51cfc.png",
+  portrait:"https://i.gachabase.net/S4ADnfW9VYATX9wUzQPfHXx5TqgtTIhUFaHA0Gv3zHQ/q:50/f:webp/plain/zzz/assets/3fb40cbaaf790a7c3d7d9020d9f41606.png",
   engines:[['1',"怒目金刚"]],
   skills:[
     {id:1471027, name:"普通攻击：焚身", type:"basic", base:11060, step:1010, defaultCount:1},

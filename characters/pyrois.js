@@ -3,7 +3,7 @@ const pyrois={
   name:"佩洛伊斯", role:"强攻 · 以太", kind:"attack", element:205,
   stat:924, crit:0.194, cd:0.5, ultimate:"永陷幽囚",
   agentId:1551, weaponId:14155, weaponSlug:"sol-exuvia", slug:"pyrois", ultId:1551016, chainId:1551012,
-  portrait:"https://i.gachabase.net/6kj-aGqE1y38HSFQub5JO1J_2ZZv244hIfYfG9SJkXk/q:50/f:webp/plain/zzz/assets/e9277e63618ed398b9d3f2ab084d24bb.png",
+  portrait:"https://i.gachabase.net/Gy_iIMRiGELzURErIzNxmp79h5T0-rRyeITHuDzG3GA/q:50/f:webp/plain/zzz/assets/ca36ef74d0203412de654820c7015e2d.png",
   engines:[['1',"日冕遗蜕"]],
   skills:[
     {id:1551006, name:"普通攻击：天光（三段）", type:"basic", base:54900, step:5000, defaultCount:2},

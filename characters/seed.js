@@ -3,7 +3,7 @@ const seed={
   name:"「席德」", role:"强攻 · 电", kind:"attack", element:203,
   stat:929, crit:0.05, cd:0.788, ultimate:"机芯花园·绽放！",
   agentId:1461, weaponId:14146, weaponSlug:"cordis-germina", slug:"seed", ultId:1461015, chainId:1461014,
-  portrait:"https://i.gachabase.net/fdZ9D97RT7d-OHGB_duMr3FghPBWTMD26reAP5U0wJc/q:50/f:webp/plain/zzz/assets/2ebbf28001e05eab34511b9d6c67dc41.png",
+  portrait:"https://i.gachabase.net/NmEhmziRhGybw1gaP4e94wljM9gMTyjBDzpUHkWelmc/q:50/f:webp/plain/zzz/assets/cf6a2c52411f787c1aaedef0ea714029.png",
   engines:[['1',"机巧心种"]],
   skills:[
     {id:1461006, name:"普通攻击：落华·重戮", type:"basic", base:16660, step:1520, defaultCount:2},

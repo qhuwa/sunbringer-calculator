@@ -3,7 +3,7 @@ const severian={
   name:"赛维里安", role:"强攻 · 风", kind:"attack", element:204,
   stat:933, crit:0.05, cd:0.788, ultimate:"戮灭的风灾",
   agentId:1631, weaponId:14163, weaponSlug:"incarcerating-grip", slug:"severian", ultId:1631013, chainId:1631012,
-  portrait:"https://i.gachabase.net/Q_3EXljvsAryx2wbKe-_eRmloiWHUxZRI0sWKbX4vOg/q:50/f:webp/plain/zzz/assets/cc636363eedb1d41301dd24c26d87fc4.png",
+  portrait:"https://i.gachabase.net/rfibKKH-wVXDjYEZRPR4bbQU1sfenB9nzp-aEXAPR1o/q:50/f:webp/plain/zzz/assets/cd03523923aae9b7a11236f6c3232979.png",
   engines:[['1',"禁罪囚笼"]],
   skills:[
     {id:1631005, name:"普通攻击：烈旋", type:"basic", base:33820, step:3080, defaultCount:2},

@@ -3,7 +3,7 @@ const sigrid={
   name:"希格莉德", role:"强攻 · 冰", kind:"attack", element:202,
   stat:938, crit:0.194, cd:0.5, ultimate:"霜天",
   agentId:1591, weaponId:14159, weaponSlug:"knights-extolment", slug:"sigrid", ultId:1591016, chainId:1591015,
-  portrait:"https://i.gachabase.net/dHarr4yFnSGcFPRaUtEyt6N-K8xknGt2JY6vjEd8yzk/q:50/f:webp/plain/zzz/assets/9f16adfacef00aaa23a4dd5bd8068cfd.png",
+  portrait:"https://i.gachabase.net/1ZQko9XffUov9fmq53qNaBXpBRqI-GVzU9o3c3RICnc/q:50/f:webp/plain/zzz/assets/b7bded3b9323dd19c7851248407bb1bf.png",
   engines:[['1',"骁骑礼赞"]],
   skills:[
     {id:1591007, name:"普通攻击：敛枪式 第一段", type:"basic", base:35830, step:3260, defaultCount:1},
