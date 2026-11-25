@@ -39,18 +39,27 @@ function renderRuptureExample(c,b){
   const panelHp=sumBonuses(s.baseHp)*(1+sumBonuses(hpBonus))+sumBonuses(s.panelHpFlat);
   const hpSources=[...sources.teamHp,...(s.ownBattleHp??[])];
   const battleHp=panelHp*(1+sumBonuses(hpSources));
-  const panelAtk=sumBonuses(s.baseAtk)*(1+sumBonuses(atkBonus))+sumBonuses(s.panelAtkFlat);
+  const baseAtk=sumBonuses(s.baseAtk);
+  const panelAtk=baseAtk*(1+sumBonuses(atkBonus))+sumBonuses(s.panelAtkFlat);
+  const battleAtk=panelAtk+baseAtk*sumBonuses(s.combatAtkPct)+sumBonuses(s.combatAtkFlat);
   const rows=[
-    ['战斗贯穿力',num(b.combatStat),'<div>战斗生命 '+num(battleHp)+' × 10% ＋ 初始攻击 '+num(panelAtk)+' × 30% ＋ 固定贯穿力 '+num(sumBonuses(s.teamSheerForce))+'。</div>'+
+    ['战斗贯穿力',num(b.combatStat),'<div>战斗最大生命 '+num(battleHp)+' × 10% ＋ 战斗攻击力 '+num(battleAtk)+' × 30% ＋ 固定贯穿力 '+num(sumBonuses(s.teamSheerForce))+'。</div>'+
       group('面板生命百分比',hpBonus)+group('面板固定生命',s.panelHpFlat,num)+group('战斗最大生命',hpSources)+
-      group('面板攻击百分比',atkBonus)+group('面板固定攻击',s.panelAtkFlat,num)+group('固定贯穿力',s.teamSheerForce,num)],
+      group('固定贯穿力',s.teamSheerForce,num)],
+    ['战斗攻击力',num(battleAtk),'<div>初始攻击力 '+num(panelAtk)+' ＋ 基础攻击力 '+num(baseAtk)+' × '+
+      percent(sumBonuses(s.combatAtkPct))+' ＋ 战斗固定攻击力 '+num(sumBonuses(s.combatAtkFlat))+'。</div>'+
+      group('基础攻击力',s.baseAtk,num)+group('面板攻击百分比',atkBonus)+group('面板固定攻击',s.panelAtkFlat,num)+
+      group('战斗攻击百分比',s.combatAtkPct)+group('战斗固定攻击',s.combatAtkFlat,num)],
     ['招式倍率',percent(d.coefficient),lead().ultimate+' Lv.'+upgradeLevel(c.w)+
       (billy && row.natural.spent?'。基础 '+percent(row.natural.baseMult)+'，本行共消耗 '+row.natural.spent+' 层煊赫星辉，每层追加 100% 贯穿力。':'')],
-    ['通用、'+element+'及贯穿增伤',times(d.generic),
+    ['通用与'+element+'增伤',times(d.generic),
       group('通用增伤',[...sources.general.filter(([, ,type])=>type!=='element'),...(s.ownGeneral??[])])+
-      group(element+'增伤',[...s.ownElement,...sources.general.filter(([, ,type])=>type==='element')])+
-      group('全招式贯穿增伤',[...s.ownSheer,...sources.sheer])],
+      group(element+'增伤',[...s.ownElement,...sources.general.filter(([, ,type])=>type==='element')])],
     ['招式专项增伤',percent(d.skill),group('本招附加',row.natural.categorySources)],
+    ['贯穿倍率',times(d.sheer),group('全招式贯穿增伤',[...s.ownSheer,...sources.sheer])+
+      group('本招贯穿增伤',row.natural.sheerSources)+
+      (Number.isFinite(c.skillOverrides?.[b.rows.indexOf(row)]?.sheer)?
+        '<div><strong class="override-note">手动覆盖</strong> 本招采用 '+times(d.sheer)+'。</div>':'')],
     ['最终倍率',times(d.final),group('最终伤害加成',row.natural.finalSources)],
     ...attackCritRows(b,percent),
     ['期望暴击倍率',times(d.crit),'1 ＋ 有效暴击率 × 暴击伤害。'],
@@ -174,12 +183,12 @@ function renderAttackExample(c,b,element){
 
 document.getElementById('yiNotes').innerHTML=`
 <p>仪玄按 Lv.60、核心技 F、Lv.60 青溟笼舍和基础技能 Lv.12 计算。默认轮转含玄墨迅击、青溟云影、符法千重、玄墨极阵及青溟震击、满蓄凝云术及墨烬影消，以及满蓄墨痕化形连段。两种附招分别列出，可调整各自次数。闪能、术法值与落雷次数按所填轮转结算。</p>
-<p>贯穿力 = 初始攻击力 × 30% ＋ 战斗最大生命值 × 10% ＋ 固定贯穿力。战斗最大生命值按面板生命乘全队生命增益计算。玄墨伤害采用以太增伤与以太抗性，自动防御区为 ×1。通用、以太、贯穿与招式增伤在同一区相加。驱动优化在生命值百分比、暴击率、暴击伤害与攻击力百分比之间分配副词条，固定生命值可手动输入。</p>
+<p>贯穿力 = 战斗攻击力 × 30% ＋ 战斗最大生命值 × 10% ＋ 固定贯穿力。战斗最大生命值按面板生命乘全队生命增益计算。玄墨伤害采用以太增伤与以太抗性，自动防御区为 ×1。普通增伤、以太增伤和招式普通增伤相加，再乘贯穿增伤倍率。驱动优化在生命值百分比、暴击率、暴击伤害与攻击力百分比之间分配副词条，固定生命值可手动输入。</p>
 <p>二影的 15% 无视以太抗性仅用于强化特殊技及终结技，每次符法千重按消耗一次聚墨计一次 1200% 追击。四影静心按优先消耗在本轮第一组凝云术及墨烬影消计算。六影在有青溟云影时，默认按 30 秒内额外一次符法千重，并在凝神覆盖时计入 20% 贯穿增伤。额外获得玄墨值后接的普攻可手动填写。琉音默认额外增加一次青溟云影，诺姆额外增加两次玄墨迅击。</p>
 <p>数据来源见 <a href="https://zzz.gachabase.net/agents/1371/yixuan/beta?lang=chs">仪玄</a>、<a href="https://zzz.gachabase.net/w-engines/14137/qingming-birdcage/beta?lang=chs">青溟笼舍</a>和<a href="https://zzz.gachabase.net/drive-discs/33100/yunkui-tales/beta?lang=chs">云岿如我</a>。</p>`;
 
 document.getElementById('billyNotes').innerHTML=`
-<p>星徽·比利按 Lv.60、核心技 F、Lv.60 辉骑面铠计算。技能默认 Lv.12，三影和五影分别加两级。贯穿力 = 初始攻击力 × 30% ＋ 战斗最大生命值 × 10% ＋ 固定贯穿力。物理贯穿伤害使用普通暴击、物理抗性，自动防御区为 ×1。通用、物理、贯穿与招式增伤相加。</p>
+<p>星徽·比利按 Lv.60、核心技 F、Lv.60 辉骑面铠计算。技能默认 Lv.12，三影和五影分别加两级。贯穿力 = 战斗攻击力 × 30% ＋ 战斗最大生命值 × 10% ＋ 固定贯穿力。物理贯穿伤害使用普通暴击、物理抗性，自动防御区为 ×1。普通增伤、物理增伤和招式普通增伤相加，再乘贯穿增伤倍率。</p>
 <p>默认轴包含一组骑士斗技、动力压制命中两次、孤轮特技两次、摇曳步伐、脱缰、骑士漫步、最高马力星光和骑士飞踢各一次。轴为可编辑的单轮示例，闪能、决意与招式衔接由玩家按实战填写。骑士决心的 90% 暴伤及一影的 18% 物理无视抗性默认按整轮覆盖，炽热星辉与辉骑面铠默认满层。炽热星辉需要击破、防护或支援队友。</p>
 <p>二影涡轮暴伤只作用于填入的孤轮特技次数。六影按表格顺序累计和消耗煊赫星辉，最高马力星光及骑士飞踢每次最多消耗两层，本行额外倍率以所有发动次数平均。琉音追加一次骑士飞踢，诺姆追加两次骑士漫步。</p>
 <p>数据来源见 <a href="https://zzz.gachabase.net/agents/1531/starlight-billy/beta?lang=chs">星徽·比利</a>、<a href="https://wiki.biligame.com/zzz/星徽·比利">各级招式倍率</a>与<a href="https://wiki.biligame.com/zzz/辉骑面铠">辉骑面铠各星级数值</a>。</p>`;

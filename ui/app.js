@@ -124,8 +124,9 @@ el('expandedSettings').innerHTML=Object.entries(expandedControls).map(([id,field
       '<label>'+label+'<input id="'+input+'" type="number" min="'+min+'" max="'+max+'" step="1" value="'+value+'" disabled></label>';
   }).join('')+'</div>'
 ).join('');
-const multiplierFields=['coefficient','generic','skill','final','received','sharp','crit','defense','resist','stun','mark'];
-const activeMultiplierFields=()=>multiplierFields.filter(f=>(f!=='sharp' || usesSharp({main})) && (f!=='mark' || main==='sunbringer'));
+const multiplierFields=['coefficient','generic','skill','final','received','sharp','sheer','crit','defense','resist','stun','mark'];
+const activeMultiplierFields=()=>multiplierFields.filter(f=>(f!=='sharp' || usesSharp({main})) &&
+  (f!=='sheer' || usesRupture({main})) && (f!=='mark' || main==='sunbringer'));
 let overrides=[];
 function buildRotation(){
   const roster=activeSkills(), normal=main!=='sunbringer';
@@ -219,7 +220,7 @@ function getConfig(){
   c.counts=activeSkills().map((s,i)=>s.automatic?0:Number(el('n'+i).value));
   if(!usesSharp(c))for(const k of ['customAtkPct','customFlatAtk','customNormalCd'])c[k]=Number(el(k).value);
   if(usesRupture(c)){
-    for(const k of ['customHpPct','customFlatHp','customSheerForce','yiSetStacks'])c[k]=Number(el(k).value);
+    for(const k of ['customHpPct','customFlatHp','customSheerForce','customSheer','yiSetStacks','yiWoodStacks'])c[k]=Number(el(k).value);
     c.yiFrozen=el('yiFrozen').checked;
   }
   if(isYixuan(c)){
@@ -316,7 +317,7 @@ function variants(c){
   });
 }
 let revision=0, manualBaseline=null;
-const baselineVersion=3;
+const baselineVersion=()=>usesRupture({main})?5:3;
 function showComparisons(c,build){
   const version=++revision;
   const shadowComparison=el('variants').value==='w';
@@ -413,7 +414,8 @@ function renderTeammateBuffs(c,sources){
   const normal=usesAttack(c), rupture=usesRupture(c);
   const categories={general:'普通增伤',teamCritRate:'对目标暴击率',...(rupture?{}:{teamPen:'穿透率',ignore:'无视防御／减防'}),resDown:'减抗或无视抗性',
     stun:'失衡易伤',stunAlways:'失衡易伤',...(isAnby(c)?{aftershockIgnore:'追加攻击无视防御'}:{}),
-    ...(rupture?{teamHp:'最大生命值',sheerForce:'固定贯穿力',sheer:'贯穿增伤',normalCritDmg:'普通暴击伤害'}:
+    ...(rupture?{teamHp:'最大生命值',teamAtk:'战斗固定攻击力',teamAtkPct:'战斗攻击百分比',
+      sheerForce:'固定贯穿力',sheer:'贯穿增伤',normalCritDmg:'普通暴击伤害'}:
       normal?{teamAtk:'固定攻击力',teamAtkPct:'攻击力百分比',normalCritDmg:'普通暴击伤害'}:
       {teamDef:'固定防御力',sharp:'锐化增伤',critDmg:'锐暴伤害'})};
   for(const slot of teammateSlots){
@@ -433,6 +435,8 @@ function renderTeammateBuffs(c,sources){
       const condition=group==='stunAlways'?'，非失衡也生效':group==='stun' && !c.stun?'，当前未失衡':'';
       lines.push('<li><b>'+label+' +'+format(total)+'</b>（'+detail+condition+'）</li>');
     }
+    if(rupture && [...sources.teamAtk,...sources.teamAtkPct].some(([label])=>label.startsWith(prefix)))
+      lines.push('<li>战斗攻击力增益按 30% 转为贯穿力。</li>');
     if(id==='jufufu'){
       lines.push('<li><b>虎啸</b>：连携增伤 +'+pct(juChainBonus)+'，终结技增伤 +'+pct(juUltimateBonus)+'。</li>');
       const [chain,ult]=juPotential[c.potential];
@@ -578,7 +582,7 @@ function render(saveBaseline=false){
   if(saveBaseline){
     const team=[lead().name,...teammateSlots.map(slot=>teammateChoices[c[slot+'char']].name)];
     const label=team.map((name,i)=>name==='空气'?name:name+' '+c[['w','f','r'][i]]+'影').join(' / ');
-    manualBaseline={version:baselineVersion,score:b.score,description:'已固定 · '+label};
+    manualBaseline={version:baselineVersion(),score:b.score,description:'已固定 · '+label};
   }
   if(el('variants').selectedOptions[0]?.disabled)el('variants').value='w';
   el('total').textContent=fmt(b.score);
@@ -954,7 +958,7 @@ function restoreLeadProfile(profile){
   });
   const baseline=profile?.manualBaseline;
   // Saved baselines contain only the previous score, so a formula change invalidates them.
-  if(baseline?.version===baselineVersion && Number.isFinite(baseline.score) && typeof baseline.description==='string')manualBaseline=baseline;
+  if(baseline?.version===baselineVersion() && Number.isFinite(baseline.score) && typeof baseline.description==='string')manualBaseline=baseline;
 }
 function restoreSettings(){
   let saved;

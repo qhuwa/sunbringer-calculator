@@ -94,6 +94,7 @@ function solve(c,fixedBuild=null,searchMains=null){
     pen: (c.customPen||0)/100,
     general: (c.customGeneral||0)/100,
     sharp: (c.customSharp||0)/100,
+    sheer: (c.customSheer||0)/100,
     fire: (c.customFire||0)/100,
     crit: (c.customCrit||0)/100,
     critDmg: (c.customCritDmg||0)/100,
@@ -153,12 +154,14 @@ function solve(c,fixedBuild=null,searchMains=null){
       const physical=row.element==='physical';
       const generic=skillOverride(c,i,'generic',physical?physicalBonus:bonus);
       const sharpFactor=normal?1:skillOverride(c,i,'sharp',1+buffs.sharp+(attackStats?.sharp??0));
+      const sheerFactor=rupture?skillOverride(c,i,'sheer',
+        1+attackStats.sheerBonus+sumBonuses(row.natural.sheerSources)):1;
       const resistFactor=skillOverride(c,i,'resist',(physical?physicalResist:resist+(attackStats?.res??0))+(row.extraRes??0));
       const stunFactor=skillOverride(c,i,'stun',(row.veil?veil:stun)+(row.extraStun??0));
       const remaining=remainingDefense((physical?physicalIgnore:ignore)+row.extraIgnore,penRate+(row.extraPen??0));
       const critDamageBonus=(row.critDamageBonus??0)+(physical?physicalCritDamage:0);
       const receivedFactor=skillOverride(c,i,'received',received);
-      const fixed=row.mult*(generic+row.category)*row.final*receivedFactor*sharpFactor*resistFactor*stunFactor;
+      const fixed=row.mult*(generic+row.category)*row.final*receivedFactor*sharpFactor*sheerFactor*resistFactor*stunFactor;
       const critOverride=c.skillOverrides?.[i]?.crit, defOverride=c.skillOverrides?.[i]?.defense;
       const settled=i<=lastRelease?row.markWeight*(row.ultimate && c.w>=6?1.8:1):0;
       const damageWeight=fixed*(row.count+settled)*(critOverride??1)*(defOverride??1);
@@ -172,7 +175,7 @@ function solve(c,fixedBuild=null,searchMains=null){
         weight[critKey]+=damageWeight;
         if(critOverride==null && critDamageBonus)weight[3]+=damageWeight*critDamageBonus;
       }
-      return {fixed,remaining,critDamageBonus,generic,sharp:sharpFactor,resist:resistFactor,stun:stunFactor,received:receivedFactor};
+      return {fixed,remaining,critDamageBonus,generic,sharp:sharpFactor,sheer:sheerFactor,resist:resistFactor,stun:stunFactor,received:receivedFactor};
     });
     const defMains=mains.filter(stat=>stat==='def').length;
     const setDefense=.16+(c.two==='rose' && c.set!=='rose'?.16:0);

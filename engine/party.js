@@ -76,7 +76,7 @@ function partyBonuses(c,custom,assault){
     teamHp:[zhao?['照 · 涌泉',.05]:['卢西娅 · 涌泉',lucia?.05:0],['照 · 半糖雪兔',zhaoEngineAtk],
       ['卢西娅 · 铸梦炉歌',luciaEngine?[.15,.173,.195,.218,.24][rank(lucia)]:0]],
     sheerForce:[['卢西娅 · 破暗',lucia?900:0],['潘引壶 · 通窍',pan?(shadow(pan)>=6?720:540):0]],
-    sheer:[['卢西娅 · 二影破暗',shadow(lucia)>=2?.15:0]],
+    sheer:[['卢西娅 · 二影破暗',shadow(lucia)>=2?.15:0],['自定义贯穿增伤',custom.sheer]],
     teamCritRate:[['妮可 · 六影侵蚀能量场',shadow(nicole)>=6?.15:0]],
     normalCritDmg:[['希希芙 · 额外能力',cissiaCrit?.40:0],['橘福福 · 虎啸',ju?(shadow(ju)>=2?.72:.50):0],['扳机 · 二影',shadow(trigger)>=2?.24:0],
       [mountain?.name+' · 山大王四件',mountain?.bonus],

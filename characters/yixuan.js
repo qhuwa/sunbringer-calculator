@@ -10,6 +10,7 @@ const yiDiscStats={hp:0,crit:1,cd:2,atk:3};
 const yiHpRoll=.03;
 const yiHpConversion=.10;
 const yiAtkConversion=.30;
+const woodpeckerAttackBonus=(c,stacks)=>c.set==='woodpecker'?.09*stacks:0;
 
 // Coefficients are in 1/10000 units. Full-channel hits exclude the linked finishing move.
 const yiSkills=[
@@ -67,15 +68,15 @@ function yiRotation(c,stunFinisher){
       ['仪玄 · 术法宗师',coreBoost?.60:0],
       ['仪玄 · 玄墨暗涌',charge && c.stun && yiExtra(c)?.30:0],
       ['仪玄 · 四影静心（本行平均）',charge && c.counts[i]?.30*meditation/c.counts[i]:0],
-      ['青溟笼舍 · 特殊技／终结技以太贯穿伤害',(ex||ultimate)?yiWeaponStacks(c)*(.10+.015*yiWeaponRank(c)):0],
       ['橘福福 · 虎啸',ju?(chain?juChainBonus:ultimate?juUltimateBonus:0):0],
       ['危局招式增伤',c.stun && (chain||ultimate)?stunFinisher:0]
     ];
+    const sheerSources=[['青溟笼舍 · 特殊技／终结技以太贯穿伤害',(ex||ultimate)?yiWeaponStacks(c)*(.10+.015*yiWeaponRank(c)):0]];
     const finalSources=[['橘福福 · 侠肝义胆',chain?chainFinal:ultimate?ultFinal:0]];
     const category=sumBonuses(categorySources), final=1+sumBonuses(finalSources);
     const extraRes=c.w>=2 && (ex||ultimate)?.15:0;
     return {name:s.name,count,available,extraRes,extraM6:s.type==='adrenalineUlt'?freeUltimate:0,
-      ultimate:s.type==='adrenalineUlt',natural:{mult,category,final,categorySources,finalSources},
+      ultimate:s.type==='adrenalineUlt',natural:{mult,category,final,categorySources,sheerSources,finalSources},
       mult:skillOverride(c,i,'coefficient',mult),category:skillOverride(c,i,'skill',category),final:skillOverride(c,i,'final',final),
       source:'other',markRate:0,markWeight:0,settle:false};
   });
@@ -93,6 +94,7 @@ function yiStats(c,buffs,mains,custom){
     panelAtkPct:[['攻击力主属性',.30*mains.filter(stat=>stat==='atk').length],['激素朋克两件',yiSet(c,'hormone')?.10:0],
       ['静听嘉音两件',yiSet(c,'astral')?.10:0],['手动攻击力百分比',(c.customAtkPct??0)/100]],
     panelAtkFlat:[['二号位主属性',316],['手动固定攻击力',c.customFlatAtk??0]],
+    ownCombatAtkPct:[['啄木鸟电音四件',woodpeckerAttackBonus(c,c.yiWoodStacks??3)]],
     panelRate:[['基础暴击率',.05],['核心技强化',.144],['青溟笼舍',.20+.03*yiWeaponRank(c)],
       ['四号位主属性',fourth==='crit'?.24:0],['啄木鸟电音两件',yiSet(c,'woodpecker')?.08:0]],
     ownCombatRate:[['云岿如我四件',.04*yiSetStacks(c)],['一影清灵道心',c.w>=1?.10:0],
@@ -113,14 +115,18 @@ function ruptureStats(buffs,statSources){
   const baseHp=sumBonuses(statSources.baseHp), baseAtk=sumBonuses(statSources.baseAtk);
   const panelHp=baseHp*(1+sumBonuses(statSources.panelHpPct))+sumBonuses(statSources.panelHpFlat);
   const panelAtk=baseAtk*(1+sumBonuses(statSources.panelAtkPct))+sumBonuses(statSources.panelAtkFlat);
+  const combatAtkPct=[...(statSources.ownCombatAtkPct??[]),...buffs.entries.teamAtkPct];
+  const combatAtkFlat=[...(statSources.ownCombatAtkFlat??[]),...buffs.entries.teamAtk];
+  const combatAtk=panelAtk+baseAtk*sumBonuses(combatAtkPct)+sumBonuses(combatAtkFlat);
   const hpMultiplier=1+buffs.teamHp;
   const fixedForce=sumBonuses(statSources.teamSheerForce);
   const initialBase=yiHpConversion*panelHp+yiAtkConversion*panelAtk;
   const hpRollForce=yiHpConversion*baseHp*yiHpRoll, atkRollForce=yiAtkConversion*baseAtk*atkRoll;
   const rate=sumBonuses(statSources.panelRate)+sumBonuses(statSources.ownCombatRate)+sumBonuses(statSources.rateAdjustment);
   const critDmg=sumBonuses(statSources.panelCd)+sumBonuses(statSources.ownCombatCd)+sumBonuses(statSources.cdAdjustment)+buffs.normalCritDmg;
-  return {initialBase,hpRollForce,atkRollForce,rate,critDmg,statSources,
-    bonus:1+buffs.general+buffs.sheer+sumBonuses(statSources.ownElement)+sumBonuses(statSources.ownSheer),
+  return {initialBase,hpRollForce,atkRollForce,rate,critDmg,statSources:{...statSources,combatAtkPct,combatAtkFlat},
+    bonus:1+buffs.general+sumBonuses(statSources.ownElement),
+    sheerBonus:buffs.sheer+sumBonuses(statSources.ownSheer),
     combatWithRolls:(hp,atk)=>(yiHpConversion*panelHp+hpRollForce*hp)*hpMultiplier+
-      yiAtkConversion*panelAtk+atkRollForce*atk+fixedForce};
+      yiAtkConversion*combatAtk+atkRollForce*atk+fixedForce};
 }

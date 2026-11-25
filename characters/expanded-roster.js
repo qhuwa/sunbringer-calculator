@@ -66,6 +66,7 @@ function expandedRotation(c,stunFinisher){
       ['橘福福 · 虎啸',ju?(chain?juChainBonus:ult?juUltimateBonus:0):0],
       ['危局招式增伤',c.stun && (chain || ult)?stunFinisher:0]
     ];
+    const sheerSources=[];
     const finalSources=[['橘福福 · 侠肝义胆',chain?chainFinal:ult?ultFinal:0]];
     if(c.set==='dawn' || c.two==='dawn'){
       categorySources.push(['拂晓生花两件',basic?.15:0],['拂晓生花四件',basic && c.set==='dawn'?.40:0]);
@@ -106,8 +107,8 @@ function expandedRotation(c,stunFinisher){
     if(actor===banyue){
       const affected=[1471014,1471016,1471012,1471017,1471009,1471010].includes(id);
       const anger=[1471016,1471017,1471009,1471010].includes(id);
-      categorySources.push(['般岳 · 一影战栗',m>=1 && option('shiver') && affected?.10:0],
-        ['般岳 · 四影',m>=4 && anger?.30:0]);
+      sheerSources.push(['般岳 · 一影战栗',m>=1 && option('shiver') && affected?.10:0]);
+      categorySources.push(['般岳 · 四影',m>=4 && anger?.30:0]);
       if(m>=6 && id===1471010)bonusMult=6;
     }
     if(actor===yidhari){
@@ -148,7 +149,7 @@ function expandedRotation(c,stunFinisher){
     const category=sumBonuses(categorySources), final=1+sumBonuses(finalSources);
     return {name,count,available,element:skill.element,ultimate:id===actor.ultId,source:'other',markRate:0,markWeight:0,settle:false,
       extraIgnore,extraRes,extraPen,extraStun,critDamageBonus,critRateBonus,
-      natural:{mult,baseMult,category,final,categorySources,finalSources},
+      natural:{mult,baseMult,category,final,categorySources,sheerSources,finalSources},
       mult:skillOverride(c,i,'coefficient',mult),category:skillOverride(c,i,'skill',category),final:skillOverride(c,i,'final',final)};
   });
 }
@@ -178,7 +179,7 @@ function expandedStats(c,buffs,mains,custom){
     atkPctAdjustment:[['手动攻击力百分比',(c.customAtkPct??0)/100]],
     atkFlatAdjustment:[['手动固定攻击力',c.customFlatAtk??0]],
     ownCombatAtkPct:[[name+' · 影画',actor===sigrid && m>=1?.25:actor===severian && m>=4?.10:0],
-      ['激素朋克四件',c.set==='hormone'?.25:0],['啄木鸟电音四件',c.set==='woodpecker'?.27:0],
+      ['激素朋克四件',c.set==='hormone'?.25:0],['啄木鸟电音四件',woodpeckerAttackBonus(c,rupture?(c.yiWoodStacks??3):3)],
       ['拂晓行纪四件',c.set==='chronicle'?.10:0],[weapon,actor===severian && option('weapon')?rank(.10,.015):0]],
     ownCombatAtkFlat:[[name+' · 核心被动',bloom?1000:0],[name+' · 额外能力',actor===sigrid && supportOrStun?840:0]],
     panelRate:[['角色面板（含核心技强化）',actor.crit],['四号位主属性',fourth==='crit'?.24:0],
