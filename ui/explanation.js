@@ -119,14 +119,14 @@ function renderDetailedAttackBreakdown(c,b){
     '<div>与其他普通增伤合计 '+times(d.generic+d.skill)+'。</div>','skill',row.natural.category,percent);
   add('最终倍率',times(d.final),'<div>基础 ×1。</div>'+group('最终伤害加成',row.natural.finalSources),'final',row.natural.final);
 
-  const critRows=attackCritRows(b,percent,row.critDamageBonus,actor?.name+' · 本招',row.critRateBonus);
+  const critRows=attackCritRows(b,percent,row.critDamageBonus,(isMiyabi(c)?'霜寒':actor?.name+' · 本招'),row.critRateBonus);
   critRows.forEach(row=>add(...row));
   add('期望暴击倍率',times(d.crit),'1 ＋ '+critRows[0][1]+' × '+critRows[1][1]+'。','crit',row.naturalCrit);
   add('关卡受伤倍率',times(d.received),'<div>基础 ×1。</div>'+group('关卡受伤提升',sources.received),'received',1+sumBonuses(sources.received));
 
   const penetration=[['五号位穿透率',fifth==='pen'?.24:0],['河豚电音两件',c.two==='puffer'?.08:0],...sources.teamPen,
-    ['自定义穿透率',c.customPen/100],...(stats.ownPen??[]),[actor?.name+' · 本招',row.extraPen]];
-  const flatPen=[['穿透值副词条 ×'+pen,discRoll.pen*pen],['额外固定穿透值',c.extraFlatPen??0]];
+    ['自定义穿透率',c.customPen/100],[alternateLeadWeapon(c)?.name,engineStat(alternateLeadWeapon(c),'pen')],...(stats.ownPen??[]),[actor?.name+' · 本招',row.extraPen]];
+  const flatPen=[['穿透值副词条 ×'+pen,isMiyabi(c)?0:discRoll.pen*pen],['额外固定穿透值',c.extraFlatPen??0]];
   const ignoreSources=[...sources.ignore,...(stats.ownIgnore??[]),[actor?actor.name+' · 本招及音擎':'叶瞬光 · 二影（飞光／斩妄开天）',row.extraIgnore??0]];
   const ignore=b.ignore+(row.extraIgnore??0);
   const effectivePen=b.penRate+(row.extraPen??0);
@@ -232,9 +232,11 @@ function renderUltimateExample(c,b){
   const fourSet=c.set==='star'?'星之碑':'荆棘玫瑰';
   const [def,cr,cd,flatPen]=b.rolls;
   const [four,five]=b.mains.slice(3);
-  const defSources=[['蜃炎梦火',.48],[fourSet+'两件效果',.16],['荆棘玫瑰两件',c.two==='rose' && c.set!=='rose'?.16:0],...b.mains.map((main,i)=>[(i+1)+' 号位',main==='def'?.48:0]),['防御副词条 ×'+def,discRoll.def*def],['自定义防御',c.customDefPct/100]];
+  const alt=alternateLeadWeapon(c);
+  const name=alt?.name??'蜃炎梦火';
+  const defSources=[[name,alt?engineStat(alt,'def'):.48],[fourSet+'两件效果',.16],['荆棘玫瑰两件',c.two==='rose' && c.set!=='rose'?.16:0],...b.mains.map((main,i)=>[(i+1)+' 号位',main==='def'?.48:0]),['防御副词条 ×'+def,discRoll.def*def],['自定义防御',c.customDefPct/100]];
   const fixedDef=[['三号位',184],['自定义固定防御',c.customFlatDef]];
-  add('战斗防御力',num(b.combatDef),'基础防御 887（挽昼 441 ＋ 蜃炎梦火 446）。百分比加成合计 '+percent(sum(defSources))+'（'+list(defSources)+'），固定值来自'+list(fixedDef,num)+'。初始防御 '+num(b.initial)+' × '+num(1+assault.def)+'（危局防御）'+(sources.teamDef.length?'，再加'+list(sources.teamDef,num):'')+'。');
+  add('战斗防御力',num(b.combatDef),'基础防御 441 ＋ '+(alt?engineBase(alt,'def'):446)+'（'+name+'）。百分比加成合计 '+percent(sum(defSources))+'（'+list(defSources)+'），固定值来自'+list(fixedDef,num)+'。初始防御 '+num(b.initial)+' × '+num(1+assault.def)+'（危局防御）'+(sources.teamDef.length?'，再加'+list(sources.teamDef,num):'')+'。');
   add('招式倍率',percent(d.coefficient),'挽昼终结技 Lv.'+upgradeLevel(c.w)+'，倍率为 '+percent(skills[index].base/10000)+' ＋ '+(upgradeLevel(c.w)-1)+' × '+percent(skills[index].step/10000)+'。','coefficient',natural.mult,percent);
   const general=[...sources.general,['挽昼 · 五号位火伤',five==='fire'?.30:0]];
   add('通用与火属性',times(d.generic),'基础 1，'+list(general)+'。','generic',b.bonus);
@@ -243,8 +245,8 @@ function renderUltimateExample(c,b){
   add('锐化增伤',times(d.sharp),'基础 1，'+list(sources.sharp)+'。','sharp',1+sum(sources.sharp));
   add('最终伤害',times(d.final),natural.final===1?'当前无终结技最终增伤。':'橘福福 · 潜能「侠肝义胆」使终结技最终伤害 '+signed(natural.final-1,percent)+'。','final',natural.final);
   add('关卡受伤倍率',times(d.received),(list(sources.received)||'当前无关卡受伤加成')+'。','received',1+sum(sources.received));
-  const initialCD=[['挽昼基础',.50],['四号位暴伤',four==='cd'?.48:0],['暴伤副词条 ×'+cd,cd*discRoll.cd],['额外初始暴伤',(c.extraInitialCritDmg??0)/100]];
-  const rates=[['挽昼基础暴击率',.05],['核心技强化',.288],['极昼',.40],['蜃炎梦火',.20+.02*(c.wr-1)],['四号位暴击',four==='crit'?.24:0],['暴击副词条 ×'+cr,cr*discRoll.crit],['啄木鸟电音',c.two==='woodpecker'?.08:0],[fourSet+'四件',c.set==='star'?.12:b.initial>=1800?.16:b.initial>=1000?.08:0],['初始暴伤折算',.35*sum(initialCD)],['自定义暴击',c.customCrit/100]];
+  const initialCD=[['挽昼基础',.50],[name,engineStat(alt,'cd')],['四号位暴伤',four==='cd'?.48:0],['暴伤副词条 ×'+cd,cd*discRoll.cd],['额外初始暴伤',(c.extraInitialCritDmg??0)/100]];
+  const rates=[['挽昼基础暴击率',.05],['核心技强化',.288],['极昼',.40],[name,alt?engineStat(alt,'crit'):.20+.02*(c.wr-1)],['四号位暴击',four==='crit'?.24:0],['暴击副词条 ×'+cr,cr*discRoll.crit],['啄木鸟电音',c.two==='woodpecker'?.08:0],[fourSet+'四件',c.set==='star'?.12:b.initial>=1800?.16:b.initial>=1000?.08:0],['初始暴伤折算',.35*sum(initialCD)],['自定义暴击',c.customCrit/100]];
   add('战斗暴击率',percent(b.rate),list([...rates,...sources.teamCritRate])+'。初始暴伤合计 '+percent(sum(initialCD))+'（'+list(initialCD)+'），按 35% 折算。');
   add('锐暴伤害',percent(b.critDmg),list(sources.critDmg)+'。');
   const first=Math.max(0,Math.min(b.rate,1)), second=Math.min(1,Math.max(0,b.rate-1)), m=1+b.critDmg;
@@ -262,11 +264,11 @@ function renderUltimateExample(c,b){
   const markFormula=c.w<2?'':c.markMode==='add'?' ＋ 35 个百分点（二影加算假设）':' × 1.35（二影）';
   add('烬痕积攒率',percent(d.mark),'挽昼核心 '+percent(natural.mark)+markFormula+'。'+(natural.boosted?'本次命中四影指定的首次引爆，额外积攒 '+percent(natural.firstBonus)+' 的单次直伤。':''),'mark',natural.autoMarkRate,percent);
   const equation=[b.combatDef,d.coefficient,d.generic+d.skill,d.sharp,d.final,d.received,d.crit,d.defense,d.resist,d.stun].map(num).join(' × ');
-  const team=['挽昼 '+c.w+' 影 · 蜃炎梦火 '+c.wr+' 星'];
+  const team=['挽昼 '+c.w+' 影 · '+name+' '+c.wr+' 星'];
   for(const slot of teammateSlots){
     const id=c[slot+'char'], agent=teammateChoices[id];
     if(id==='air'){team.push(agent.name);continue;}
-    const engine=agent.engines.find(([key])=>Number(key)===c[slot+'e']);
+    const engine=[c[slot+'e'],weaponOptionLabel(agent,c[slot+'e'])];
     const potential=id==='jufufu'?c.potential:id==='rina'?c.rinaPotential:null;
     team.push(agent.name+' '+c[slot]+' 影'+(potential!=null?' · '+(potential?'潜能 '+['','I','II','III','IV','V','VI'][potential]:'未觉醒'):'')+
       ' · '+engine[1]+(c[slot+'e'] || id==='jufufu'?' '+c[slot+'r']+' 星':''));
@@ -276,6 +278,7 @@ function renderUltimateExample(c,b){
 }
 
 const expandedRotationNote={
+  miyabi:'默认轮转为三次满蓄霜月、三次霜灼·破、三次烈霜紊乱、一次名残雪、一次春临，以及飞雪斩击与追击各一次。碎冰等补充招式默认 0 次。风花前两段和冲刺为物理，其他攻击为烈霜，使用冰伤和冰抗。碎冰、霜灼·破、烈霜紊乱各行独立计数。烈霜积蓄归属、霜寒剩余时间和冰抗无视覆盖可在本轮增益中调节。南宫羽的极性紊乱及异放由队友卡片设置控制。',
   cissia:'蚀骨输入框填基础触发次数。四影、六影额外触发由增益选项补计；毒牙的基础倍率含首轮三段与收招，延长攻击填在额外打击行。',
   seed:'落霰风暴为电伤。霜蕊轮舞前两段、磁陨轮舞为物理伤害，使用独立的物理抗性输入。崩坠一、二式分行。二影能量增伤按一次衔接重戮分摊，六影激光每次填一组三道，按实际触发次数填写。',
   sigrid:'敛枪式各段分行。可填写一影溢出强化次数；未指定单独段数时，从有计次的敛枪式第一段起分配。',
@@ -289,7 +292,8 @@ const expandedRotationNote={
 function renderExpandedNotes(actor){
   const source='https://zzz.gachabase.net';
   el('expandedNotes').innerHTML='<p>'+expandedRotationNote[actor.slug.replaceAll('-','')]+'</p>'+
-    '<p>按 60 级角色、60 级专属音擎、核心技 F 和默认 12 级主动技能计算。三、五影各增加 2 级。默认轴用于比较同条件下的伤害，消耗、冷却和触发间隔由技能次数与覆盖选项体现。</p>'+
+    (actor===miyabi?'<p>核心 F 霜灼·破按战斗攻击力 × 15 计算，可进行普通暴击。四影的 30% 加到招式增伤。霜寒覆盖时增加 10% 暴击伤害。碎冰的系数为 5。由星见雅先施加霜寒、再被另一种异常覆盖时，烈霜紊乱系数为 6 ＋ 0.75 × 剩余秒数（0–20 秒）。碎冰与紊乱乘战斗异常精通 ÷ 100，再乘 60 级异常系数 2 和积蓄归属，通常不暴击。另一属性被烈霜覆盖时，结算归属该属性的施加者。积蓄触发和参与比例由手动设置。六影追加斩击依据原始命中表 1091035，将每次拔刀的两次 50% 命中合为 720%，按当次消耗的落霜折算阶段次数。</p><p>柚叶额外能力的异常／紊乱专属倍率单列，六影每层将紊乱基础系数加 1.05。南宫羽的极性紊乱按对应紊乱结算的 25%，不移除霜寒。颤音异放按原碎冰系数和异放比例算；每次失衡最多结算一次常规颤音，六影颤音：改可在进入失衡时另结算。</p><p><a href="https://github.com/frzyc/genshin-optimizer/blob/master/libs/zzz/formula/src/data/char/util.ts">烈霜紊乱系数与异常伤害计算</a></p>':'')+
+    '<p>按 60 级角色、60 级音擎、核心技 F 和默认 12 级主动技能计算。三、五影各增加 2 级。默认轴用于比较同条件下的伤害，消耗、冷却和触发间隔由技能次数与覆盖选项体现。</p>'+
     '<p>角色对目标造成伤害提升与通用及属性增伤相加。关卡受伤、明确的失衡易伤和锐化伤害按各自区域结算。</p>'+
     '<p><a href="'+source+'/agents/'+actor.agentId+'/'+actor.slug+'/beta?lang=chs">角色技能数据</a> · '+
     '<a href="'+source+'/w-engines/'+actor.weaponId+'/'+actor.weaponSlug+'/beta?lang=chs">专属音擎数据</a> · '+

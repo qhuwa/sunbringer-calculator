@@ -100,11 +100,12 @@ function yeStats(c,buffs,mains,custom){
     ownCombatCd:[['云霓孤光 · 开启帷幕',c.yeVeilBuff?yeWeaponBonus[c.wr-1]:0]],
     cdAdjustment:[['自定义普通暴伤',(c.customNormalCd||0)/100]]
   };
-  const sum=key=>sumBonuses(statSources[key]);
+  applyLeadEngineStats(c,statSources,'云霓孤光');
+  const sum=key=>sumBonuses(statSources[key]??[]);
   const baseAtk=sum('baseAtk');
   const initialBase=baseAtk*(1+sum('panelAtkPct')+sum('atkPctAdjustment'))+sum('panelAtkFlat')+sum('atkFlatAdjustment');
   const attackPct=buffs.teamAtkPct+sum('ownCombatAtkPct');
   const rate=sum('panelRate')+sum('ownCombatRate')+sum('rateAdjustment');
   const critDmg=sum('panelCd')+sum('ownCombatCd')+sum('cdAdjustment')+buffs.normalCritDmg;
-  return {baseAtk,initialBase,attackPct,rate,critDmg,statSources,bonus:1+buffs.general+(fifth==='physical'?.30:0)};
+  return {baseAtk,initialBase,attackPct,rate,critDmg,statSources,bonus:1+buffs.general+(fifth==='physical'?.30:0)+sum('ownGeneral')+sum('ownElement')};
 }

@@ -90,5 +90,6 @@ function billyStats(c,buffs,mains,custom){
     ownSheer:[['辉骑面铠 · 骑士气势',weaponStacks*(.10+.015*rank)],['云岿如我四件满层',setStacks===3?.10:0]],
     teamSheerForce:[...buffs.entries.sheerForce,['手动固定贯穿力',c.customSheerForce??0]]
   };
+  applyLeadEngineStats(c,statSources,'辉骑面铠');
   return ruptureStats(buffs,statSources);
 }

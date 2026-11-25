@@ -71,7 +71,7 @@ function yiRotation(c,stunFinisher){
       ['橘福福 · 虎啸',ju?(chain?juChainBonus:ultimate?juUltimateBonus:0):0],
       ['危局招式增伤',c.stun && (chain||ultimate)?stunFinisher:0]
     ];
-    const sheerSources=[['青溟笼舍 · 特殊技／终结技以太贯穿伤害',(ex||ultimate)?yiWeaponStacks(c)*(.10+.015*yiWeaponRank(c)):0]];
+    const sheerSources=[['青溟笼舍 · 特殊技／终结技以太贯穿伤害',leadSignature(c) && (ex||ultimate)?yiWeaponStacks(c)*(.10+.015*yiWeaponRank(c)):0]];
     const finalSources=[['橘福福 · 侠肝义胆',chain?chainFinal:ultimate?ultFinal:0]];
     const category=sumBonuses(categorySources), final=1+sumBonuses(finalSources);
     const extraRes=c.w>=2 && (ex||ultimate)?.15:0;
@@ -108,6 +108,7 @@ function yiStats(c,buffs,mains,custom){
     ownSheer:[['云岿如我四件满层',yiSetStacks(c)===3?.10:0],['六影 · 凝神',c.w>=6 && yiFocused(c)?.20:0]],
     teamSheerForce:[...buffs.entries.sheerForce,['手动固定贯穿力',c.customSheerForce??0]]
   };
+  applyLeadEngineStats(c,statSources,'青溟笼舍');
   return ruptureStats(buffs,statSources);
 }
 
@@ -125,7 +126,7 @@ function ruptureStats(buffs,statSources){
   const rate=sumBonuses(statSources.panelRate)+sumBonuses(statSources.ownCombatRate)+sumBonuses(statSources.rateAdjustment);
   const critDmg=sumBonuses(statSources.panelCd)+sumBonuses(statSources.ownCombatCd)+sumBonuses(statSources.cdAdjustment)+buffs.normalCritDmg;
   return {initialBase,hpRollForce,atkRollForce,rate,critDmg,statSources:{...statSources,combatAtkPct,combatAtkFlat},
-    bonus:1+buffs.general+sumBonuses(statSources.ownElement),
+    bonus:1+buffs.general+sumBonuses(statSources.ownElement)+sumBonuses(statSources.ownGeneral??[]),
     sheerBonus:buffs.sheer+sumBonuses(statSources.ownSheer),
     combatAttackWithRolls:atk=>combatAtk+baseAtk*atkRoll*atk,
     combatWithRolls:(hp,atk)=>(yiHpConversion*panelHp+hpRollForce*hp)*hpMultiplier+

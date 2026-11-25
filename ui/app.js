@@ -12,6 +12,7 @@ const supportEngines=signature=>[['1',signature],[String(kaboomEngine),'好斗�
 const teammateChoices={
   air:emptyTeammate,
   ...classicTeammates,
+  ...anomalySupports,
   cissia:{...cissia,engines:[...cissia.engines,['0','其他音擎']]},
   jufufu:{name:'橘福福',role:'击破 · 火',portrait:portraits[1],engines:[['1','福虓炉炉'],['0','燃狱齿轮']]},
   roxy:{name:'洛克茜',role:'击破 · 风',portrait:'https://i.gachabase.net/DijdTpaLWeJmg39VwoMIkRzIVyKh8cy96PpISuBx68c/q:50/f:webp/plain/zzz/assets/386b80141590c07add669b27246d96df.png',engines:[['1','永夜辗眠'],['0','其他音擎']]},
@@ -68,16 +69,16 @@ const activeSkills=()=>leadSetup[main].skills;
 const fourPieces=()=>leadSetup[main].four;
 const twoPieces=()=>leadSetup[main].two;
 const defaultDiscs=()=>leadSetup[main].initial;
-const leadRollNames=id=>usesRupture({main:id})?['生命 %','暴击率','暴击伤害','攻击 %']:
+const leadRollNames=id=>id==='miyabi'?['攻击 %','暴击率','暴击伤害','异常精通']:usesRupture({main:id})?['生命 %','暴击率','暴击伤害','攻击 %']:
   usesSharp({main:id})?statNames:['攻击 %',...statNames.slice(1)];
 function teammateCard(slot,index){
   const initial=defaultTeammates[slot];
-  const choices=Object.entries(teammateChoices).map(([id,actor])=>`<option value="${id}"${id===initial?' selected':''}>${actor.name}</option>`).join('');
+  const choices=agentOptions(teammateChoices,initial);
   return `<div class="card"><div class="agent"><img id="${slot}portrait" alt="" onerror="this.style.display='none'"><div><h3 id="${slot}name"></h3><small id="${slot}role"></small></div></div>
     <div class="fields" id="${slot}Fields"><label>队友 ${index+1}<select id="${slot}char">${choices}</select></label>
     <label>意象影画<select id="${slot}">${numericOptions(0,6,' 影')}</select></label>
     <label>音擎星级<select id="${slot}r">${numericOptions(1,5,' 星')}</select></label>
-    <label class="wide"><span id="${slot}engineLabel">音擎</span><select id="${slot}e"></select></label>
+    <label class="wide"><span id="${slot}engineLabel">音擎</span><select id="${slot}e"></select></label><small class="wide weapon-hint" id="${slot}WeaponHint" hidden></small>
     <label class="wide" hidden>队友驱动套装<select id="${slot}d" disabled></select></label>
     <label class="wide roll-limit" hidden><input id="${slot}MountainFull" type="checkbox" checked disabled>山大王装备者暴击率达 50%</label>
     <label class="wide">队友伤害系数<input id="${slot}DamageCoefficient" type="number" min="0" step="any" value="0" required></label>
@@ -86,11 +87,11 @@ function teammateCard(slot,index){
 }
 el('cards').innerHTML=`<div class="card"><div class="agent"><img id="mainPortrait" alt="" src="${portraits[0]}" onerror="this.style.display='none'"><div><h3 id="mainName">挽昼</h3><small id="mainRole">锋御 · 燎源</small></div></div>
   <div class="fields"><label>意象影画<select id="w">${numericOptions(0,6,' 影')}</select></label><label>音擎星级<select id="wr">${numericOptions(1,5,' 星')}</select></label>
-  <label class="wide">主 C<select id="mainAgent">${options(Object.entries(leadChoices).map(([id,agent])=>[id,agent.name]))}</select></label>
-  <label class="wide">音擎<select id="we" disabled>${options(sunbringer.engines)}</select></label>
+  <label class="wide">主 C<select id="mainAgent">${agentOptions(leadChoices,'sunbringer')}</select></label>
+  <label class="wide">音擎<select id="we">${options(sunbringer.engines)}</select></label><small class="wide weapon-hint" id="leadWeaponHint" hidden></small>
   <label class="wide" data-neko hidden>潜能觉醒 · 猫的报恩<select id="nekoPotential"></select></label>
   <label class="wide" data-anby hidden>潜能觉醒 · 银白色的心<select id="anbyPotential"></select></label></div></div>`+teammateSlots.map(teammateCard).join('');
-const teammateBuilds={};
+const teammateBuilds={}, leadWeaponRanks={};
 // Ju Fufu's zero-ID option is an actual W-Engine. Other zero-ID options are placeholders.
 const hasEngineRank=(character,engine)=>engine!==0 || character==='jufufu';
 function savedEngineRank(character,engine){
@@ -113,10 +114,24 @@ el('fchar').closest('.fields').insertAdjacentHTML('beforeend',
 el('potential').value=6;
 el('rchar').closest('.fields').insertAdjacentHTML('beforeend',
   '<div class="wide fields" id="rinaControls" hidden><label>潜能觉醒 · 完美侍奉<select id="rinaPotential">'+potentialOptions+
-  '</select></label><label>丽娜觉醒前穿透率 %<input id="rinaBasePen" type="number" min="0" max="100" step="any" value="70.4"></label></div>');
+  '</select></label><label>丽娜觉醒前穿透率 %（以专武为基准）<input id="rinaBasePen" type="number" min="0" max="100" step="any" value="70.4"></label></div>');
 el('rinaPotential').value=6;
 el('rchar').closest('.fields').insertAdjacentHTML('beforeend',
   '<label class="wide" id="cissiaRegenLabel" hidden>希希芙初始能量自动回复<input id="cissiaRegen" type="number" min="0" step="any" value="3.68" disabled></label>');
+const extraTeamFields={
+  koleda:['珂蕾妲',`<label>潜能觉醒 · 爆破作业<select id="koledaPotential">${potentialOptions}</select></label>
+    <label>连携增伤层数<input type="number" id="koledaStacks" min="0" max="2" value="2"></label>`],
+  lycaon:['莱卡恩','<label class="roll-limit"><input type="checkbox" id="lycaonAwakened" checked>潜能觉醒 · 掠冰</label>'],
+  yuzuha:['柚叶','<label>六影紊乱倍率层数<input type="number" id="yuzuhaDisorderStacks" min="0" max="3" value="3"></label>'],
+  nangongYu:['南宫羽',`<label>失衡后极性紊乱次数<input type="number" id="nangongPolar" min="0" max="2" value="2"></label>
+    <label class="roll-limit"><input type="checkbox" id="nangongM2Polar" checked>二影连携触发极性紊乱</label>
+    <label>结算异放的颤音层数<input type="number" id="nangongTremolo" min="0" max="4" value="4"></label>
+    <label>六影失衡前颤音：改层数<input type="number" id="nangongTremoloM6" min="0" max="4" value="4"></label>`]
+};
+for(const [id,[name,content]] of Object.entries(extraTeamFields)){
+  el('fFields').insertAdjacentHTML('beforeend',`<div class="wide fields" id="${id}Controls" aria-label="${name}战斗设置" hidden>${content}</div>`);
+}
+el('koledaPotential').value='6';
 const expandedFieldId=(id,key)=>'lead-'+id+'-'+key;
 el('expandedSettings').innerHTML=Object.entries(expandedControls).map(([id,fields])=>
   '<div class="fields" data-expanded-role="'+id+'" hidden>'+fields.map(([key,label,min,max,value])=>{
@@ -125,9 +140,9 @@ el('expandedSettings').innerHTML=Object.entries(expandedControls).map(([id,field
       '<label>'+label+'<input id="'+input+'" type="number" min="'+min+'" max="'+max+'" step="1" value="'+value+'" disabled></label>';
   }).join('')+'</div>'
 ).join('');
-const multiplierFields=['coefficient','generic','skill','final','received','sharp','sheer','crit','defense','resist','stun','mark'];
+const multiplierFields=['coefficient','generic','skill','final','received','sharp','sheer','crit','anomaly','anomalyBonus','defense','resist','stun','mark'];
 const activeMultiplierFields=()=>multiplierFields.filter(f=>(f!=='sharp' || usesSharp({main})) &&
-  (f!=='sheer' || usesRupture({main})) && (f!=='mark' || main==='sunbringer'));
+  (f!=='sheer' || usesRupture({main})) && (f!=='mark' || main==='sunbringer') && (!['anomaly','anomalyBonus'].includes(f) || main==='miyabi'));
 let overrides=[];
 function buildRotation(){
   const roster=activeSkills(), normal=main!=='sunbringer';
@@ -200,7 +215,8 @@ function rankAssaultBuffs(config){
 }
 function getConfig(){
   const c={main};
-  for(const k of ['rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat','w','f','r','wr','fr','rr','fe','re','stun','vuln','enemy','res','beat','customIgnore','customPen','customGeneral','customSharp','customFire','customCrit','customCritDmg','customDefPct','customFlatDef','customStun'])c[k]=Number(el(k).value);
+  for(const k of ['rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat','w','f','r','wr','fr','rr','we','fe','re','stun','vuln','enemy','res','beat','customIgnore','customPen','customGeneral','customSharp','customFire','customCrit','customCritDmg','customDefPct','customFlatDef','customStun'])c[k]=Number(el(k).value);
+  c.enemyWeakness=bossById.get(el('boss').value)?.weakness_ids??[];
   c.fchar=el('fchar').value;
   c.rchar=el('rchar').value;
   c.physicalRes=expandedLeads[main]?.skills.some(skill=>skill.element)?el('physicalRes').valueAsNumber:0;
@@ -209,6 +225,14 @@ function getConfig(){
     const input=el(expandedFieldId(main,key));
     return [key,input.type==='checkbox'?input.checked:input.valueAsNumber];
   }));
+  for(const [id] of Object.entries(extraTeamFields)){
+    if(!teammateSlot(c,id))continue;
+    for(const input of el(id+'Controls').querySelectorAll('input,select')){
+      c[input.id]=input.type==='checkbox'?input.checked:Number(input.value);
+    }
+  }
+  const stacks=el('leadWeaponStacks');
+  if(!stacks.disabled)c.weaponStacks=stacks.valueAsNumber;
   c.kaboomStacks=Number(el('kaboomStacks').value);
   c.astralStacks=Number(el('astralStacks').value);
   for(const slot of teammateSlots){
@@ -293,7 +317,7 @@ function variants(c){
   const key=el('variants').value;
   if(key==='gear'){
     const items=[];
-    const fEngines=teammateChoices[c.fchar].engines, rEngines=teammateChoices[c.rchar].engines;
+    const fEngines=weaponOptions(teammateChoices[c.fchar],c.fe), rEngines=weaponOptions(teammateChoices[c.rchar],c.re);
     for(const [set,setName] of Object.entries(fourPieces()))for(const [two,twoName] of Object.entries(twoPieces()))for(const [fe,fName] of fEngines)for(const [re,rName] of rEngines){
       const fEngine=Number(fe), rEngine=Number(re);
       const fr=fEngine===c.fe?c.fr:savedEngineRank(c.fchar,fEngine);
@@ -309,7 +333,7 @@ function variants(c){
   const actor=slot==='w'?lead():teammateChoices[c[slot+'char']];
   const selectedEngine=c[slot+'e']??1;
   const engineId=hasEngineRank(c[slot+'char'],selectedEngine)?selectedEngine:1;
-  const engineName=actor.engines.find(([id])=>Number(id)===engineId)?.[1];
+  const engineName=weaponOptionLabel(actor,engineId);
   return Array.from({length:rank?5:7},(_,i)=>{
     const level=rank?i+1:i;
     const changes={[key]:level};
@@ -324,7 +348,7 @@ function showComparisons(c,build,discLocked){
   const shadowComparison=el('variants').value==='w';
   const items=variants(c);
   const discs=defaultDiscs();
-  const baselineScore=manualBaseline?.score??optimized({...c,w:0,f:0,r:0,wr:1,fr:1,rr:1,fe:c.fchar==='air'?0:1,re:c.rchar==='air'?0:1,...discs})?.score;
+  const baselineScore=manualBaseline?.score??optimized({...c,w:0,f:0,r:0,wr:1,fr:1,rr:1,we:1,fe:c.fchar==='air'?0:1,re:c.rchar==='air'?0:1,...discs})?.score;
   const [ratio,delta]=percentages(build.score,baselineScore);
   const label=manualBaseline?'手动基线':'全 01';
   el('compare').textContent=`相对${label}　${ratio}　（${delta}）`;
@@ -400,12 +424,13 @@ function renderRollGains(config,build){
     ...singleRolls.filter(([,key])=>!['customDefPct','customFlatDef','customSharp','customCritDmg','extraInitialCritDmg'].includes(key))
       .map(row=>row[1]==='customFire'?[elementNames[lead().element]+'属性增伤',...row.slice(1)]:row)
   ]:singleRolls;
-  const rolls=rupture?[
+  const rolls=isMiyabi(config)?[['异常精通','flatAP',9,' 点'],...ordinaryRolls]:rupture?[
     ['生命值百分比','customHpPct',3,'%'],['固定生命值','customFlatHp',112,' 点'],
     ...ordinaryRolls.filter(([,key])=>!['customIgnore','customPen','extraFlatPen'].includes(key))
   ]:ordinaryRolls;
   el('rollGainRows').innerHTML=rolls.map(([label,key,step,unit])=>{
-    const modified={...config,[key]:(config[key]??0)+step};
+    const modified=key==='flatAP'?{...config,expanded:{...config.expanded,flatAP:config.expanded.flatAP+step}}:
+      {...config,[key]:(config[key]??0)+step};
     const added=solve(modified,build).score-build.score;
     const damage=Math.round(added);
     const gain=build.score>0?(100*added/build.score).toFixed(2)+'%':'—';
@@ -415,7 +440,8 @@ function renderRollGains(config,build){
 function renderTeammateBuffs(c,sources){
   const normal=usesAttack(c), rupture=usesRupture(c);
   const categories={general:'普通增伤',teamCritRate:'对目标暴击率',...(rupture?{}:{teamPen:'穿透率',ignore:'无视防御／减防'}),resDown:'减抗或无视抗性',
-    stun:'失衡易伤',stunAlways:'失衡易伤',...(isAnby(c)?{aftershockIgnore:'追加攻击无视防御'}:{}),
+    stun:'失衡易伤',stunAlways:'失衡易伤',physicalGeneral:'非冰伤增伤',
+    ...(isMiyabi(c)?{teamAP:'异常精通',anomalyDamage:'异常增益倍率',disorderDamage:'紊乱增益倍率',disorderBase:'紊乱基础倍率'}:{}),...(isAnby(c)?{aftershockIgnore:'追加攻击无视防御'}:{}),
     ...(rupture?{teamHp:'最大生命值',teamAtk:'战斗固定攻击力',teamAtkPct:'战斗攻击百分比',
       sheerForce:'固定贯穿力',sheer:'贯穿增伤',normalCritDmg:'普通暴击伤害'}:
       normal?{teamAtk:'固定攻击力',teamAtkPct:'攻击力百分比',normalCritDmg:'普通暴击伤害'}:
@@ -428,7 +454,7 @@ function renderTeammateBuffs(c,sources){
       const entries=sources[group].filter(([source])=>source.startsWith(prefix));
       if(!entries.length)continue;
       const format=value=>{
-        if(['teamDef','teamAtk','sheerForce'].includes(group))return Number(value.toFixed(3))+' 点';
+        if(['teamDef','teamAtk','sheerForce','teamAP'].includes(group))return Number(value.toFixed(3))+' 点';
         const amount=Number((value*100).toFixed(4));
         return amount+(group.startsWith('stun')?' 个百分点':'%');
       };
@@ -445,7 +471,13 @@ function renderTeammateBuffs(c,sources){
       if(chain || ult)lines.push('<li><b>潜能「侠肝义胆」</b>：连携最终伤害 +'+pct(chain)+'，终结技最终伤害 +'+pct(ult)+'。</li>');
       if(usesSharp(c))lines.push('<li>虎啸提供 '+(c[slot]>=2?72:50)+'% 战斗中普通暴伤，对'+lead().name+'锐暴的贡献为 0。'+(sources.stun.some(([label])=>label==='橘福福 · 额外能力')?'':'当前未满足橘福福额外能力的入队条件。')+'</li>');
     }
-    if(id==='roxy' && expandedLead(c))lines.push('<li>同属性浸染与风化按主 C 的覆盖选项结算。赛维里安默认按风化覆盖。</li>');
+    if(id==='koleda')lines.push('<li>连携技对失衡敌人增伤 '+pct(koledaChainBonus(c))+'。需要同属性、同阵营或觉醒后有命破／锋御队友。</li>');
+    if(id==='lycaon')lines.push('<li>冰抗降低 25%。失衡易伤需要冰、同阵营或觉醒后的异常队友。</li>');
+    if(id==='soukaku')lines.push('<li>展旗按满额并传递给主 C 计算。冰伤增益需要同属性或对空六课队友。</li>');
+    if(id==='lucy')lines.push('<li>加油！按 600 点攻击力上限覆盖计算。</li>');
+    if(id==='yuzuha')lines.push('<li>狸之愿按 3,000 初始攻击力及 200 异常掌控计算。二影强制连携见招式明细。</li>');
+    if(id==='nangongYu')lines.push('<li>失衡积蓄与持续时间由技能提供。星见雅的烈霜极性紊乱和异放单独列在招式明细。</li>');
+    if(id==='roxy' && expandedLead(c) && !isMiyabi(c))lines.push('<li>同属性浸染与风化按主 C 的覆盖选项结算。赛维里安默认按风化覆盖。</li>');
     if(id==='rina')lines.push('<li>按丽娜自身 '+Number(rinaBuffs(c).personalPen.toFixed(3))+'% 穿透率、人偶在场且'+lead().name+'位于人偶附近计算。</li>');
     if(id==='trigger'){
       lines.push('<li>破隙幽瞳及索魂影眸按追加攻击命中后持续覆盖计算。</li>');
@@ -500,7 +532,7 @@ function renderTeammateBuffs(c,sources){
       if(mountain && !mountain[0].startsWith(prefix))lines.push('<li>山大王四件效果由'+mountain[0].split(' · ')[0]+'提供。</li>');
       else if(mountain && usesSharp(c))lines.push('<li>山大王四件提供 '+pct(mountain[1])+' 全队普通暴伤。'+lead().name+'终结技使用锐暴伤害。</li>');
     }
-    if(c[slot+'e']===kaboomEngine){
+    if(isCannonSelected(id,c[slot+'e'])){
       const cannon=sources.teamAtkPct.find(([label])=>label.endsWith(' · 好斗的阿炮'));
       if(cannon && !cannon[0].startsWith(prefix))lines.push('<li>好斗的阿炮增益由'+cannon[0].split(' · ')[0]+'提供。</li>');
       else if(cannon && usesSharp(c))lines.push('<li>好斗的阿炮提供 '+pct(cannon[1])+' 全队攻击力。'+lead().name+'按防御力结算。</li>');
@@ -523,15 +555,15 @@ function render(saveBaseline=false,tuneDiscs=false){
   el('multiplierStatus').textContent='';
   const discLocked=el('lockEntireBuild').checked;
   el('discSearchStatus').textContent=discLocked?'整套驱动盘已锁定。':'';
-  el('kaboomOptions').hidden=!teammateSlots.some(slot=>Number(el(slot+'e').value)===kaboomEngine);
+  el('kaboomOptions').hidden=!teammateSlots.some(slot=>isCannonSelected(el(slot+'char').value,Number(el(slot+'e').value)));
   el('astralOptions').hidden=!teammateSlots.some(slot=>el(slot+'d').value==='astral');
   for(const slot of teammateSlots){
     const character=el(slot+'char').value, actor=teammateChoices[character];
     const selectedEngine=el(slot+'e').value;
+    syncTeammateWeaponHint(slot,actor,Number(selectedEngine));
     const ranked=hasEngineRank(character,Number(selectedEngine));
-    const engine=actor.engines.find(([value])=>value===(ranked?selectedEngine:'1'))??actor.engines[0];
     el(slot+'r').disabled=!ranked;
-    el('variants').querySelector(`[value="${slot}r"]`).textContent=engine[1]+'星级';
+    el('variants').querySelector(`[value="${slot}r"]`).textContent=weaponOptionLabel(actor,ranked?selectedEngine:'1')+'星级';
     const drive=el(slot+'d'), auto=drive.querySelector('option[value="auto"]');
     if(auto)auto.textContent='自动 · '+(automaticStunDrive({main})==='mountain'?'山大王':'赤翼夜曲')+'四件套';
     const mountain=el(slot+'MountainFull');
@@ -549,7 +581,8 @@ function render(saveBaseline=false,tuneDiscs=false){
     rollLocks[i].disabled=discLocked;
     input.disabled=discLocked || !rollLocks[i].checked;
   });
-  const valid=[...document.querySelectorAll('input:not([data-field]):enabled')].every(x=>x.value!=='' && x.checkValidity());
+  syncNangongOptions();
+  const valid=[...document.querySelectorAll('input[type=number]:not([data-field]):enabled')].every(x=>x.value!=='' && x.checkValidity());
   const c=valid?getConfig():null;
   let b=null;
   if(c){
@@ -619,7 +652,7 @@ function render(saveBaseline=false,tuneDiscs=false){
   const rollsText=rolls=>rolls.map((v,i)=>v?names[i]+' ×'+v:'').filter(Boolean).join('　') || '—';
   const rankedRolls=b.rolls.slice().sort((a,b)=>b-a);
   const topTwo=rankedRolls[0]+rankedRolls[1];
-  el('best').innerHTML=line('有效副词条　'+b.rolls.reduce((sum,n)=>sum+n,0)+' / '+c.rollBudget,rollsText(b.rolls))+line('最多三种合计 / X',(topTwo+rankedRolls[2])+' / '+c.tripleRollLimit)+line('最多两种合计 / Y',topTwo+' / '+c.pairRollLimit)+line('单种最多 / Z',rankedRolls[0]+' / '+c.maxRollsPerStat)+(normal?'':line('副词条暴伤折合暴击率',pct(b.rolls[2]*discRoll.cd)+' × 0.35 = '+Number((b.rolls[2]*discRoll.cd*35).toFixed(2))+'%'))+line('初始'+statTitle+' ＋ 战斗加成',fmt(b.initial)+' ＋ '+fmt(b.combatStat-b.initial))+line('穿透率',pct(b.penRate))+
+  el('best').innerHTML=line('有效副词条　'+b.rolls.reduce((sum,n)=>sum+n,0)+' / '+c.rollBudget,rollsText(b.rolls))+line('最多三种合计 / X',(topTwo+rankedRolls[2])+' / '+c.tripleRollLimit)+line('最多两种合计 / Y',topTwo+' / '+c.pairRollLimit)+line('单种最多 / Z',rankedRolls[0]+' / '+c.maxRollsPerStat)+(normal?'':line('副词条暴伤折合暴击率',pct(b.rolls[2]*discRoll.cd)+' × 0.35 = '+Number((b.rolls[2]*discRoll.cd*35).toFixed(2))+'%'))+line('初始'+statTitle+' ＋ 战斗加成',fmt(b.initial)+' ＋ '+fmt(b.combatStat-b.initial))+line('穿透率',pct(b.penRate))+(isMiyabi(c)?line('战斗异常精通 / 异常掌控',fmt(b.ap)+' / '+Number(b.mastery.toFixed(1))):'')+
     `<details open><summary>每盘主属性与有效副词条</summary>${balanced.map((rolls,i)=>line((i+1)+' 号 · '+mainLabels[b.mains[i]],rolls.reduce((sum,n)=>sum+n,0)+' 条｜'+rollsText(rolls))).join('')}</details>`;
   const capped=b.rate>=critCap-1e-10?b:optimized({...c,requireFullCrit:true});
   el('best').insertAdjacentHTML('beforeend','<h3 class="disc-title">同条件下的 '+pct(critCap)+' 暴击率对照</h3>'+
@@ -632,7 +665,7 @@ function render(saveBaseline=false,tuneDiscs=false){
     const count=el('n'+i);
     if(roster[i].automatic){
       count.value=r.count;
-      count.title=main==='claret'?'六影每次连携技或终结技自动追加一次':yi?'根据符法千重次数与当前影画自动计算':
+      count.title=main==='miyabi'?(String(roster[i].id).startsWith('m6Slash')?'按霜月的蓄力段数和六影开关计算':'按南宫羽队友设置与失衡条件计算'):main==='claret'?'六影每次连携技或终结技自动追加一次':yi?'根据符法千重次数与当前影画自动计算':
         Object.hasOwn(classicLeads,main)?'按前置招式次数与当前条件自动计算':'根据三连组数与当前影画、潜能自动计算';
     }else{
       count.setAttribute('aria-label',r.name+(roster[i].type==='triple'?'手动组数':'次数'));
@@ -640,7 +673,7 @@ function render(saveBaseline=false,tuneDiscs=false){
       count.title=count.disabled?'当前配置未满足触发条件':'';
       const extra=el('extraCast'+i);
       extra.hidden=!r.extraCast && !r.extraM6;
-      if(r.extraCast)extra.textContent='+'+r.extraCast.count+' '+teammateRotationLabels[r.extraCast.id]+' · 共 '+r.count;
+      if(r.extraCast)extra.textContent='+'+r.extraCast.count+' '+(r.extraCast.sources??[r.extraCast.id]).map(id=>teammateRotationLabels[id]).join('＋')+' · 共 '+r.count;
       else if(r.extraM6)extra.textContent='+1 六影调息 · 共 '+r.count;
     }
     el('m'+i).textContent=pct(r.display.coefficient)+' / '+pct(r.base);
@@ -657,7 +690,7 @@ function render(saveBaseline=false,tuneDiscs=false){
     `<tr><td>${r.name}</td><td>${pct(r.mult)}</td><td>${r.count}</td><td>${fmt(r.direct)}</td><td>${fmt(r.accrued)}</td></tr>`).join('');
   el('multiplierRows').innerHTML=b.rows.map((row,i)=>{
     const cells=activeMultiplierFields().map(field=>{
-      if(field==='sheer' && !row.display.sheerDamage)return '<td>—</td>';
+      if(field==='sheer' && !row.display.sheerDamage || field==='anomaly' && !row.trueAnomaly || field==='anomalyBonus' && !row.anomalyTagged)return '<td>—</td>';
       const edited=Object.hasOwn(overrides[i],field);
       const value=edited?Number((100*overrides[i][field]).toPrecision(14)):Number((100*row.display[field]).toFixed(2));
       return `<td><input data-field="${field}" data-skill-row="${i}" class="${edited?'overridden':''}" aria-label="${row.name} ${field}" type="number" step="any" value="${value}"></td>`;
@@ -705,10 +738,9 @@ function syncTeammate(key){
   portrait.style.display='';
   if(empty)portrait.removeAttribute('src');
   else portrait.src=choice.portrait;
-  el(key+'e').innerHTML=options(choice.engines);
-  restoreControl(el(key+'e'),build.engine);
+  setWeaponSelect(el(key+'e'),choice,build.engine);
   restoreTeammateEngineRank(key);
-  el(key+'engineLabel').textContent=choice.engines.map(([,name])=>name).join(' / ');
+  el(key+'engineLabel').textContent='音擎';
   const drive=el(key+'d');
   const defaultDrive=defaultTeammateDrive(id);
   const driveOptions={
@@ -734,13 +766,14 @@ function syncTeammate(key){
   extraRotation.closest('label').hidden=extraRotation.disabled;
   extraRotation.checked=extraRotation.defaultChecked;
   restoreControl(extraRotation,build.extraRotation);
-  el(key+'ExtraRotationLabel').textContent=id==='dialyn'?'追加一次终结技及附招':'追加两次连携技';
+  el(key+'ExtraRotationLabel').textContent=id==='dialyn'?'追加一次终结技及附招':id==='yuzuha'?'二影在未失衡时追加一次连携技':'追加两次连携技';
 }
 function syncTeamControls(){
   const config={fchar:el('fchar').value,rchar:el('rchar').value};
-  for(const [id,character] of [['potentialLabel','jufufu'],['rinaControls','rina']]){
+  for(const [id,character] of [['potentialLabel','jufufu'],['rinaControls','rina'],...Object.keys(extraTeamFields).map(id=>[id+'Controls',id])]){
     const control=el(id), slot=teammateSlot(config,character);
     control.hidden=!slot;
+    for(const input of control.querySelectorAll('input,select'))input.disabled=!slot;
     if(slot && control.parentElement!==el(slot+'Fields'))el(slot+'Fields').append(control);
   }
   const cissiaSlot=teammateSlot(config,'cissia');
@@ -751,6 +784,46 @@ function syncTeamControls(){
   el('rinaBasePen').disabled=el('rinaControls').hidden;
   el('beat').disabled=!teammateSlot(config,'robin');
 }
+const isCannonSelected=(id,engine)=>engine===kaboomEngine || engine===13115 || id==='lucy' && engine===1;
+function syncNangongOptions(){
+  const slot=teammateSlots.find(key=>el(key+'char').value==='nangongYu');
+  if(!slot)return;
+  const m=Number(el(slot).value);
+  for(const [id,level] of [['nangongM2Polar',2],['nangongTremoloM6',6]]){
+    el(id).disabled=m<level;
+    el(id).closest('label').hidden=m<level;
+  }
+}
+function syncTeammateWeaponHint(slot,actor,engine){
+  const info=el(slot+'WeaponHint'), weapon=weaponCatalog.get(engine);
+  info.hidden=!weapon;
+  info.textContent=weapon && (weapon.role!==agentRole(actor)?'职业不符，被动不生效。':
+    modeledTeamEngines.has(engine)?'已收录的队伍增益见卡片下方。':'此音擎未录入队伍被动，队友角色增益仍按卡片条件计算。');
+}
+function syncLeadEngine(){
+  const select=el('we'), weapon=weaponCatalog.get(Number(select.value));
+  const rank=leadWeaponRanks[main]?.[select.value];
+  el('wr').value=rank??1;
+  el('variants').querySelector('[value="wr"]').textContent=weaponOptionLabel(lead(),select.value)+'星级';
+  const info=el('leadWeaponHint'), stacks=el('leadWeaponStacks');
+  info.hidden=!weapon;
+  info.textContent=weapon && (weapon.role!==agentRole(lead())?'职业不符，只有基础与副属性生效。':
+    modeledLeadEngines.has(weapon.id)?'按下方设置结算已收录的被动。':'当前按基础与副属性计算，此音擎被动尚未建模。');
+  stacks.disabled=!weapon || weapon.role!==agentRole(lead()) || !Object.hasOwn(weaponPassiveStacks,weapon.id);
+  stacks.closest('label').hidden=stacks.disabled;
+  if(!stacks.disabled){
+    stacks.max=weaponPassiveStacks[weapon.id];
+    stacks.value=leadProfiles[main]?.weaponStacks?.[weapon.id]??stacks.max;
+  }
+}
+function applyWeaponChange(slot){
+  if(slot==='w')syncLeadEngine();
+  else restoreTeammateEngineRank(slot);
+}
+const openWeaponPicker=setupWeaponPicker(slot=>{
+  applyWeaponChange(slot);
+  render();
+});
 function rememberTeammate(slot){
   const character=el(slot+'char').dataset.character;
   if(!character || character==='air')return;
@@ -774,7 +847,17 @@ el('reset').onclick=()=>{
 };
 document.addEventListener('change',event=>{
   const input=event.target;
-  if(input.id==='backgroundOpacity')return;
+  if(input.id==='backgroundOpacity' || input.id==='weaponSearch')return;
+  const weaponSlot=['w',...teammateSlots].find(slot=>input.id===slot+'e');
+  if(weaponSlot && input.value===catalogOption){
+    openWeaponPicker(weaponSlot,weaponSlot==='w'?lead():teammateChoices[el(weaponSlot+'char').value],input);
+    return;
+  }
+  if(weaponSlot){
+    input.dataset.applied=input.value;
+    applyWeaponChange(weaponSlot);
+  }
+  if(input.id==='wr')(leadWeaponRanks[main]??={})[el('we').value]=input.value;
   if(input.id==='mainAgent'){
     saveSettings();
     configureLead(input.value);
@@ -794,8 +877,6 @@ document.addEventListener('change',event=>{
     syncTeammate(slot);
     syncTeamControls();
   }
-  const engineSlot=teammateSlots.find(key=>input.id===key+'e');
-  if(engineSlot)restoreTeammateEngineRank(engineSlot);
   const rankSlot=teammateSlots.find(key=>input.id===key+'r');
   if(rankSlot)rememberTeammate(rankSlot);
   if(input.id==='boss')syncBoss();
@@ -870,9 +951,14 @@ el('recalculate').onclick=()=>{
 const settingsKey='sunbringer-calculator.settings.v1';
 const teamFields=new Set(teammateSlots.flatMap(slot=>['char','','e','r','d','MountainFull','DamageCoefficient','ExtraRotation'].map(key=>slot+key)));
 const settingsControls=Array.from(document.querySelectorAll('select[id],input[id]'))
-  .filter(control=>!teamFields.has(control.id) && !['mainAgent','backgroundOpacity'].includes(control.id));
+  .filter(control=>!teamFields.has(control.id) && !['mainAgent','backgroundOpacity','weaponSearch'].includes(control.id));
 const leadProfiles={};
-const leadFields=new Set(['w','wr','set','two','main4','main5','main6','res','physicalRes','rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat',
+const miyabiRotationPreset=3;
+const previousMiyabiCounts={
+  1:{1091015:1,1091018:1,1091029:2,1091009:1,1091011:1,1091005:1,shatter:2,frostburn:2,frostDisorder:1},
+  2:{1091018:1,1091029:3,frostburn:3,frostDisorder:3}
+};
+const leadFields=new Set(['w','we','wr','leadWeaponStacks','set','two','main4','main5','main6','res','physicalRes','rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat',
   'lockDiscSets','lockTwo','lockMain4','lockMain5','lockMain6','lockEntireBuild','customFire','customCritDmg','customDefPct','customFlatDef','customSharp',
   ...rollInputs.map(x=>x.id),...rollLocks.map(x=>x.id),
   ...settingsControls.filter(x=>x.closest('[data-neko],[data-anby],[data-ye],[data-yi],[data-billy],[data-rupture],[data-normal],[data-expanded]')).map(x=>x.id)]);
@@ -903,7 +989,7 @@ function configureLead(id){
     customElementLabel:element+'属性增伤',exampleHeading:'终结技「'+actor.ultimate+'」乘区拆解',
     stunColumn:id==='yeShunguang'?'失衡／帷幕区':'失衡区'
   }))el(field).textContent=text;
-  for(const [selector,shown] of [['[data-sun]',id==='sunbringer'],['[data-sharp]',!normal],['[data-normal]',normal],['[data-attack]',usesAttack({main:id})],
+  for(const [selector,shown] of [['[data-miyabi]',id==='miyabi'],['[data-sun]',id==='sunbringer'],['[data-sharp]',!normal],['[data-normal]',normal],['[data-attack]',usesAttack({main:id})],
     ['[data-neko]',id==='nekomata'],['[data-anby]',id==='anby'],['[data-ye]',id==='yeShunguang'],['[data-yi]',id==='yixuan'],
     ['[data-billy]',id==='starlightBilly'],['[data-rupture]',usesRupture({main:id})]]){
     for(const node of document.querySelectorAll(selector)){
@@ -920,9 +1006,9 @@ function configureLead(id){
     for(const input of node.querySelectorAll('input'))input.disabled=node.hidden;
   }
   if(expanded)renderExpandedNotes(actor);
-  el('we').innerHTML=options(actor.engines);
+  setWeaponSelect(el('we'),actor,actor.engines[0][0]);
   el('variants').querySelector('[value="w"]').textContent=actor.name+'影画';
-  el('variants').querySelector('[value="wr"]').textContent=actor.engines[0][1]+'星级';
+  syncLeadEngine();
   el('shadowNote').textContent='仅改变'+actor.name+'影画。各档沿用当前队友、音擎、驱动主副词条、轮转和战斗条件，分别与 0 影及上一影比较整轮期望伤害。';
   const discs=defaultDiscs();
   const fourth=discs.main4==='auto'?'自动择优':mainLabels[discs.main4].split(' +')[0];
@@ -934,7 +1020,7 @@ function configureLead(id){
     rollLocks[i].setAttribute('aria-label','锁定'+name+'条数');
   });
   for(const control of settingsControls){
-    if(!leadFields.has(control.id) || ['res','physicalRes'].includes(control.id))continue;
+    if(!leadFields.has(control.id) || ['res','physicalRes','we','wr','leadWeaponStacks'].includes(control.id))continue;
     if(control.type==='checkbox')control.checked=control.defaultChecked;
     else if(control.tagName==='SELECT')control.value=discs[control.id]??(control.id.endsWith('Potential')?'6':control.options[0].value);
     else control.value=control.defaultValue;
@@ -969,26 +1055,37 @@ function saveSettings(){
     if(!skill.automatic && (!Number.isFinite(count.valueAsNumber)||!count.validity.valid))return;
     rotation[skill.name]={count:skill.automatic?undefined:count.value,overrides:overrides[i]};
   }
-  leadProfiles[main]={fields:Object.fromEntries(Object.entries(fields).filter(([id])=>leadFields.has(id))),
-    rotation,manualBaseline,boss:fields.boss};
+  const weaponId=el('we').value;
+  const weaponStacks={...leadProfiles[main]?.weaponStacks};
+  if(!el('leadWeaponStacks').disabled)weaponStacks[weaponId]=el('leadWeaponStacks').value;
+  (leadWeaponRanks[main]??={})[weaponId]=el('wr').value;
+  leadProfiles[main]={weaponStacks,fields:Object.fromEntries(Object.entries(fields).filter(([id])=>leadFields.has(id))),
+    rotation,manualBaseline,boss:fields.boss,
+    ...(main==='miyabi'?{rotationPreset:miyabiRotationPreset}:{})};
   for(const slot of teammateSlots){
     fields[slot+'char']=el(slot+'char').value;
     rememberTeammate(slot);
   }
   try{
-    localStorage.setItem(settingsKey,JSON.stringify({fields,teammateBuilds,main,leadProfiles}));
+    localStorage.setItem(settingsKey,JSON.stringify({fields,teammateBuilds,main,leadProfiles,leadWeaponRanks}));
   }catch{
     el('storageWarning').hidden=false;
   }
 }
 function restoreLeadProfile(profile){
+  setWeaponSelect(el('we'),lead(),profile?.fields?.we);
+  syncLeadEngine();
   for(const control of settingsControls){
-    if(!leadFields.has(control.id) || (['res','physicalRes'].includes(control.id) && profile?.boss!==el('boss').value))continue;
+    if(!leadFields.has(control.id) || ['we','leadWeaponStacks'].includes(control.id) || (['res','physicalRes'].includes(control.id) && profile?.boss!==el('boss').value))continue;
     restoreControl(control,profile?.fields?.[control.id]);
   }
+  // Older profiles also saved untouched counts, so migrate only matching presets.
+  const previousCounts=main==='miyabi'?previousMiyabiCounts[profile?.rotationPreset??1]:null;
+  const updateMiyabiPreset=previousCounts && activeSkills().every(skill=>skill.automatic ||
+    profile?.rotation?.[skill.name]?.count===String(previousCounts[skill.id]??0));
   activeSkills().forEach((skill,i)=>{
     const row=profile?.rotation?.[skill.name];
-    if(!skill.automatic)restoreControl(el('n'+i),row?.count);
+    if(!skill.automatic && !updateMiyabiPreset)restoreControl(el('n'+i),row?.count);
     for(const field of activeMultiplierFields()){
       const value=row?.overrides?.[field];
       if(Number.isFinite(value))overrides[i][field]=value;
@@ -1002,6 +1099,7 @@ function restoreSettings(){
   let saved;
   try{saved=JSON.parse(localStorage.getItem(settingsKey));}catch{}
   const fields=saved?.fields||{};
+  Object.assign(leadWeaponRanks,saved?.leadWeaponRanks);
   for(const id of Object.keys(leadChoices)){
     const profile=saved?.leadProfiles?.[id];
     if(profile && typeof profile==='object')leadProfiles[id]=profile;

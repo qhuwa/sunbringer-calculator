@@ -81,7 +81,7 @@
 <label>云岿如我四件层数<input id="yiSetStacks" type="number" min="0" max="3" step="1" value="3"></label>
 <label>啄木鸟电音四件攻击力层数<input id="yiWoodStacks" type="number" min="0" max="3" step="1" value="3"></label>
 <label class="roll-limit"><input type="checkbox" id="yiFrozen">折枝剑歌冻结／碎冰已触发</label>
-</div><div id="expandedSettings" data-expanded hidden></div></details><details open><summary>自定义词条调节</summary><p class="comparison-note custom-help">输入正数增加，输入负数减少。百分比字段按百分点填写，例如 15 表示 +15%。上下键默认每次调整 5。</p><div class="custom-grid"><label>无视防御<input id="customIgnore" type="number" min="-100" max="100" step="5" value="0"><span class="unit">百分点</span></label><label>穿透率<input id="customPen" type="number" min="-100" max="100" step="5" value="0"><span class="unit">百分点</span></label><label>通用增伤<input id="customGeneral" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>锐化增伤<input id="customSharp" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label><span id="customElementLabel">火属性增伤</span><input id="customFire" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label>暴击率<input id="customCrit" type="number" min="-100" max="200" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>锐暴伤害<input id="customCritDmg" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>防御力百分比<input id="customDefPct" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>固定防御<input id="customFlatDef" type="number" min="-3000" max="10000" step="5" value="0"><span class="unit">点</span></label><label data-normal hidden>攻击力百分比<input id="customAtkPct" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label>
+</div><label class="wide" hidden>其他音擎被动层数<input id="leadWeaponStacks" type="number" min="0" max="10" value="0" disabled></label><div id="expandedSettings" data-expanded hidden></div></details><details open><summary>自定义词条调节</summary><p class="comparison-note custom-help">输入正数增加，输入负数减少。百分比字段按百分点填写，例如 15 表示 +15%。上下键默认每次调整 5。</p><div class="custom-grid"><label>无视防御<input id="customIgnore" type="number" min="-100" max="100" step="5" value="0"><span class="unit">百分点</span></label><label>穿透率<input id="customPen" type="number" min="-100" max="100" step="5" value="0"><span class="unit">百分点</span></label><label>通用增伤<input id="customGeneral" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>锐化增伤<input id="customSharp" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label><span id="customElementLabel">火属性增伤</span><input id="customFire" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label>暴击率<input id="customCrit" type="number" min="-100" max="200" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>锐暴伤害<input id="customCritDmg" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>防御力百分比<input id="customDefPct" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>固定防御<input id="customFlatDef" type="number" min="-3000" max="10000" step="5" value="0"><span class="unit">点</span></label><label data-normal hidden>攻击力百分比<input id="customAtkPct" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label>
 <label data-normal hidden>固定攻击力<input id="customFlatAtk" type="number" min="-3000" max="10000" step="5" value="0"><span class="unit">点</span></label>
 <label data-rupture hidden>生命值百分比<input id="customHpPct" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label>
 <label data-rupture hidden>固定生命值<input id="customFlatHp" type="number" min="-10000" max="30000" step="5" value="0"><span class="unit">点</span></label>
@@ -100,7 +100,7 @@
 <div class="skill-details-actions"><button id="reset">恢复默认次数</button></div><p class="comparison-note" id="markSummary"></p><div class="tablewrap"><table><thead><tr><th id="skillHeading">挽昼招式</th><th>单次 / 合计倍率</th><th>次数</th><th>直接伤害</th><th data-sun>本招积攒烬痕</th><th data-sun>烬灭扣血¹</th><th scope="col">伤害占比</th></tr></thead><tbody id="rows"></tbody></table></div></details>
 <details class="panel skill-details" id="multiplierDetails"><summary>技能乘区</summary>
 <div class="skill-details-actions"><button id="refreshMultipliers" type="button" aria-describedby="multiplierHelp">刷新技能乘区</button></div>
-<p class="comparison-note" id="multiplierHelp">高亮格为手动值。清空单格可恢复自动计算，点击刷新可清除本表全部手动值，按当前配置重算。 <span id="multiplierStatus" role="status"></span></p><div class="tablewrap"><table class="multiplier-table"><thead><tr><th>技能</th><th>技能倍率</th><th>通用倍率</th><th>技能附加</th><th>觉醒最终倍率</th><th>关卡受伤倍率</th><th data-sharp>锐化倍率</th><th data-rupture hidden>贯穿倍率</th><th id="critColumn">锐暴倍率</th><th>防御区</th><th id="resColumn">火抗区</th><th id="stunColumn">失衡区</th><th data-sun>烬痕倍率</th></tr></thead><tbody id="multiplierRows"></tbody></table></div><p class="comparison-note" data-sun>当前公式为技能倍率 ×（通用倍率＋技能附加）×觉醒最终倍率×关卡受伤倍率×锐化倍率×锐暴倍率×防御区×火抗区×失衡区。百分比字段表示倍率，例如 235% 表示 ×2.35。</p><p class="comparison-note" data-attack hidden>整轮按战斗攻击力 × 技能倍率 ×（通用倍率＋技能附加）× 最终倍率 × 关卡受伤倍率 × 期望暴击倍率 × 防御区 × 属性抗性区 × 失衡区计算。期望暴击倍率 = 1 ＋ min(100%, 暴击率) × 暴击伤害。</p><p class="comparison-note" data-rupture hidden>贯穿伤害使用战斗贯穿力和普通暴击，自动防御区为 ×1。战斗攻击力的 30% 转为贯穿力。通用、属性和招式普通增伤相加，再乘独立贯穿倍率（1 ＋ 贯穿增伤之和）。</p></details>
+<p class="comparison-note" id="multiplierHelp">高亮格为手动值。清空单格可恢复自动计算，点击刷新可清除本表全部手动值，按当前配置重算。 <span id="multiplierStatus" role="status"></span></p><div class="tablewrap"><table class="multiplier-table"><thead><tr><th>技能</th><th>技能倍率</th><th>通用倍率</th><th>技能附加</th><th>觉醒最终倍率</th><th>关卡受伤倍率</th><th data-sharp>锐化倍率</th><th data-rupture hidden>贯穿倍率</th><th id="critColumn">锐暴倍率</th><th data-miyabi hidden>异常精通 × 等级</th><th data-miyabi hidden>异常增益倍率</th><th>防御区</th><th id="resColumn">火抗区</th><th id="stunColumn">失衡区</th><th data-sun>烬痕倍率</th></tr></thead><tbody id="multiplierRows"></tbody></table></div><p class="comparison-note" data-sun>当前公式为技能倍率 ×（通用倍率＋技能附加）×觉醒最终倍率×关卡受伤倍率×锐化倍率×锐暴倍率×防御区×火抗区×失衡区。百分比字段表示倍率，例如 235% 表示 ×2.35。</p><p class="comparison-note" data-attack hidden>整轮按战斗攻击力 × 技能倍率 ×（通用倍率＋技能附加）× 最终倍率 × 关卡受伤倍率 × 期望暴击倍率 × 防御区 × 属性抗性区 × 失衡区计算。期望暴击倍率 = 1 ＋ min(100%, 暴击率) × 暴击伤害。</p><p class="comparison-note" data-miyabi hidden>碎冰、烈霜紊乱和异放额外乘异常精通与等级区，并按指定的积蓄归属折算。霜灼·破可暴击。</p><p class="comparison-note" data-rupture hidden>贯穿伤害使用战斗贯穿力和普通暴击，自动防御区为 ×1。战斗攻击力的 30% 转为贯穿力。通用、属性和招式普通增伤相加，再乘独立贯穿倍率（1 ＋ 贯穿增伤之和）。</p></details>
 <details class="panel notes"><summary>公式、条件与数据来源</summary><section class="formula-guide" aria-labelledby="supportTitle">
 <h2 id="supportTitle">代理人增益总览</h2>
 <p data-sun>按挽昼的固定轮转统计。表中列出各候选队友可提供的增益，音擎范围对应 1 至 5 星。下方算例只计入当前配置生效的数值。</p>
@@ -131,8 +131,15 @@
 <section class="formula-guide"><h2 id="exampleHeading">终结技「此愿，重塑万象」乘区拆解</h2><div id="ultimateExample"></div></section>
 <h2>轮转、公式与数据来源</h2><div id="notes" data-sun></div><div id="nekoNotes" data-neko hidden></div><div id="anbyNotes" data-anby hidden></div><div id="yeNotes" data-ye hidden></div><div id="yiNotes" data-yi hidden></div><div id="billyNotes" data-billy hidden></div><div id="expandedNotes" data-expanded hidden></div></details>
 <footer>绝区零　 /　 配队研究 <span>测试服数值以所列快照为准</span></footer></main>
+<dialog id="weaponPicker" aria-labelledby="weaponPickerTitle">
+  <div class="weapon-picker-heading"><h2 id="weaponPickerTitle">选择音擎</h2><button type="button" id="closeWeaponPicker" aria-label="关闭音擎选择">✕</button></div>
+  <label for="weaponSearch">搜索名称、职业或编号</label><input type="search" id="weaponSearch" autocomplete="off" placeholder="例如 霰落、异常、14109">
+  <p class="comparison-note">基础与副属性按满级计。同职业可触发已收录的被动。</p>
+  <p id="weaponResultCount" role="status"></p><div id="weaponResults" class="weapon-results"></div>
+</dialog>
 <script src="data/bosses.js"></script>
 <script src="data/assault.js"></script>
+<script src="data/w-engines.js"></script>
 <script src="characters/sunbringer.js"></script>
 <script src="characters/nekomata.js"></script>
 <script src="characters/anby.js"></script>
@@ -149,10 +156,14 @@
 <script src="characters/claret.js"></script>
 <script src="characters/classic-roster.js"></script>
 <script src="characters/classic-kits.js"></script>
+<script src="characters/anomaly-supports.js"></script>
+<script src="characters/miyabi.js"></script>
 <script src="characters/expanded-roster.js"></script>
 <script src="engine/discs.js"></script>
+<script src="engine/weapons.js"></script>
 <script src="engine/party.js"></script>
 <script src="engine/calc.js"></script>
 <script src="ui/explanation.js"></script>
+<script src="ui/weapons.js"></script>
 <script src="ui/app.js"></script>
 </body></html>

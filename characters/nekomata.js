@@ -84,11 +84,12 @@ function nekomataStats(c,buffs,mains,custom){
       ['猫又六影 · '+c.nekoM6Stacks+' 层',c.w>=6?.18*c.nekoM6Stacks:0]],
     cdAdjustment:[['自定义普通暴伤',(c.customNormalCd||0)/100]]
   };
+  applyLeadEngineStats(c,statSources,'钢铁肉垫');
   const baseAtk=sumBonuses(statSources.baseAtk);
   const initialBase=baseAtk*(1+sumBonuses(statSources.panelAtkPct)+sumBonuses(statSources.atkPctAdjustment))+
     sumBonuses(statSources.panelAtkFlat)+sumBonuses(statSources.atkFlatAdjustment);
   const attackPct=buffs.teamAtkPct+sumBonuses(statSources.ownCombatAtkPct);
   const rate=sumBonuses(statSources.panelRate)+sumBonuses(statSources.ownCombatRate)+sumBonuses(statSources.rateAdjustment);
   const critDmg=sumBonuses(statSources.panelCd)+sumBonuses(statSources.ownCombatCd)+sumBonuses(statSources.cdAdjustment)+buffs.normalCritDmg;
-  return {baseAtk,initialBase,attackPct,rate,critDmg,statSources,bonus:1+buffs.general+(fifth==='physical'?.30:0)};
+  return {baseAtk,initialBase,attackPct,rate,critDmg,statSources,bonus:1+buffs.general+(fifth==='physical'?.30:0)+sumBonuses(statSources.ownGeneral??[])+sumBonuses(statSources.ownElement??[])};
 }

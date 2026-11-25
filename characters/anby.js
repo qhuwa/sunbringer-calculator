@@ -70,13 +70,14 @@ function anbyRotation(c,stunFinisher){
 }
 
 function anbyStats(c,buffs,mains,custom){
-  const baseAtk=929+713;
+  const alternate=alternateLeadWeapon(c);
+  const baseAtk=929+(alternate?engineBase(alternate,'atk'):713);
   const [fourth,fifth]=mains.slice(3,5);
   const atkMains=mains.filter(stat=>stat==='atk').length;
   const has=set=>c.set===set || c.two===set;
-  const initialBase=baseAtk*(1+.30*atkMains+(has('hormone')?.10:0)+(has('astral')?.10:0)+(c.customAtkPct||0)/100)+316+(c.customFlatAtk||0);
+  const initialBase=baseAtk*(1+engineStat(alternate,'atk')+.30*atkMains+(has('hormone')?.10:0)+(has('astral')?.10:0)+(c.customAtkPct||0)/100)+316+(c.customFlatAtk||0);
   const shadowStacks=c.set==='shadow'?c.anbySetStacks:0;
-  const attackPct=buffs.teamAtkPct+.04*shadowStacks+
+  const attackPct=buffs.teamAtkPct+leadWeaponEffects(c).atk+.04*shadowStacks+
     (c.set==='thunder' && c.anbyShock?.28:0)+(c.set==='woodpecker'?.09*c.anbyWoodStacks:0)+(c.set==='hormone' && c.anbyDiscProc?.25:0);
   const weaponCritPerStack=[.10,.115,.13,.145,.16][c.wr-1];
   const statSources={
@@ -90,8 +91,9 @@ function anbyStats(c,buffs,mains,custom){
       ['牺牲洁纯 · '+c.anbyWeaponStacks+' 层',c.anbyWeaponStacks*weaponCritPerStack]],
     cdAdjustment:[['自定义普通暴伤',(c.customNormalCd||0)/100]]
   };
+  applyLeadEngineStats(c,statSources,'牺牲洁纯');
   const rate=sumBonuses(statSources.panelRate)+sumBonuses(statSources.ownCombatRate)+sumBonuses(statSources.rateAdjustment);
   const critDmg=sumBonuses(statSources.panelCd)+sumBonuses(statSources.ownCombatCd)+sumBonuses(statSources.cdAdjustment)+buffs.normalCritDmg;
-  return {baseAtk,initialBase,attackPct,rate,critDmg,statSources,bonus:1+buffs.general+(fifth==='electric'?.30:0),
+  return {baseAtk,initialBase,attackPct,rate,critDmg,statSources,bonus:1+buffs.general+(fifth==='electric'?.30:0)+sumBonuses(statSources.ownGeneral??[])+sumBonuses(statSources.ownElement??[]),
     aftershockCritShare:c.anbyMarked?(c.anbyPotential>=1?.35:.30):0};
 }

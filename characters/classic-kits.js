@@ -201,7 +201,7 @@ function classicRotationRules(c,actor,counts){
         if(elemental && (basic || dash) && count){
           const spent=Math.min(rounds,count);
           rounds-=spent;
-          add(weapon,spent/count*[.35,.435,.52,.605,.70][r]);
+          add(weapon,(leadSignature(c)?spent/count:0)*[.35,.435,.52,.605,.70][r]);
         }
         if(id===1241027)out.count=mind>=6?Math.min(option('m6'),n(1241016)):0;
         break;
@@ -228,7 +228,7 @@ function classicRotationRules(c,actor,counts){
           add(e('二影电掣'),.50*charged/count);
         }
         if(slash || follow)out.extraRes=potential>=2?.025*potential:0;
-        if(dash && elemental || follow)add(weapon,.40+.06*r);
+        if(leadSignature(c) && (dash && elemental || follow))add(weapon,.40+.06*r);
         if(follow)out.count=c.stun?n(1201020)+n(1201021)+n(1201022):0;
         if(id===1201024)out.count=ultCount;
         if(id===1201096)out.count=mind>=6?Math.floor(n(1201008)/12):0;
