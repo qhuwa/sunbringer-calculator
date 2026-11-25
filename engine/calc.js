@@ -23,7 +23,7 @@ const juChainBonus=.20, juUltimateBonus=.40;
 const juPotential = [[0,0],[0,0],[.03,.08],[.047,.12],[.064,.16],[.081,.20],[.10,.25]];
 const teammateSlots=['f','r'];
 const defaultTeammates={f:'jufufu',r:'robin'};
-const teammateSlot=(c,id)=>teammateSlots.find(slot=>(c[slot+'char']??defaultTeammates[slot])===id);
+const teammateSlot=(c,id)=>id===c.main?undefined:teammateSlots.find(slot=>(c[slot+'char']??defaultTeammates[slot])===id);
 const teammateRotationLabels={dialyn:'琉音',norma:'诺姆',yuzuha:'柚叶'};
 function teammateRotation(c){
   const cat=isNekomata(c), silver=isAnby(c), ye=isYeShunguang(c), yi=isYixuan(c), sharp=usesSharp(c);
@@ -143,7 +143,8 @@ function solve(c,fixedBuild=null,searchMains=null){
   const fifth=searchMains?.main5 || main5==='auto'?[scalingStat,damageElement(c),
     ...(actor?.skills.some(skill=>skill.element==='physical')?['physical']:[]),...(rupture?[]:['pen'])]:[main5];
   const branchMastery=(actor===banyue || billy) && c.set==='branch';
-  const sixth=searchMains?.main6?(isMiyabi(c)?['atk','mastery']:actor===cissia?['atk','energy']:branchMastery?['hp','mastery']:[scalingStat]):[fixedBuild?.mains[5]??c.main6];
+  const sixth=searchMains?.main6?(isMiyabi(c)?['atk','mastery']:actor===qingyi?['atk','impact']:
+    actor===cissia || actor===roxy?['atk','energy']:branchMastery?['hp','mastery']:[scalingStat]):[fixedBuild?.mains[5]??c.main6];
   const blockedStats=driveBlockedStats(c);
   for(const four of fourth)for(const five of fifth)for(const six of sixth){
     const mains=['flatHp','flatAtk','flatDef',four,five,six];
@@ -224,7 +225,8 @@ function solve(c,fixedBuild=null,searchMains=null){
           (normal?attackStats.baseAtk*atkRoll:baseDef*discRoll.def)*d);
         const rate=critBase+buffs.teamCritRate+discRoll.crit*cr+(normal?0:.35*discRoll.cd*cd+(c.set==='rose'?(initial>=1800?.16:initial>=1000?.08:0):actor===claret?0:.12));
         if(c.requireFullCrit && rate<(normal?1:2)-1e-10)return;
-        const cdValue=critDamage+(normal?discRoll.cd*cd:0);
+        const dynamicCd=attackStats?.combatCritSources?.(initial,rate-buffs.teamCritRate)??null;
+        const cdValue=critDamage+(normal?discRoll.cd*cd:0)+(dynamicCd?sumBonuses(dynamicCd):0);
         const crit=normal?expectedNormalCrit(rate,cdValue):expectedSharpCrit(rate,cdValue);
         const aftershockExtra=(crit-1)*aftershockShare;
         const ap=(attackStats?.ap??0)+(isMiyabi(c)?9*pen:0);
@@ -241,7 +243,7 @@ function solve(c,fixedBuild=null,searchMains=null){
           score+=(attackScaling?combatAttack:combatStat)*scale*defense*(apScaling?2*ap/100:1)*(ap>=375?1+disorderRatio:1)*(fixed+ordinary*rowCrit+aftershock*(rowCrit+aftershockExtra));
         }
         if(best && score<=best.score)return;
-        candidates.push({score,rolls:[d,cr,cd,pen],initial,combatStat,combatAttack,rate,critFactor:crit,aftershockExtra,aftershockShare,critDmg:cdValue,flatPen,ownAttack,ap,mastery:attackStats?.mastery});
+        candidates.push({score,rolls:[d,cr,cd,pen],initial,combatStat,combatAttack,rate,critFactor:crit,aftershockExtra,aftershockShare,critDmg:cdValue,flatPen,ownAttack,ap,mastery:attackStats?.mastery,dynamicCd});
     }
     // Visit fuller builds first. A lower roll count can win if main/substat
     // exclusions prevent extending the best allocation to the next count.
@@ -250,7 +252,10 @@ function solve(c,fixedBuild=null,searchMains=null){
       for(const candidate of candidates){
         const discs=fixedBuild?.discs??makeDiscs(candidate.rolls,blocked);
         if(discs){
-          best={...candidate,discs,mains,penRate,bonus,teamDef,ignore:rupture?1:ignore,factors,statSources:attackStats?.statSources};
+          const {dynamicCd,...stats}=candidate;
+          const statSources=attackStats?.statSources;
+          best={...stats,discs,mains,penRate,bonus,teamDef,ignore:rupture?1:ignore,factors,
+            statSources:dynamicCd?{...statSources,ownCombatCd:[...statSources.ownCombatCd,...dynamicCd]}:statSources};
           break;
         }
       }
@@ -302,7 +307,7 @@ function solve(c,fixedBuild=null,searchMains=null){
   });
   const direct=details.reduce((a,x)=>a+x.direct,0), mark=details.reduce((a,x)=>a+x.mark,0);
   const mainScore=direct+mark;
-  const teammateCoefficients=teammateSlots.filter(slot=>c[slot+'char']!=='air').map(slot=>({
+  const teammateCoefficients=teammateSlots.filter(slot=>!['air',c.main].includes(c[slot+'char']??defaultTeammates[slot])).map(slot=>({
     slot,coefficient:c[slot+'DamageCoefficient']??0
   }));
   const teamFactor=1+teammateCoefficients.reduce((sum,{coefficient})=>sum+coefficient,0);

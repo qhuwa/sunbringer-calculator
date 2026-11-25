@@ -1,4 +1,4 @@
-const expandedLeads={miyabi,cissia,seed,sigrid,banyue,yidhari,pyrois,severian,claret,...classicLeads};
+const expandedLeads={miyabi,cissia,seed,sigrid,banyue,yidhari,pyrois,severian,claret,...classicLeads,...stunLeads};
 const expandedLead=c=>expandedLeads[c.main];
 const isSunbringer=c=>(c.main??'sunbringer')==='sunbringer';
 const partyHas=(c,ids)=>ids.some(id=>teammateSlot(c,id));
@@ -11,6 +11,7 @@ const elementSet={
 };
 
 function expandedDriveSetup(actor){
+  if(Object.hasOwn(stunLeads,actor.slug.replaceAll('-','')))return stunLeadDriveSetup(actor);
   if(actor===miyabi)return {skills:miyabi.skills,
     four:Object.fromEntries(['branch','polar','chaos','phaethon','woodpecker','hormone'].map(id=>[id,miyabiGear[id]])),
     two:miyabiGear,initial:{set:'branch',two:'woodpecker',main4:'auto',main5:'auto',main6:'atk'}};
@@ -42,10 +43,11 @@ const expandedControls={
   pyrois:[['flare','耀斑覆盖',false],['sun','阳炎覆盖',false],['infusion','浸染覆盖',false],['weapon','日蚀覆盖'],['m6','六影曜锋覆盖次数',0,99,1]],
   severian:[['weapon','禁罪囚笼普攻触发效果覆盖'],['m1','一影登场技换成连携'],['m2','二影穿透率覆盖']],
   claret:[['core','猩红铭刻覆盖'],['blade','残锋覆盖（需满足额外能力）'],['weapon','猩红渴望锐化增伤覆盖'],['dodge','锻星／伏钺极限闪避后增伤覆盖',false]],
-  ...classicControls
+  ...classicControls,
+  ...stunLeadControls
 };
 for(const [id,fields] of Object.entries(expandedControls)){
-  if(id!=='severian' && id!=='miyabi')fields.push(['roxy','洛克茜同属性浸染与风化覆盖',false]);
+  if(id!=='severian' && id!=='miyabi' && id!=='roxy')fields.push(['roxy','洛克茜同属性浸染与风化覆盖',false]);
 }
 const expandedOption=(c,key)=>c.expanded?.[key]??(expandedControls[c.main]?.find(field=>field[0]===key)?.at(-1)??true);
 function cissiaDefenseIgnore(regen,mindscape){
@@ -61,6 +63,7 @@ function expandedRotation(c,stunFinisher){
   const weapon=c.wr-1;
   const counts=new Map(actor.skills.map((skill,i)=>[skill.id,c.counts[i]]));
   const classic=Object.hasOwn(classicLeads,c.main)?classicRotationRules(c,actor,counts):null;
+  const stunKit=Object.hasOwn(stunLeads,c.main)?stunLeadRotation(c,counts):null;
   const pyroInfusion=actor===pyrois && (option('infusion') || option('roxy') && partyHas(c,['roxy']));
   let sigridOverflow=actor===sigrid && m>=1?option('m1'):0;
   let pyroBlade=actor===pyrois && m>=6?option('m6'):0;
@@ -79,6 +82,12 @@ function expandedRotation(c,stunFinisher){
       categorySources.push(['拂晓生花两件',basic?.15:0],['拂晓生花四件',basic && c.set==='dawn'?.40:0]);
     }
     if(classic)({count,available,bonusMult,extraRes,extraIgnore,critDamageBonus,critRateBonus,critThreshold,thresholdScale}=classic(skill,count,categorySources));
+    if(stunKit){
+      ({count,coeffScalar,available=true,critDamageBonus=0}=stunKit(skill,count,categorySources,finalSources));
+      if(basic && stunLeadEngine(c,14114)){
+        categorySources.push(['拘缚者 · 普攻增伤',(c.expanded?.restraint??5)*(.06+.015*weaponRankIndex(c.wr))]);
+      }
+    }
     if(actor===cissia){
       if(id===1521019){
         bonusMult=3.35;
@@ -155,9 +164,10 @@ function expandedRotation(c,stunFinisher){
     const baseMult=(skill.base+(upgradeLevel(m)-1)*skill.step)/10000*(skill.split??1);
     const mult=(baseMult+bonusMult)*coeffScalar;
     const category=sumBonuses(categorySources), final=1+sumBonuses(finalSources);
-    return {name,count,available,element:skill.element,ultimate:id===actor.ultId,source:'other',markRate:0,markWeight:0,settle:false,
+    return {name,count,available,element:skill.element,aftershock:skill.aftershock,ultimate:id===actor.ultId,source:'other',markRate:0,markWeight:0,settle:false,
       extraIgnore,extraRes,extraPen,extraStun,critDamageBonus,critRateBonus,critThreshold,thresholdScale,
-      natural:{mult,baseMult,category,final,categorySources,sheerSources,finalSources},
+      natural:{mult,baseMult,category,final,categorySources,sheerSources,finalSources,
+        critSources:actor===qingyi && critDamageBonus?[['青衣 · 六影醉花月云转',critDamageBonus]]:[]},
       mult:skillOverride(c,i,'coefficient',mult),category:skillOverride(c,i,'skill',category),final:skillOverride(c,i,'final',final)};
   });
 }
@@ -187,7 +197,7 @@ function expandedStats(c,buffs,mains,custom){
     atkPctAdjustment:[['手动攻击力百分比',(c.customAtkPct??0)/100]],
     atkFlatAdjustment:[['手动固定攻击力',c.customFlatAtk??0]],
     ownCombatAtkPct:[[name+' · 影画',actor===sigrid && m>=1?.25:actor===severian && m>=4?.10:0],
-      ['激素朋克四件',c.set==='hormone'?.25:0],['啄木鸟电音四件',woodpeckerAttackBonus(c,rupture?(c.yiWoodStacks??3):3)],
+      ['激素朋克四件',c.set==='hormone'?.25:0],['啄木鸟电音四件',woodpeckerAttackBonus(c)],
       ['拂晓行纪四件',c.set==='chronicle'?.10:0],[weapon,actor===severian && option('weapon')?rank(.10,.015):0]],
     ownCombatAtkFlat:[[name+' · 核心被动',bloom?1000:0],[name+' · 额外能力',actor===sigrid && supportOrStun?840:0]],
     panelRate:[['角色面板（含核心技强化）',actor.crit],['四号位主属性',fourth==='crit'?.24:0],
@@ -274,6 +284,7 @@ function expandedStats(c,buffs,mains,custom){
     return {...ruptureStats({...buffs,teamHp:buffs.teamHp+sumBonuses(statSources.ownBattleHp)},statSources),res:sumBonuses(ownRes)};
   }
   applyLeadEngineStats(c,statSources,weapon);
+  const combatCritSources=Object.hasOwn(stunLeads,c.main)?stunLeadStats(c,buffs,mains,statSources):undefined;
   const baseAtk=sumBonuses(statSources.baseAtk);
   const initialBase=baseAtk*(1+sumBonuses(statSources.panelAtkPct)+sumBonuses(statSources.atkPctAdjustment))+
     sumBonuses(statSources.panelAtkFlat)+sumBonuses(statSources.atkFlatAdjustment);
@@ -282,7 +293,7 @@ function expandedStats(c,buffs,mains,custom){
   const attackPct=buffs.teamAtkPct+sumBonuses(statSources.ownCombatAtkPct);
   const severianExtra=actor===severian && (supportOrStun || partyHas(c,['cissia']));
   const combatAttackBonus=rate=>sumBonuses(ownCombatAtkFlat)+(severianExtra?850*Math.max(0,Math.min(1,rate)):0);
-  return {baseAtk,initialBase,rate,critDmg,attackPct,statSources,combatAttackBonus,
+  return {baseAtk,initialBase,rate,critDmg,attackPct,statSources,combatAttackBonus,combatCritSources,
     bonus:1+buffs.general+sumBonuses(ownElement)+sumBonuses(ownGeneral),
     res:sumBonuses(ownRes), ignore:sumBonuses(statSources.ownIgnore),pen:sumBonuses(ownPen)};
 }

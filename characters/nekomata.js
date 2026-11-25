@@ -73,7 +73,7 @@ function nekomataStats(c,buffs,mains,custom){
     panelAtkFlat:[['二号位主属性',316]],
     atkPctAdjustment:[['自定义攻击力百分比',(c.customAtkPct||0)/100]],
     atkFlatAdjustment:[['自定义固定攻击力',c.customFlatAtk||0]],
-    ownCombatAtkPct:[['啄木鸟电音四件 · '+c.nekoWoodStacks+' 层',c.set==='woodpecker'?.09*c.nekoWoodStacks:0],
+    ownCombatAtkPct:[['啄木鸟电音四件',woodpeckerAttackBonus(c)],
       ['激素朋克四件',c.set==='hormone' && c.nekoDiscProc?.25:0]],
     panelRate:[['猫又基础暴击率',.05],['核心技强化',.144],['钢铁肉垫副属性',.24],
       ['四号位主属性',fourth==='crit'?.24:0],['啄木鸟电音两件',has('woodpecker')?.08:0]],

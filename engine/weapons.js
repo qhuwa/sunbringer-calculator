@@ -3,15 +3,15 @@ const leadSignature=c=>!alternateLeadWeapon(c);
 const weaponRankIndex=rank=>Math.max(0,Math.min(4,(rank??1)-1));
 const engineStat=(weapon,stat)=>weapon?.stat===stat?weapon.value:0;
 const engineBase=(weapon,type)=>weapon?.baseType===type?weapon.base:0;
-const modeledTeamEngines=new Set([13113,13115,14107,14116,14121,14125,14139,14141,14151,13103,14002]);
-const modeledLeadEngines=new Set([14118,13008,13009,13003,14104,14119,14122,12011]);
+const modeledTeamEngines=new Set([13113,13115,14107,14116,14121,14125,14139,14141,14151,14162,13103,14002]);
+const modeledLeadEngines=new Set([14114,14118,14125,13008,13009,13003,14104,14119,14122,14162,12011]);
 const weaponPassiveStacks={14118:3,13008:4,13003:10,14104:8};
 const leadWeaponRole=c=>expandedLead(c)?.role.split(' · ')[0]??(usesSharp(c)?'锋御':usesRupture(c)?'命破':'强攻');
 
 // The catalog supplies base and advanced stats across specialties. Passives require a specialty match.
 function leadWeaponEffects(c){
   const weapon=alternateLeadWeapon(c);
-  const result={atk:0,ap:0,general:0,element:0,crit:0,cd:0,disorder:0};
+  const result={atk:0,ap:0,general:0,element:0,crit:0,cd:0,res:0,disorder:0};
   if(!weapon || weapon.role!==leadWeaponRole(c))return result;
   const r=weaponRankIndex(c.wr), stacks=c.weaponStacks??weaponPassiveStacks[weapon.id]??0;
   const element=damageElement(c);
@@ -44,6 +44,10 @@ function leadWeaponEffects(c){
       result.element=element==='ice'?[.25,.315,.38,.44,.50][r]:0;
       result.crit=element==='ice'?2*(.10+.025*r):(.10+.025*r);
       break;
+    case 14162: // Everlasting Slumber
+      result.crit=.24+.02*r;
+      result.res=element==='wind'?roxyWeaponRes[r]:0;
+      break;
   }
   return result;
 }
@@ -67,4 +71,5 @@ function applyLeadEngineStats(c,sources,signatureName){
   insert('ownCombatCd',effects.cd);
   insert('ownElement',effects.element);
   insert('ownGeneral',effects.general);
+  insert('ownRes',effects.res);
 }

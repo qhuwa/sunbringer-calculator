@@ -13,13 +13,14 @@ for(const actor of Object.values(anomalySupports)){
 
 const sharedFactions=[
   ['lycaon','corin','ellen','rina'],
+  ['qingyi','zhuyuan','seth','jane'],
   ['miyabi','soukaku','harumasa'],
-  ['lucy','caesar'],
+  ['lucy','caesar','lighter'],
   ['yuzuha','manato','yidhari'],
   ['nangongYu','sunna']
 ];
 const allyGroups={
-  fire:['jufufu','norma','orphie','koleda','lucy'],
+  fire:['jufufu','norma','orphie','koleda','lucy','lighter'],
   ice:['zhao','lycaon','soukaku'],
   anomaly:['miyabi']
 };

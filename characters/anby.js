@@ -76,11 +76,11 @@ function anbyStats(c,buffs,mains,custom){
   const atkMains=mains.filter(stat=>stat==='atk').length;
   const has=set=>c.set===set || c.two===set;
   const initialBase=baseAtk*(1+engineStat(alternate,'atk')+.30*atkMains+(has('hormone')?.10:0)+(has('astral')?.10:0)+(c.customAtkPct||0)/100)+316+(c.customFlatAtk||0);
-  const shadowStacks=c.set==='shadow'?c.anbySetStacks:0;
-  const attackPct=buffs.teamAtkPct+leadWeaponEffects(c).atk+.04*shadowStacks+
-    (c.set==='thunder' && c.anbyShock?.28:0)+(c.set==='woodpecker'?.09*c.anbyWoodStacks:0)+(c.set==='hormone' && c.anbyDiscProc?.25:0);
+  const shadowStacks=equippedDiscStacks(c,'shadow');
   const weaponCritPerStack=[.10,.115,.13,.145,.16][c.wr-1];
   const statSources={
+    ownCombatAtkPct:[['如影相随四件',.04*shadowStacks],['啄木鸟电音四件',woodpeckerAttackBonus(c)],
+      ['雷暴重金属四件',c.set==='thunder' && c.anbyShock?.28:0],['激素朋克四件',c.set==='hormone' && c.anbyDiscProc?.25:0]],
     panelRate:[['零号·安比基础暴击率',.05],['核心技强化',.144],
       ['四号位主属性',fourth==='crit'?.24:0],['啄木鸟电音两件',has('woodpecker')?.08:0]],
     ownCombatRate:[['如影相随四件 · '+shadowStacks+' 层',.04*shadowStacks],
@@ -92,6 +92,7 @@ function anbyStats(c,buffs,mains,custom){
     cdAdjustment:[['自定义普通暴伤',(c.customNormalCd||0)/100]]
   };
   applyLeadEngineStats(c,statSources,'牺牲洁纯');
+  const attackPct=buffs.teamAtkPct+sumBonuses(statSources.ownCombatAtkPct);
   const rate=sumBonuses(statSources.panelRate)+sumBonuses(statSources.ownCombatRate)+sumBonuses(statSources.rateAdjustment);
   const critDmg=sumBonuses(statSources.panelCd)+sumBonuses(statSources.ownCombatCd)+sumBonuses(statSources.cdAdjustment)+buffs.normalCritDmg;
   return {baseAtk,initialBase,attackPct,rate,critDmg,statSources,bonus:1+buffs.general+(fifth==='electric'?.30:0)+sumBonuses(statSources.ownGeneral??[])+sumBonuses(statSources.ownElement??[]),

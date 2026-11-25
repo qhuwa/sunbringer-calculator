@@ -17,6 +17,14 @@ const mainPools=[
 ];
 const blockedSubstat={def:0,crit:1,cd:2};
 const twoPieceNames={inferno:'炎狱重金属',puffer:'河豚电音',woodpecker:'啄木鸟电音',rose:'荆棘玫瑰'};
+const leadDiscStackRules={
+  woodpecker:{name:'啄木鸟电音',sets:['woodpecker']},
+  shadow:{name:'如影相随',sets:['shadow','shadowHarmony']},
+  yunkui:{name:'云岿如我',sets:['yunkui']}
+};
+const maxDiscStacks=3;
+const equippedDiscStacks=(c,key)=>leadDiscStackRules[key].sets.includes(c.set)?(c.driveStacks?.[key]??maxDiscStacks):0;
+const woodpeckerAttackBonus=c=>.09*equippedDiscStacks(c,'woodpecker');
 // A fully upgraded S disc has up to four different initial substats and five upgrades.
 // Check a candidate allocation by constructing six actual discs, respecting main exclusions.
 function evenSquares(total,slots){

@@ -89,7 +89,7 @@ function yeStats(c,buffs,mains,custom){
     panelAtkFlat:[['二号位主属性',316]],
     atkPctAdjustment:[['自定义攻击力百分比',(c.customAtkPct||0)/100]],
     atkFlatAdjustment:[['自定义固定攻击力',c.customFlatAtk||0]],
-    ownCombatAtkPct:[['沧浪行歌四件',ballad?.10:0],['啄木鸟电音四件',c.set==='woodpecker'?.09*c.yeWoodStacks:0],
+    ownCombatAtkPct:[['沧浪行歌四件',ballad?.10:0],['啄木鸟电音四件',woodpeckerAttackBonus(c)],
       ['激素朋克四件',c.set==='hormone' && c.yeDiscProc?.25:0]],
     panelRate:[['基础暴击率',.05],['核心技强化',.144],['四号位主属性',fourth==='crit'?.24:0],
       ['啄木鸟电音两件',yeHasSet(c,'woodpecker')?.08:0]],

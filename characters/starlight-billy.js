@@ -77,7 +77,7 @@ function billyStats(c,buffs,mains,custom){
     panelAtkPct:[['攻击力主属性',.30*mains.filter(stat=>stat==='atk').length],['激素朋克两件',hasSet('hormone')?.10:0],
       ['静听嘉音两件',hasSet('astral')?.10:0],['手动攻击力百分比',(c.customAtkPct??0)/100]],
     panelAtkFlat:[['二号位主属性',316],['手动固定攻击力',c.customFlatAtk??0]],
-    ownCombatAtkPct:[['啄木鸟电音四件',woodpeckerAttackBonus(c,c.yiWoodStacks??3)]],
+    ownCombatAtkPct:[['啄木鸟电音四件',woodpeckerAttackBonus(c)]],
     panelRate:[['基础暴击率',.05],['核心技强化',.144],['辉骑面铠',.20+.03*rank],
       ['四号位主属性',fourth==='crit'?.24:0],['啄木鸟电音两件',hasSet('woodpecker')?.08:0]],
     ownCombatRate:[['云岿如我四件',.04*setStacks],['折枝剑歌四件（冻结或碎冰）',frozen?.12:0]],

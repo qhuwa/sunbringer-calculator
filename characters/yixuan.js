@@ -10,7 +10,6 @@ const yiDiscStats={hp:0,crit:1,cd:2,atk:3};
 const yiHpRoll=.03;
 const yiHpConversion=.10;
 const yiAtkConversion=.30;
-const woodpeckerAttackBonus=(c,stacks)=>c.set==='woodpecker'?.09*stacks:0;
 
 // Coefficients are in 1/10000 units. Full-channel hits exclude the linked finishing move.
 const yiSkills=[
@@ -45,7 +44,7 @@ const yiExtra=c=>[...Object.keys(stunNames),...Object.keys(supportNames),...Obje
 const yiSet=(c,set)=>c.set===set || c.two===set;
 const yiWeaponRank=c=>c.wr-1;
 const yiWeaponStacks=c=>c.yiWeaponStacks??2;
-const yiSetStacks=c=>c.set==='yunkui'?(c.yiSetStacks??3):0;
+const yiSetStacks=c=>equippedDiscStacks(c,'yunkui');
 const yiFocused=c=>(c.yiFocused??true) && yiExtra(c);
 
 function yiRotation(c,stunFinisher){
@@ -94,7 +93,7 @@ function yiStats(c,buffs,mains,custom){
     panelAtkPct:[['攻击力主属性',.30*mains.filter(stat=>stat==='atk').length],['激素朋克两件',yiSet(c,'hormone')?.10:0],
       ['静听嘉音两件',yiSet(c,'astral')?.10:0],['手动攻击力百分比',(c.customAtkPct??0)/100]],
     panelAtkFlat:[['二号位主属性',316],['手动固定攻击力',c.customFlatAtk??0]],
-    ownCombatAtkPct:[['啄木鸟电音四件',woodpeckerAttackBonus(c,c.yiWoodStacks??3)]],
+    ownCombatAtkPct:[['啄木鸟电音四件',woodpeckerAttackBonus(c)]],
     panelRate:[['基础暴击率',.05],['核心技强化',.144],['青溟笼舍',.20+.03*yiWeaponRank(c)],
       ['四号位主属性',fourth==='crit'?.24:0],['啄木鸟电音两件',yiSet(c,'woodpecker')?.08:0]],
     ownCombatRate:[['云岿如我四件',.04*yiSetStacks(c)],['一影清灵道心',c.w>=1?.10:0],

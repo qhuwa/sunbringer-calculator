@@ -11,7 +11,7 @@ const classicControls={
     ['weapon','深海访客暴击增益数（普攻、冰冲刺）',0,2,2],['m1','一影急冻层数',0,6,6],['m2','二影强化特殊技暴伤层数',0,3,3],
     ['m6','六影盛宴蓄力剪击次数',0,99,1],['freeze','冻结或碎冰覆盖',false]],
   harumasa:[['potential','潜能觉醒阶数（0 为未觉醒）',0,6,0],['focus','锋芒层数',0,6,6],['m2','可用电掣层数',0,7,7],
-    ['anomaly','目标处于属性异常',false],['m6','六影甲乙矢抗性增益覆盖'],['shadow','如影相随四件层数',0,3,3]],
+    ['anomaly','目标处于属性异常',false],['m6','六影甲乙矢抗性增益覆盖']],
   billy:[['crouch','蹲姿射击增伤覆盖'],['weapon','仿制星徽引擎远距离触发效果覆盖'],
     ['m4','四影强化特殊技距离暴击率（%）',0,32,0],['m6','六影增伤层数',0,5,5],['assault','强击触发套装增伤']]
 };
@@ -122,9 +122,9 @@ function classicStatSources(c,actor,s){
       if(potential>=2)attack(label('潜能觉醒'),.02*potential);
       s.ownRes.push([label('六影'),mind>=6 && anomaly && option('m6')?.15:0]);
       if(c.set==='shadowHarmony'){
-        const stacks=option('shadow')*.04;
-        attack('如影相随四件',stacks);
-        crit('如影相随四件',stacks);
+        const bonus=.04*equippedDiscStacks(c,'shadow');
+        attack('如影相随四件',bonus);
+        crit('如影相随四件',bonus);
       }
       break;
     case billy:

@@ -6,7 +6,7 @@ const weaponCatalog = new Map([
   [14164,"涅槃初翎","异常","atk",713,"mastery",0.3,"plume-of-rebirth"],
   [14163,"禁罪囚笼","强攻","atk",713,"crit",0.24,"incarcerating-grip"],
   [13022,"烛光诡计","锋御","def",356,"def",0.4,"candlelit-scheme"],
-  [14162,"...","击破","atk",713,"energy",0.6,"14162"],
+  [14162,"绯月银棺","击破","atk",713,"energy",0.6,"14162"],
   [14161,"猩红渴望","锋御","def",431,"def",0.48,"crimson-thirst"],
   [13021,"血髓秘匣","锋御","def",356,"crit",0.2,"bloodmarrow-coffer"],
   [13017,"喵运当头","锋御","def",356,"def",0.4,"catty-luck"],

@@ -3,7 +3,7 @@
 const corin={
   name:"可琳", role:"强攻 · 物理", kind:"attack", element:200, stat:807, crit:0.05, cd:0.788, ultimate:"非、非常抱歉！", agentId:1061, slug:"corin", chainId:1061017, ultId:1061018, weaponId:13106, weaponSlug:"housekeeper",
   weaponAtk:624, weaponAtkPct:0.25,
-  portrait:"https://i.gachabase.net/bIfDqrH1MzcMb_-uo9HY-9XjBl0dxBWa5BVEZ2S5VGA/q:50/f:webp/plain/zzz/assets/27161da7f41384e40069477da896bbec.png",
+  portrait:"https://i.gachabase.net/OD7LV6Fef-BL_7VPPJ1lKvC4GJaPAr34sExkhtaTIhg/q:50/f:webp/plain/zzz/assets/4ea7a26c25b33ac7b6f1241367f839d7.png",
   engines:[['1',"家政员"]],
   skills:[
     {id:1061011, name:"强化特殊技：小心裙角（回旋斩击）", type:"ex", base:34510, step:3140, defaultCount:2},
@@ -30,7 +30,7 @@ const corin={
 const manato={
   name:"真斗", role:"命破 · 火", kind:"rupture", element:201, stat:755, crit:0.05, cd:0.5, ultimate:"无想荒魂", agentId:1441, slug:"manato", chainId:1441018, ultId:1441019, weaponId:13144, weaponSlug:"grill-o-wisp", hp:7724, coreHp:0.18,
   weaponAtk:624, weaponHp:0.25,
-  portrait:"https://i.gachabase.net/OD7LV6Fef-BL_7VPPJ1lKvC4GJaPAr34sExkhtaTIhg/q:50/f:webp/plain/zzz/assets/4ea7a26c25b33ac7b6f1241367f839d7.png",
+  portrait:"https://i.gachabase.net/YYjRbkW4CNBEznNWaQN5-RUACMUZKpCqvJRmzqUuBBE/q:50/f:webp/plain/zzz/assets/64c690c95deaf0b2ae87c41991e5a5ec.png",
   engines:[['1',"燔火胧夜"]],
   skills:[
     {id:1441009, name:"普通攻击：炽风·胧切（一段）", type:"basic", base:5310, step:490, defaultCount:2},
@@ -60,7 +60,7 @@ const manato={
 const hugo={
   name:"雨果", role:"强攻 · 冰", kind:"attack", element:202, stat:919, crit:0.194, cd:0.5, ultimate:"渎神者", agentId:1291, slug:"hugo", chainId:1291015, ultId:1291018, weaponId:14129, weaponSlug:"myriad-eclipse",
   weaponAtk:713, weaponCrit:0.24,
-  portrait:"https://i.gachabase.net/9P--8ENy--m1Ph_RJ37sdw1eUtdeeIxvuxxtv8pk44A/q:50/f:webp/plain/zzz/assets/0586bd6fbddf7887b57a2a9226f14149.png",
+  portrait:"https://i.gachabase.net/KZhIz6_lp2qROzXXI4tM16F8_0XQS2UZM8SZ1yvPqtU/q:50/f:webp/plain/zzz/assets/3ecb79f698995c3ece15fe8d1675d6c0.png",
   engines:[['1',"千面日陨"]],
   skills:[
     {id:1291004, name:"普通攻击：暗渊四重奏（斩击）", type:"basic", base:14910, step:1360, defaultCount:1},
@@ -94,7 +94,7 @@ const hugo={
 const evelyn={
   name:"伊芙琳", role:"强攻 · 火", kind:"attack", element:201, stat:929, crit:0.194, cd:0.5, ultimate:"月辉丝·弦音", agentId:1321, slug:"evelyn", chainId:1321015, ultId:1321016, weaponId:14132, weaponSlug:"heartstring-nocturne",
   weaponAtk:713, weaponCrit:0.24,
-  portrait:"https://i.gachabase.net/TUXaEMm9d7s5FfgziyN6ToRTVaVI9pg2YmG9OY5oZ8U/q:50/f:webp/plain/zzz/assets/fb6b547120bba62f4767d2dc5c694eae.png",
+  portrait:"https://i.gachabase.net/sVeh8XHO9xo4mgSQlSCSpEAPO1o8MJv7qLT9FfKiwW8/q:50/f:webp/plain/zzz/assets/1ff4b563898be891e3b7a3902618853d.png",
   engines:[['1',"心弦夜响"]],
   skills:[
     {id:1321006, name:"普通攻击：绞勒式·I型", type:"basic", base:22640, step:2060, defaultCount:2},
@@ -123,7 +123,7 @@ const evelyn={
 const soldier11={
   name:"「11号」", role:"强攻 · 火", kind:"attack", element:201, stat:888, crit:0.194, cd:0.5, ultimate:"轰鸣烈焰", agentId:1041, slug:"soldier-11", chainId:1041016, ultId:1041017, weaponId:14104, weaponSlug:"the-brimstone",
   weaponAtk:684, weaponAtkPct:0.3,
-  portrait:"https://i.gachabase.net/z2er5IJOgHVOm43NJH4PZYZ-Zm6NpbZT-vUw809B2k0/q:50/f:webp/plain/zzz/assets/cfb6bc2550d1ae9676166b3ad40bb631.png",
+  portrait:"https://i.gachabase.net/bIfDqrH1MzcMb_-uo9HY-9XjBl0dxBWa5BVEZ2S5VGA/q:50/f:webp/plain/zzz/assets/27161da7f41384e40069477da896bbec.png",
   engines:[['1',"硫磺石"]],
   skills:[
     {id:1041002, name:"普通攻击：火力镇压（一段）", type:"basic", base:5510, step:510, defaultCount:2},
@@ -153,7 +153,7 @@ const soldier11={
 const zhuyuan={
   name:"朱鸢", role:"强攻 · 以太", kind:"attack", element:205, stat:919, crit:0.05, cd:0.788, ultimate:"歼灭模式MAX", agentId:1241, slug:"zhu-yuan", chainId:1241022, ultId:1241023, weaponId:14124, weaponSlug:"riot-suppressor-mark-vi",
   weaponAtk:713, weaponCd:0.48,
-  portrait:"https://i.gachabase.net/zcHfjp63-hf37xmX4ZLUknJbr5iSlD-60olZwVvmi3k/q:50/f:webp/plain/zzz/assets/047944013ad775f2f13eb367e4ba4f2c.png",
+  portrait:"https://i.gachabase.net/HEwFkNYywaQzlSXJyedHlAQSMcFFGG2785NQM8GKjbI/q:50/f:webp/plain/zzz/assets/9b50c3cc0f91f0d08740d78849628234.png",
   engines:[['1',"防暴者Ⅵ型"]],
   skills:[
     {id:1241010, name:"普通攻击：请勿抵抗（一段（以太））", type:"basic", base:13590, step:1240, defaultCount:2},
@@ -187,7 +187,7 @@ const zhuyuan={
 const ellen={
   name:"艾莲", role:"强攻 · 冰", kind:"attack", element:202, stat:938, crit:0.194, cd:0.5, ultimate:"永冬狂宴", agentId:1191, slug:"ellen", chainId:1191016, ultId:1191017, weaponId:14119, weaponSlug:"deep-sea-visitor",
   weaponAtk:713, weaponCrit:0.24,
-  portrait:"https://i.gachabase.net/HEwFkNYywaQzlSXJyedHlAQSMcFFGG2785NQM8GKjbI/q:50/f:webp/plain/zzz/assets/9b50c3cc0f91f0d08740d78849628234.png",
+  portrait:"https://i.gachabase.net/z2er5IJOgHVOm43NJH4PZYZ-Zm6NpbZT-vUw809B2k0/q:50/f:webp/plain/zzz/assets/cfb6bc2550d1ae9676166b3ad40bb631.png",
   engines:[['1',"深海访客"]],
   skills:[
     {id:1191004, name:"普通攻击：急冻修剪法（一段）", type:"basic", base:9960, step:910, defaultCount:2},
@@ -220,7 +220,7 @@ const ellen={
 const harumasa={
   name:"悠真", role:"强攻 · 电", kind:"attack", element:203, stat:915, crit:0.194, cd:0.5, ultimate:"残心", agentId:1201, slug:"harumasa", chainId:1201013, ultId:1201014, weaponId:14120, weaponSlug:"zanshin-herb-case",
   weaponAtk:713, weaponCd:0.48,
-  portrait:"https://i.gachabase.net/mses99lnbMUacDqpur-IBl8j7TWJiT5bBVRA7Yd7Sks/q:50/f:webp/plain/zzz/assets/a1979673f097e96eec0b2f20eb513ef6.png",
+  portrait:"https://i.gachabase.net/zcHfjp63-hf37xmX4ZLUknJbr5iSlD-60olZwVvmi3k/q:50/f:webp/plain/zzz/assets/047944013ad775f2f13eb367e4ba4f2c.png",
   engines:[['1',"残心青囊"]],
   skills:[
     {id:1201007, name:"普通攻击：落羽", type:"basic", base:10540, step:960, defaultCount:2},
@@ -252,7 +252,7 @@ const harumasa={
 const billy={
   name:"比利", role:"强攻 · 物理", kind:"attack", element:200, stat:787, crit:0.194, cd:0.5, ultimate:"星徽在此闪耀", agentId:1081, slug:"billy", chainId:1081018, ultId:1081019, weaponId:13108, weaponSlug:"starlight-engine-replica",
   weaponAtk:624, weaponAtkPct:0.25,
-  portrait:"https://i.gachabase.net/KZhIz6_lp2qROzXXI4tM16F8_0XQS2UZM8SZ1yvPqtU/q:50/f:webp/plain/zzz/assets/3ecb79f698995c3ece15fe8d1675d6c0.png",
+  portrait:"https://i.gachabase.net/TUXaEMm9d7s5FfgziyN6ToRTVaVI9pg2YmG9OY5oZ8U/q:50/f:webp/plain/zzz/assets/fb6b547120bba62f4767d2dc5c694eae.png",
   engines:[['1',"仿制星徽引擎"]],
   skills:[
     {id:1081004, name:"普通攻击：火力全开（蹲姿开火）", type:"basic", base:6180, step:570, defaultCount:1},
@@ -278,6 +278,9 @@ const billy={
 const classicLeads={corin,manato,hugo,evelyn,soldier11,zhuyuan,ellen,harumasa,billy};
 
 const classicTeammates={
-  qingyi:{name:"青衣", role:"击破 · 电", portrait:"https://i.gachabase.net/sVeh8XHO9xo4mgSQlSCSpEAPO1o8MJv7qLT9FfKiwW8/q:50/f:webp/plain/zzz/assets/1ff4b563898be891e3b7a3902618853d.png", engines:[['1',"玉壶青冰"],['0','其他音擎']]},
-  caesar:{name:"凯撒", role:"防护 · 物理", portrait:"https://i.gachabase.net/YYjRbkW4CNBEznNWaQN5-RUACMUZKpCqvJRmzqUuBBE/q:50/f:webp/plain/zzz/assets/64c690c95deaf0b2ae87c41991e5a5ec.png", engines:[['1',"奔袭獠牙"],['0','其他音擎']]}
+  qingyi:{name:"青衣", role:"击破 · 电", portrait:"https://i.gachabase.net/mses99lnbMUacDqpur-IBl8j7TWJiT5bBVRA7Yd7Sks/q:50/f:webp/plain/zzz/assets/a1979673f097e96eec0b2f20eb513ef6.png", engines:[['1',"玉壶青冰"],['0','其他音擎']]},
+  lighter:{name:'莱特',role:'击破 · 火',agentId:1161,slug:'lighter',weaponId:14116,
+    portrait:'https://i.gachabase.net/I5R-rKDj7mCZNCyLxonbXav7em8TdU4eBA9tecPi6Uc/q:50/f:webp/plain/zzz/assets/f613e88b2dddadf102343af72bacdaa9.png',
+    engines:[['14116','焰心桂冠'],['0','其他音擎']]},
+  caesar:{name:"凯撒", role:"防护 · 物理", portrait:"https://i.gachabase.net/9P--8ENy--m1Ph_RJ37sdw1eUtdeeIxvuxxtv8pk44A/q:50/f:webp/plain/zzz/assets/0586bd6fbddf7887b57a2a9226f14149.png", engines:[['1',"奔袭獠牙"],['0','其他音擎']]}
 };

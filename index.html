@@ -1,25 +1,31 @@
 <!doctype html>
-<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>挽昼 · 配队伤害计算器</title><link rel="stylesheet" href="ui/style.css">
-<body><main><header><div><p class="eyebrow">绝区零　/　配队研究</p><h1><strong id="leadTitle">挽昼</strong><span>伤害计算器</span></h1></div>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>挽昼计算器</title><link rel="stylesheet" href="ui/style.css">
+<body><main><header class="site-header"><div class="app-heading"><p class="eyebrow">绝区零　/　配队研究</p><h1>挽昼计算器</h1></div>
 <div class="header-options"><small>GachaBase 数据快照<br><b>Beta 3.4.5 · D20713015</b></small>
-<div class="background-control"><label for="backgroundOpacity">背景不透明度</label><input id="backgroundOpacity" type="range" min="0" max="100" value="45"><output id="backgroundOpacityValue" for="backgroundOpacity">45%</output></div></div></header>
+<div class="theme-control"><label for="appTheme">主题</label><select id="appTheme"><option value="meadow">纳西妲 · 草地</option><option value="sunbringer">挽昼 · 深蓝</option></select></div>
+<div class="background-control"><label for="backgroundOpacity">背景不透明度</label><input id="backgroundOpacity" type="range" min="0" max="100" value="100"><output id="backgroundOpacityValue" for="backgroundOpacity">100%</output></div></div></header>
 <section class="summary"><div><p id="summaryTitle">挽昼单轮期望伤害</p><strong id="total"></strong><div class="split" id="split"></div></div><div class="mini" id="summaryStats"></div></section>
 <div class="benchmark"><strong id="compare" aria-live="polite"></strong><span id="reference"></span>
 <div class="compare-actions"><button id="saveBaseline" type="button">设当前配置为基线</button><button id="defaultBaseline" type="button" hidden>恢复全 01 基线</button><button id="recalculate" type="button">手动重算</button></div><span id="calcStatus" role="status"></span></div>
 <h2>队伍配置</h2><p class="comparison-note">全队估算伤害 = 主 C 本轮总伤害 ×（1＋队友 1 系数＋队友 2 系数）。两人分别填 0.2 和 0.3 时，全队伤害是主 C 的 1.5 倍。系数默认 0，按角色保存。</p><p class="comparison-note" id="storageWarning" role="status" hidden>当前浏览器无法保存配置。请允许本地存储，以便下次打开时恢复选择。</p><section class="cards" id="cards"></section>
 <div class="fields disc-title" id="kaboomOptions" hidden><label>好斗的阿炮层数<select id="kaboomStacks"></select></label><p class="comparison-note">每个命中敌人的友方单位各提供一层，默认按四层覆盖本轮。多人装备时按最高星级结算一份。</p></div>
 <div class="fields disc-title" id="astralOptions" hidden><label>静听嘉音层数<select id="astralStacks"></select></label><p class="comparison-note">默认主 C 通过快速支援入场并吃满三层。主 C 未通过快速支援入场时选 0 层。</p></div>
+<div class="fields disc-title" id="snowbunnyOptions" hidden><label>雪兔梦游仙境层数<select id="snowbunnyStacks"></select></label><p class="comparison-note">每层 +6% 普通增伤，多人装备时只计一份。</p></div>
 <section class="workspace"><article><h2 id="discHeading">挽昼驱动盘</h2><div class="panel">
 <div class="fields">
   <div class="disc-field"><label for="set">四件套</label><select id="set"><option value="star">星之碑</option><option value="rose">荆棘玫瑰</option></select><label class="disc-lock"><input type="checkbox" id="lockDiscSets" aria-label="锁定四件套"></label></div>
   <div class="disc-field"><label for="two">两件套</label><select id="two"></select><label class="disc-lock"><input type="checkbox" id="lockTwo" aria-label="锁定两件套"></label></div>
+</div>
+<div id="leadDiscStackOptions" hidden>
+<div class="fields disc-title" id="leadDiscStacks"></div>
+<p class="comparison-note">四件套层数按整轮覆盖计算，也用于自动调优。</p>
 </div>
 <h3 class="disc-title">主属性 · S 级满级</h3><div class="fields" id="mainSlots"></div>
 <p class="comparison-note disc-lock-note">自动寻优保留锁定的选择。四至六号位可锁定已选的主属性。</p>
 <h3 class="disc-title">副词条分配 · 六盘合计</h3><div class="fields" id="rollLocks"></div>
 <p class="comparison-note disc-lock-note">锁定后可填写固定条数（可填 0），其余副词条继续自动分配。</p>
 <h3 class="disc-title">副词条上限</h3>
-<div class="fields"><label>有效副词条总上限（0–54）<input type="number" id="rollBudget" value="45" min="0" max="54" step="1" required></label><label>任意三种副词条合计上限 X<input type="number" id="tripleRollLimit" min="0" max="54" step="1" value="45" required></label><label>任意两种副词条合计上限 Y<input type="number" id="pairRollLimit" min="0" max="54" step="1" value="30" required></label><label>单种副词条上限 Z（0–36）<input type="number" id="maxRollsPerStat" min="0" max="36" step="1" value="15" required></label></div><p class="comparison-note">数量最多的三种之和须 ≤ X，数量最多的两种之和须 ≤ Y。每一种的数量须 ≤ Z。X、Y 可设为 0–54。</p>
+<div class="fields"><label>有效副词条总上限（0–54）<input type="number" id="rollBudget" value="42" min="0" max="54" step="1" required></label><label>任意三种副词条合计上限 X<input type="number" id="tripleRollLimit" min="0" max="54" step="1" value="38" required></label><label>任意两种副词条合计上限 Y<input type="number" id="pairRollLimit" min="0" max="54" step="1" value="30" required></label><label>单种副词条上限 Z（0–36）<input type="number" id="maxRollsPerStat" min="0" max="36" step="1" value="18" required></label></div><p class="comparison-note">数量最多的三种之和须 ≤ X，数量最多的两种之和须 ≤ Y。每一种的数量须 ≤ Z。X、Y 可设为 0–54。</p>
 <div class="disc-actions"><button type="button" id="optimizeDiscs">自动计算最优分配</button><button type="button" id="toggleDiscLock" aria-pressed="false">整套锁定</button><input type="checkbox" id="lockEntireBuild" hidden></div>
 <p class="comparison-note disc-lock-note">更换队友后自动寻优。整套锁定可固定当前套装及主、副词条，用于对比不同队友。</p>
 <p class="comparison-note" id="discSearchStatus" role="status"></p>
@@ -44,7 +50,6 @@
 <label>利爪超载层数（0–2）<input type="number" id="nekoExtraStacks" value="2" min="0" max="2" step="1"></label>
 <label>猫又四影暴击率层数<input type="number" id="nekoM4Stacks" value="2" min="0" max="2" step="1"></label>
 <label>猫又六影暴伤层数<input type="number" id="nekoM6Stacks" value="3" min="0" max="3" step="1"></label>
-<label>啄木鸟电音四件层数<input type="number" id="nekoWoodStacks" value="3" min="0" max="3" step="1"></label>
 </div>
 <div class="fields" data-anby hidden>
 <label class="roll-limit"><input type="checkbox" id="anbyMarked" checked>银星标记覆盖本轮</label>
@@ -52,15 +57,12 @@
 <label class="roll-limit"><input type="checkbox" id="anbyRoxy">洛克茜电浸染与风化覆盖</label>
 <label class="roll-limit"><input type="checkbox" id="anbyDiscProc" checked>激素朋克四件套已触发</label>
 <label>牺牲洁纯层数（0–3）<input id="anbyWeaponStacks" type="number" min="0" max="3" step="1" value="3"></label>
-<label>如影相随四件层数（0–3）<input id="anbySetStacks" type="number" min="0" max="3" step="1" value="3"></label>
-<label>啄木鸟电音四件层数（0–3）<input id="anbyWoodStacks" type="number" min="0" max="3" step="1" value="3"></label>
 </div>
 <div class="fields" data-ye hidden>
 <label>决裁帷幕快照<select id="yeVeilSnapshot"><option value="current">沿用当前目标状态</option><option value="stunned">开启时目标已失衡</option><option value="normal">开启时目标未失衡</option></select></label>
 <label class="roll-limit"><input type="checkbox" id="yeVeilBuff" checked>云霓孤光与沧浪行歌增益覆盖本轮</label>
 <label class="roll-limit"><input type="checkbox" id="yeDiscProc" checked>备选四件套条件已触发</label>
 <label class="roll-limit"><input type="checkbox" id="yeRoxy">洛克茜物理浸染与风化覆盖</label>
-<label>啄木鸟电音四件层数<input id="yeWoodStacks" type="number" min="0" max="3" step="1" value="3"></label>
 <label>六影归尘替换为斩妄开天的次数<input id="yeM6Replacements" type="number" min="0" max="99" step="1" value="0" disabled></label>
 </div>
 <div class="fields" data-yi hidden>
@@ -78,8 +80,6 @@
 <label class="roll-limit"><input type="checkbox" id="billyRoxy">洛克茜物理浸染与风化覆盖</label>
 </div>
 <div class="fields" data-rupture hidden>
-<label>云岿如我四件层数<input id="yiSetStacks" type="number" min="0" max="3" step="1" value="3"></label>
-<label>啄木鸟电音四件攻击力层数<input id="yiWoodStacks" type="number" min="0" max="3" step="1" value="3"></label>
 <label class="roll-limit"><input type="checkbox" id="yiFrozen">折枝剑歌冻结／碎冰已触发</label>
 </div><label class="wide" hidden>其他音擎被动层数<input id="leadWeaponStacks" type="number" min="0" max="10" value="0" disabled></label><div id="expandedSettings" data-expanded hidden></div></details><details open><summary>自定义词条调节</summary><p class="comparison-note custom-help">输入正数增加，输入负数减少。百分比字段按百分点填写，例如 15 表示 +15%。上下键默认每次调整 5。</p><div class="custom-grid"><label>无视防御<input id="customIgnore" type="number" min="-100" max="100" step="5" value="0"><span class="unit">百分点</span></label><label>穿透率<input id="customPen" type="number" min="-100" max="100" step="5" value="0"><span class="unit">百分点</span></label><label>通用增伤<input id="customGeneral" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>锐化增伤<input id="customSharp" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label><span id="customElementLabel">火属性增伤</span><input id="customFire" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label>暴击率<input id="customCrit" type="number" min="-100" max="200" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>锐暴伤害<input id="customCritDmg" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>防御力百分比<input id="customDefPct" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label><label data-sharp>固定防御<input id="customFlatDef" type="number" min="-3000" max="10000" step="5" value="0"><span class="unit">点</span></label><label data-normal hidden>攻击力百分比<input id="customAtkPct" type="number" min="-100" max="300" step="5" value="0"><span class="unit">百分点</span></label>
 <label data-normal hidden>固定攻击力<input id="customFlatAtk" type="number" min="-3000" max="10000" step="5" value="0"><span class="unit">点</span></label>
@@ -107,18 +107,19 @@
 <div class="support-list" data-sun>
 <article><h3>挽昼 <small>自身</small></h3><p>极昼提供 40% 暴击率和 20% 无视防御。初始暴伤的 35% 转为暴击率。基础锐暴伤害为 150%，队内有击破或防护队友时，「众愿一心」再加 25%。支援突击「不灭热忱」自身有 20% 招式增伤。</p><p>一影无视 15% 火抗。二影让其余招式以 30% 积攒烬痕，各招式积攒量默认乘 1.35，可在「增益与结算选项」切换加算假设。三、五影各提高两级招式等级。四影加 10% 通用增伤，聚锋后指定的首次引爆另有烬痕加成。六影再无视 15% 防御，「重塑万象」额外结算自身烬痕的 80%。</p><p>蜃炎梦火提供 446 基础防御、48% 防御、20%～28% 暴击率、20%～32% 火伤和 10%～16% 锐化增伤。</p></article>
 <article><h3>橘福福</h3><p>虎啸提供连携增伤 20%、终结技增伤 40%。满额普通暴伤为 50%，二影再加 22%，两者均为战斗中普通暴伤，对挽昼的锐暴期望贡献为零。队伍中有强攻或命破队友时，虎啸额外提高 20 个百分点失衡易伤。</p><p>一影增加 35 个百分点失衡易伤。潜能 II～VI 分别提高连携最终伤害 3%／4.7%／6.4%／8.1%／10%，提高终结技最终伤害 8%／12%／16%／20%／25%。</p><p>赤翼夜曲提供 8% 锐化增伤。福虓炉炉满两层提供 20%～32% 通用增伤。燃狱齿轮对给定失衡状态下的挽昼直伤增益为零。</p></article>
-<article><h3>洛克茜</h3><p>按火浸染与风化覆盖计算，锐暴伤害增加 20%，对应属性普通增伤增加 8%，失衡易伤增加 30 个百分点。一影降低 15% 全属性抗性，二影把失衡易伤提高到合计 60 个百分点。</p><p>赤翼夜曲提供 8% 锐化增伤。永夜辗眠提供 20%～32% 通用增伤。</p></article>
+<article><h3>洛克茜</h3><p>按火浸染与风化覆盖计算，锐暴伤害增加 20%，对应属性普通增伤增加 8%，失衡易伤增加 30 个百分点。一影降低 15% 全属性抗性，二影把失衡易伤提高到合计 60 个百分点。</p><p>赤翼夜曲提供 8% 锐化增伤。绯月银棺提供 20%～32% 通用增伤。</p></article>
 <article><h3>诺姆</h3><p>与挽昼同阵营，技术鸿沟满层增加 30 个百分点失衡易伤，二影提高到合计 60 个百分点。嗯呢弹幕提供 20% 通用增伤，一影降低 15% 全属性抗性。</p><p>赤翼夜曲提供 8% 锐化增伤。首席跟班满两层提供 25%～40% 通用增伤。</p></article>
-<article><h3>知更鸟</h3><p>按 26000 初始生命计算，守护咏叹提供 440 ＋ 30 × 特殊技等级的固定防御，消耗重音节拍后乘 1.25。获得和鸣护盾后触发核心技「激昂咏叹」，核心 F 提供 20% 通用增伤，持续 20 秒。一影消耗重音节拍后无视 20% 防御，二影无视 15% 抗性，六影提供 15% 锐化增伤。</p><p>默认装备雪兔梦游仙境四件。每层提供 6% 通用增伤，按三层覆盖计算，与核心技合计 38%。星韵流彩满两层提供 17%～27.2% 通用增伤，另有 15%～24% 锐暴伤害。奔袭獠牙在破招或极限闪避后的窗口提供 18%～36% 通用增伤。「仅生命主词条」仍按生命门槛已满足计算。<a href="https://zzz.gachabase.net/drive-discs/33700/bunny-in-wonderland/beta?lang=chs">套装说明</a></p></article>
+<article><h3>知更鸟</h3><p>按 26000 初始生命计算，守护咏叹提供 440 ＋ 30 × 特殊技等级的固定防御，消耗重音节拍后乘 1.25。获得和鸣护盾后触发核心技「激昂咏叹」，核心 F 提供 20% 通用增伤，持续 20 秒。一影消耗重音节拍后无视 20% 防御，二影无视 15% 抗性，六影提供 15% 锐化增伤。</p><p>默认装备雪兔梦游仙境四件。每层提供 6% 通用增伤，默认三层时与核心技合计 38%。层数可在队伍配置下方调节。星韵流彩满两层提供 17%～27.2% 通用增伤，另有 15%～24% 锐暴伤害。奔袭獠牙在破招或极限闪避后的窗口提供 18%～36% 通用增伤。「仅生命主词条」仍按生命门槛已满足计算。<a href="https://zzz.gachabase.net/drive-discs/33700/bunny-in-wonderland/beta?lang=chs">套装说明</a></p></article>
 <article><h3>丽娜</h3><p>人偶在场时共享自身穿透率的 25% ＋ 12 个百分点，上限 30%。一影且挽昼位于人偶附近时，共享量乘 1.3，上限 39%。潜能 II～VI 使丽娜自身穿透率增加 1.6 个百分点。每 1 个百分点自身穿透率提供 3／4.2／5.5／6.7／8 点攻击力和 2.5／3.5／4.5／5.5／6.5 点防御力，上限分别为 576 和 468 点。默认 VI 阶、72% 穿透率时两项均达到上限。<a href="https://zzz.gachabase.net/agents/1211/rina/beta?lang=chs#potential">潜能说明</a></p><p>啜泣摇篮满层提供 20.2%～39.8% 普通增伤。</p></article>
 <article><h3>空气</h3><p>空位的代理人、音擎和套装增益均为零。</p></article>
 </div>
 <div class="support-list">
+<article><h3>莱特</h3><p>助燃剂降低 15% 火抗和冰抗，一影额外降低 10%。溃败使失衡延长 3 秒，一影为 5 秒，二影另加 25 个百分点失衡易伤。队伍有强攻或卡吕冬之子队友时，昂扬最多提供 75% 火／冰增伤，二影上限为 90%。可在队友卡片设置战斗冲击力、昂扬层数和焰心桂冠的萎靡层数。焰心桂冠满 20 层提供 30%～48% 火／冰普通暴伤。<a href="https://zzz.gachabase.net/agents/1161/lighter/beta?lang=chs">技能数据</a>、<a href="https://zzz.gachabase.net/w-engines/14116/blazing-laurel/beta?lang=chs">焰心桂冠</a></p></article>
 <article><h3>耀嘉音</h3><p>咏叹华彩在技能 12 级时提供 20% 通用增伤和 25% 普通暴伤。核心技提供最高 1200 点固定攻击力，二影提高到 1600 点。一影满三层降低 18% 全抗。玲珑妆匣满两层提供 20%～32% 通用增伤。<a href="https://zzz.gachabase.net/agents/1311/astra-yao/beta?lang=chs">技能数据</a></p></article>
 <article><h3>千夏</h3><p>天使协律提供最高 1050 点固定攻击力。有强攻队友时，在帷幕内提供 30 个百分点失衡易伤。猫的凝视触发后，一影满三层减防 21%。二影在帷幕内加 10% 攻击力，并将猫又触发的凝视倍率从 300% 提到 500%。四影提供 18% 通用增伤，六影在创作窗口给凝视额外 50% 增伤。思络成歌满两层提供 25%～40% 通用增伤和 10%～16% 攻击力。<a href="https://zzz.gachabase.net/agents/1491/sunna/beta?lang=chs">技能数据</a></p></article>
 <article><h3>琉音</h3><p>恶意投诉提供 30 个百分点失衡易伤。二影额外增加 20 个百分点，并提供 15% 普通增伤。有强攻或命破队友时，好评如潮提供 40% 通用增伤，一影再无视 15% 全抗。昨夜来电满三层提供 30%～48% 普通暴伤。<a href="https://zzz.gachabase.net/agents/1481/dialyn/beta?lang=chs">技能数据</a></p><p>默认在手填轮转上增加一次由好评触发的终结技。挽昼计两段终结并假设满足愿核条件，零号·安比二影另增加两组自动三连及附招。叶瞬光按额外一次逐云惊霆、两段斩流光、强化灭、极及四段飞光计算。斩妄开天要求逐云惊霆消耗喧响值，符合独立触发条件时可手动填写。</p></article>
 <article><h3>诺姆 · 额外连携</h3><p>默认预热膛温允许触发两次额外连携。挽昼的两种连携各加一次，叶瞬光的明心境连携加两次，猫又和零号·安比的连携各加两次。队友卡片可关闭预设次数。<a href="https://zzz.gachabase.net/agents/1571/norma/beta?lang=chs">技能数据</a></p></article>
-<article><h3>照</h3><p>涌泉提供全队 1,000 点固定攻击力和 5% 生命。队伍中有强攻、异常或支援时，凝聚力按 27,000 初始生命和帷幕覆盖计算，提供 40% 普通增伤。一影在后台无视 15% 全抗，二影治疗触发后给队友 15% 攻击力。半糖雪兔提供 10%～16% 全队攻击力和生命值，开启帷幕后提供 30%～48% 普通暴伤。默认雪兔梦游仙境四件按三层计。<a href="https://zzz.gachabase.net/agents/1341/zhao/beta?lang=chs">技能数据</a>、<a href="https://zzz.gachabase.net/w-engines/14134/half-sugar-bunny/beta?lang=chs">半糖雪兔</a></p></article>
+<article><h3>照</h3><p>涌泉提供全队 1,000 点固定攻击力和 5% 生命。队伍中有强攻、异常或支援时，凝聚力按 27,000 初始生命和帷幕覆盖计算，提供 40% 普通增伤。一影在后台无视 15% 全抗，二影治疗触发后给队友 15% 攻击力。半糖雪兔提供 10%～16% 全队攻击力和生命值，开启帷幕后提供 30%～48% 普通暴伤。默认装备雪兔梦游仙境四件，层数可在队伍配置下方调节。<a href="https://zzz.gachabase.net/agents/1341/zhao/beta?lang=chs">技能数据</a>、<a href="https://zzz.gachabase.net/w-engines/14134/half-sugar-bunny/beta?lang=chs">半糖雪兔</a></p></article>
 <article><h3>奥菲丝&「鬼火」</h3><p>准星聚焦按 3.7 点初始能量自动回复计算，提供 700 点固定攻击力。一影提供 20% 普通增伤。队伍中有击破或支援时，熔炉所铸令带准星聚焦的追加攻击无视 25% 防御。嚣枪喧焰直接增益装备者，可通过队友伤害系数估算奥菲丝自身贡献。<a href="https://zzz.gachabase.net/agents/1301/orphie-magus/beta?lang=chs">技能数据</a>、<a href="https://zzz.gachabase.net/w-engines/14130/bellicose-blaze/beta?lang=chs">嚣枪喧焰</a></p></article>
 <article><h3>卢西娅</h3><p>破暗按 24,000 初始生命值提供 900 点贯穿力，有命破或击破队友时再加 30% 普通暴伤。巡梦童谣提供 20% 通用增伤，一影无视 18% 全抗，二影在涌泉内提高 15% 贯穿伤害。涌泉提供 5% 生命，与照的同名帷幕计一份。铸梦炉歌提供 25%～40% 通用增伤和 15%～24% 生命。<a href="https://zzz.gachabase.net/agents/1451/lucia/beta?lang=chs">技能数据</a>、<a href="https://zzz.gachabase.net/w-engines/14145/dreamlit-hearth/beta?lang=chs">铸梦炉歌</a></p></article>
 <article><h3>潘引壶</h3><p>通窍按 3,000 初始攻击力和主 C 通过快速支援或连携入场计算，提供 540 点贯穿力，六影为 720 点。有命破或云岿山队友时，气绝提供 20% 普通增伤，一影提高至 30%。默认装备雪兔梦游仙境四件。震元奇枢的招式增伤作用于潘引壶自己。<a href="https://zzz.gachabase.net/agents/1421/pan-yinhu/beta?lang=chs">技能数据</a>、<a href="https://zzz.gachabase.net/w-engines/13142/tremor-trigram-vessel/beta?lang=chs">震元奇枢</a></p></article>
@@ -131,15 +132,21 @@
 <section class="formula-guide"><h2 id="exampleHeading">终结技「此愿，重塑万象」乘区拆解</h2><div id="ultimateExample"></div></section>
 <h2>轮转、公式与数据来源</h2><div id="notes" data-sun></div><div id="nekoNotes" data-neko hidden></div><div id="anbyNotes" data-anby hidden></div><div id="yeNotes" data-ye hidden></div><div id="yiNotes" data-yi hidden></div><div id="billyNotes" data-billy hidden></div><div id="expandedNotes" data-expanded hidden></div></details>
 <footer>绝区零　 /　 配队研究 <span>测试服数值以所列快照为准</span></footer></main>
+<dialog id="agentPicker" aria-labelledby="agentPickerTitle">
+  <div class="weapon-picker-heading"><h2 id="agentPickerTitle">选择代理人</h2><button type="button" id="closeAgentPicker" aria-label="关闭代理人选择">✕</button></div>
+  <label for="agentSearch">搜索代理人名称或职业</label><input type="search" id="agentSearch" autocomplete="off" placeholder="例如 挽昼、击破">
+  <p id="agentResultCount" role="status"></p><div id="agentResults" class="agent-results"></div>
+</dialog>
 <dialog id="weaponPicker" aria-labelledby="weaponPickerTitle">
   <div class="weapon-picker-heading"><h2 id="weaponPickerTitle">选择音擎</h2><button type="button" id="closeWeaponPicker" aria-label="关闭音擎选择">✕</button></div>
   <label for="weaponSearch">搜索名称、职业或编号</label><input type="search" id="weaponSearch" autocomplete="off" placeholder="例如 霰落、异常、14109">
   <p class="comparison-note">基础与副属性按满级计。同职业可触发已收录的被动。</p>
-  <p id="weaponResultCount" role="status"></p><div id="weaponResults" class="weapon-results"></div>
+  <p id="weaponResultCount" role="status"></p><div id="weaponResults" class="agent-results"></div>
 </dialog>
 <script src="data/bosses.js"></script>
 <script src="data/assault.js"></script>
 <script src="data/w-engines.js"></script>
+<script src="data/w-engine-icons.js"></script>
 <script src="characters/sunbringer.js"></script>
 <script src="characters/nekomata.js"></script>
 <script src="characters/anby.js"></script>
@@ -158,6 +165,8 @@
 <script src="characters/classic-kits.js"></script>
 <script src="characters/anomaly-supports.js"></script>
 <script src="characters/miyabi.js"></script>
+<script src="characters/classic-stun.js"></script>
+<script src="characters/stun-leads.js"></script>
 <script src="characters/expanded-roster.js"></script>
 <script src="engine/discs.js"></script>
 <script src="engine/weapons.js"></script>
@@ -165,5 +174,6 @@
 <script src="engine/calc.js"></script>
 <script src="ui/explanation.js"></script>
 <script src="ui/weapons.js"></script>
+<script src="ui/agents.js"></script>
 <script src="ui/app.js"></script>
 </body></html>

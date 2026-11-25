@@ -49,8 +49,7 @@ const miyabiControls=[
   ['freeze','冻结或碎冰触发套装效果'],
   ['chaos','混沌爵士从后场切入后的增益覆盖'],
   ['phaethon','法厄同强化特殊技异常精通覆盖'],
-  ['m6','计入六影自动拔刀斩击'],
-  ['wood','啄木鸟攻击层数',0,3,3]
+  ['m6','计入六影自动拔刀斩击']
 ];
 
 function miyabiStats(c,buffs,mains,custom){
@@ -60,7 +59,6 @@ function miyabiStats(c,buffs,mains,custom){
   const mainCount=stat=>mains.filter(value=>value===stat).length;
   const buildAP=238+engineStat(weapon,'ap')+92*mainCount('proficiency')+(has('freedom')?30:0)+(has('chaos')?30:0);
   const mastery=116*(1+engineStat(weapon,'mastery')+.30*mainCount('mastery')+(has('phaethon')?.08:0));
-  const teamAttackSet=(c.set==='hormone'?.25:0)+(c.set==='woodpecker'?.09*expandedOption(c,'wood'):0);
   const statSources={
     baseAtk:[['星见雅 · 基础（核心 F）',miyabi.stat],[weapon.name,engineBase(weapon,'atk')]],
     panelAtkPct:[[weapon.name,engineStat(weapon,'atk')],['驱动盘主词条',.30*mainCount('atk')],['激素朋克两件',has('hormone')?.10:0]],
@@ -69,7 +67,7 @@ function miyabiStats(c,buffs,mains,custom){
     panelCd:[['基础暴击伤害',.50],[weapon.name,engineStat(weapon,'cd')],['驱动盘主词条',mains[3]==='cd'?.48:0],['折枝剑歌两件',has('branch')?.16:0]],
     ownCombatRate:[['星见雅 · 二影',c.w>=2?.15:0],['折枝剑歌四件',c.set==='branch' && expandedOption(c,'freeze')?.12:0],[weapon.name,effect.crit]],
     ownCombatCd:[[weapon.name,signature?[.50,.57,.65,.72,.80][rank]:effect.cd],['折枝剑歌四件',c.set==='branch' && mastery>=115?.30:0]],
-    ownCombatAtkPct:[[weapon.name,effect.atk],['驱动盘四件套',teamAttackSet]],
+    ownCombatAtkPct:[[weapon.name,effect.atk],['激素朋克四件',c.set==='hormone'?.25:0],['啄木鸟电音四件',woodpeckerAttackBonus(c)]],
     ownCombatAtkFlat:[],
     ownGeneral:[[weapon.name,effect.general]],
     ownElement:[['驱动盘五号位冰伤',mains[4]==='ice'?.30:0],['极地重金属两件',has('polar')?.10:0],

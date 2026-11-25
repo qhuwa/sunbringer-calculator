@@ -10,6 +10,46 @@ function factorSourceGroup(label,entries,format){
   return details?'<div><b>'+label+' '+format(sumBonuses(active))+'</b>（'+details+'）</div>':'';
 }
 
+function renderLeadBuffs(c,build){
+  const stats=build.statSources??{}, sources=build.buffSources, prefix=lead().name+' · ';
+  const gearNames=[weaponOptionLabel(lead(),c.we),fourPieces()[c.set],twoPieces()[c.two]].filter(Boolean);
+  const fromLead=([name])=>name.startsWith(prefix) || gearNames.some(gear=>name.startsWith(gear));
+  const shortName=([name,value])=>[name.replace(prefix,''),value];
+  const party=key=>sources[key].filter(fromLead);
+  const sharp=usesSharp(c), sun=isSunbringer(c), rupture=usesRupture(c);
+  const combatRate=sun?[['极昼',.40]]:[...(stats.ownCombatRate??[]),['核心被动',stats.coreRate??0]];
+  const sharpCrit=(stats.sharpCdSources??sources.critDmg).filter(entry=>fromLead(entry) && !entry[0].endsWith('基础锐暴伤害'));
+  const ownElement=(stats.ownElement??[]).filter(([name])=>!/^(驱动盘)?五号位/.test(name));
+  const groups=[
+    ['普通与属性增伤',[...party('general'),...party('physicalGeneral'),...(stats.ownGeneral??[]),...ownElement]],
+    ['战斗暴击率',[...combatRate,...party('teamCritRate')]],
+    [sharp?'锐暴伤害':'战斗暴击伤害',sharp?sharpCrit:stats.ownCombatCd??[]],
+    ['战斗攻击力',stats.ownCombatAtkPct??[]],
+    ['战斗固定攻击力',stats.ownCombatAtkFlat??[],value=>value.toLocaleString('zh-CN')+' 点'],
+    ['战斗最大生命值',stats.ownBattleHp??[]],
+    ['无视防御',rupture?[]:[...party('ignore'),...(stats.ownIgnore??[])]],
+    ['无视抗性／减抗',[...party('resDown'),...(stats.ownRes??[])]],
+    ['失衡易伤',c.stun?party('stun'):[],value=>Number((100*value).toFixed(2))+' 个百分点'],
+    ['锐化增伤',[...party('sharp'),...(stats.ownSharp??[])]],
+    ['贯穿增伤',stats.ownSheer??[]]
+  ];
+  const activeRows=build.rows.filter(row=>row.count>0);
+  for(const [label,key] of [['招式专项增伤','categorySources'],['招式专项暴伤','critSources'],['招式专项贯穿增伤','sheerSources'],['招式最终伤害','finalSources']]){
+    const entries=activeRows.flatMap(row=>(row.natural[key]??[]).filter(fromLead));
+    groups.push([label,Array.from(new Map(entries.map(([name,value])=>[name+'\0'+value,[name,value]])).values())]);
+  }
+  const lines=[];
+  for(const [label,entries,format=pct] of groups){
+    const text=factorSourceList(entries.map(shortName),format);
+    if(text)lines.push('<li><b>'+label+'</b> · '+text+'</li>');
+  }
+  if(sharp)lines.push('<li><b>暴伤折算</b> · 初始暴击伤害的 35% 转为暴击率。</li>');
+  if(sun && c.w>=2)lines.push('<li><b>二影烬痕</b> · 积攒率 '+(c.markMode==='add'?'+35 个百分点':'×1.35')+'。</li>');
+  if(isAnby(c) && c.anbyMarked && activeRows.some(row=>row.aftershock))
+    lines.push('<li><b>银星目标</b> · 将自身战斗暴伤的 '+(c.anbyPotential>=1?35:30)+'% 额外计入追加攻击暴伤。</li>');
+  el('leadBuffSummary').innerHTML=lines.length?'<ul>'+lines.join('')+'</ul>':'当前配置无自身增益。';
+}
+
 function attackCritRows(b,percent,extraCrit=0,extraLabel='电位差',extraRate=0){
   const stats=b.statSources, [,cr,cd]=b.rolls;
   const rate=b.rate+extraRate, effectiveRate=effectiveCritRate(rate);
@@ -160,6 +200,8 @@ function renderAttackExample(c,b,element){
   const describe=(group,format=pct)=>sources[group].map(([label,value])=>label+' '+(value>0?'+':'')+format(value)).join('，');
   const withSources=(value,group)=>[value,describe(group)].filter(Boolean).join(' · ');
   const teamAttack=[describe('teamAtk',fmt),describe('teamAtkPct')].filter(Boolean).join('，');
+  const ownAttack=(b.statSources?.ownCombatAtkPct??[]).filter(([,value])=>value)
+    .map(([name,value])=>name+' '+pct(value)).join('，');
   const wearElement=b.mains[4]===damageElement(c);
   const extraCrit=row.aftershock?b.aftershockShare*b.critDmg:0;
   const percent=value=>(100*value).toLocaleString('zh-CN',{maximumFractionDigits:4})+'%';
@@ -167,7 +209,7 @@ function renderAttackExample(c,b,element){
   const manualCrit=Number.isFinite(c.skillOverrides?.[index]?.crit)?
     ' <strong class="override-note">手动覆盖</strong> 自动值 '+percent(b.critFactor+(row.aftershock?b.aftershockExtra:0))+'。':'';
   const factors=[
-    ['战斗攻击力',fmt(b.initial)+' 初始 ＋ '+fmt(b.combatStat-b.initial)+' 战斗加成'+(teamAttack?' · '+teamAttack:'')],
+    ['战斗攻击力',[fmt(b.initial)+' 初始 ＋ '+fmt(b.combatStat-b.initial)+' 战斗加成',ownAttack,teamAttack].filter(Boolean).join(' · ')],
     ['终结技倍率',pct(d.coefficient)],
     ['通用倍率＋技能附加',withSources(pct(d.generic+d.skill),'general')+
       (wearElement?'，五号位'+element+'伤害 +30%':'')+(d.skill?'，招式附加 '+pct(d.skill):'')],
@@ -210,7 +252,7 @@ document.getElementById('nekoNotes').innerHTML=`<p>猫又按 Lv.60、核心技 F
 document.getElementById('anbyNotes').innerHTML=`<p>零号·安比按 Lv.60、核心技 F、Lv.60 牺牲洁纯计算。技能默认 Lv.12，三影、五影分别提高两级。默认潜能 VI 阶，银星按覆盖整轮计算。默认轴包含强化特殊技 3 次、终结技 1 次、手动三连 6 组及连携技 2 次。</p>
 <p>一组三连计入苍光 3 次、白雷 3 次、雷殛 1 次。潜能 I 起再计苍光·临界 1 次。依照本页指定口径，一影每次强化特殊技追加一整组，二影每次终结技的 6 层电鸣追加两整组。六影每累计 6 次白雷追加一次电磁涡流。</p>
 <p>白雷、雷殛、苍光·临界和电磁涡流为追加攻击。队伍中有击破或支援角色时，电极化提供 10% 暴击率，提高对银星目标的追加攻击增伤。此时潜能 I 起，连携和终结技也按追加攻击结算。银星目标的追加攻击暴伤额外增加零号·安比暴伤的 30%，潜能 I 起改为 35%。四影对银星目标无视 12% 电抗。</p>
-<p>驱动默认 4 如影相随＋2 雷暴重金属。如影相随和牺牲洁纯的层数默认各为三层，会按所填层数覆盖本轮。感电状态用于雷暴重金属四件套的攻击力加成。</p>
+<p>驱动默认 4 如影相随＋2 雷暴重金属。如影相随的层数在驱动盘区调节，牺牲洁纯的层数在战斗条件中调节，均默认三层并按所填层数覆盖本轮。感电状态用于雷暴重金属四件套的攻击力加成。</p>
 <p>资料来源见 <a href="https://zzz.gachabase.net/agents/1381/soldier-0-anby/beta?lang=chs">零号·安比</a>、<a href="https://zzz.gachabase.net/w-engines/14138/severed-innocence/beta?lang=chs">牺牲洁纯</a>、<a href="https://zzz.gachabase.net/drive-discs/beta?lang=chs">驱动盘</a>。</p>`;
 
 function renderUltimateExample(c,b){
@@ -278,6 +320,10 @@ function renderUltimateExample(c,b){
 }
 
 const expandedRotationNote={
+  qingyi:'默认轴为第三段连打 10 次、强化四段 2 次、醉花月云转完整突进与终结一击各 2 次、强化特殊技 2 次、连携和终结各 1 次。突进每次按完整五次突进计算，月上海棠倍率为技能表三段之和。羁服、电压及茶劲可调；队伍有强攻或同阵营队友时，冲击力超过 120 的部分按每点 6 攻击力结算，最多 600。六影额外暴伤只作用于醉花月云转。',
+  lycaon:'默认轴为两套蓄力普攻、两次蓄力强化特殊技，以及冰舞、连携和终结各 1 次。围猎期间同步攻击可填入对应招式次数。普通物理攻击与冰属性蓄力分开结算。关闭潜能后，冰舞及金属狼足的非冰增伤停用；潜能后续阶段提供的冲击力只影响失衡积累。',
+  roxy:'默认轴为滑行 1 次、自旋 2 秒、风炮和恕不远送各 1 次、额外爆炸与风眼爆鸣各 3 次、巨型风旋 1 次、连携和终结各 1 次。风炮跟随滑行次数，六影余响跟随巨型风旋次数，可调每次命中的余响数量。浸染／净化、风化与影画增益按覆盖选项结算。风化的异常跳伤本轮未计入。',
+  jufufu:'默认轴为强化特殊技和普通攻击「虎威」各 2 次、威势旋转 6 次、虎釜崩和终结各 1 次、虎釜震煞 2 次。六影爆米花按每次威势旋转消耗 1 点威势、命中 3 颗计算。燎身爪前三段、虎奔与普通旋转使用物理抗性。虎啸按初始攻击力计算；潜能和专武覆盖可在本轮增益中调节。',
   miyabi:'默认轮转为三次满蓄霜月、三次霜灼·破、三次烈霜紊乱、一次名残雪、一次春临，以及飞雪斩击与追击各一次。碎冰等补充招式默认 0 次。风花前两段和冲刺为物理，其他攻击为烈霜，使用冰伤和冰抗。碎冰、霜灼·破、烈霜紊乱各行独立计数。烈霜积蓄归属、霜寒剩余时间和冰抗无视覆盖可在本轮增益中调节。南宫羽的极性紊乱及异放由队友卡片设置控制。',
   cissia:'蚀骨输入框填基础触发次数。四影、六影额外触发由增益选项补计；毒牙的基础倍率含首轮三段与收招，延长攻击填在额外打击行。',
   seed:'落霰风暴为电伤。霜蕊轮舞前两段、磁陨轮舞为物理伤害，使用独立的物理抗性输入。崩坠一、二式分行。二影能量增伤按一次衔接重戮分摊，六影激光每次填一组三道，按实际触发次数填写。',
