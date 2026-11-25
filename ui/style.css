@@ -23,7 +23,7 @@ body::before{
   --edge-shade:.43;
   content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:var(--background-opacity);
   background:linear-gradient(90deg,rgb(var(--wallpaper-shade)/var(--edge-shade)),rgb(var(--wallpaper-shade)/.76) 13%,rgb(var(--wallpaper-shade)/.76) 87%,rgb(var(--wallpaper-shade)/var(--edge-shade))),
-    url("nahida-meadow.webp") center top/max(100%,208vh) auto no-repeat;
+    url("../assets/nahida-meadow.webp") center top/max(100%,208vh) auto no-repeat;
 }
 @media(max-width:1200px){body::before{--edge-shade:.76}}
 button:enabled:hover{background:var(--surface-hover)}

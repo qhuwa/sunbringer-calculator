@@ -5,11 +5,12 @@ function factorSourceList(entries,format){
 }
 
 function factorSourceGroup(label,entries,format){
-  const details=factorSourceList(entries,format);
-  return details?'<div><b>'+label+' '+format(sumBonuses(entries))+'</b>（'+details+'）</div>':'';
+  const active=entries.filter(([,value])=>Number.isFinite(value) && value!==0);
+  const details=factorSourceList(active,format);
+  return details?'<div><b>'+label+' '+format(sumBonuses(active))+'</b>（'+details+'）</div>':'';
 }
 
-function attackCritRows(b,percent,extraCrit=0){
+function attackCritRows(b,percent,extraCrit=0,extraLabel='电位差'){
   const stats=b.statSources, [,cr,cd]=b.rolls;
   const effectiveRate=Math.min(1,Math.max(0,b.rate));
   const panelRate=[...stats.panelRate,['暴击率副词条 ×'+cr,discRoll.crit*cr]];
@@ -21,12 +22,13 @@ function attackCritRows(b,percent,extraCrit=0){
       group('手动暴击率',stats.rateAdjustment)+(b.rate!==effectiveRate?'<div>封顶前战斗暴击率 '+percent(b.rate)+'。</div>':'')],
     ['暴击伤害',percent(b.critDmg+extraCrit),group('面板暴伤',panelCd)+group('自身战斗暴伤',stats.ownCombatCd)+
       group('队友战斗暴伤',b.buffSources.normalCritDmg)+group('手动暴伤',stats.cdAdjustment)+
-      group('终结技追加攻击暴伤',[['电位差',extraCrit]])]
+      group('本招额外暴伤',[[extraLabel,extraCrit]])]
   ];
 }
 
-function renderYixuanExample(c,b){
+function renderRuptureExample(c,b){
   const row=b.rows.find(skill=>skill.ultimate), d=row.display, s=b.statSources, sources=b.buffSources;
+  const billy=isStarlightBilly(c), actor=expandedLead(c), element=elementNames[lead().element];
   const [hp, , ,atk]=b.rolls;
   const num=x=>x.toLocaleString('zh-CN',{maximumFractionDigits:4});
   const percent=x=>num(x*100)+'%';
@@ -35,25 +37,27 @@ function renderYixuanExample(c,b){
   const hpBonus=[...s.panelHpPct,['生命值副词条 ×'+hp,yiHpRoll*hp]];
   const atkBonus=[...s.panelAtkPct,['攻击力副词条 ×'+atk,atkRoll*atk]];
   const panelHp=sumBonuses(s.baseHp)*(1+sumBonuses(hpBonus))+sumBonuses(s.panelHpFlat);
-  const battleHp=panelHp*(1+sumBonuses(sources.teamHp));
+  const hpSources=[...sources.teamHp,...(s.ownBattleHp??[])];
+  const battleHp=panelHp*(1+sumBonuses(hpSources));
   const panelAtk=sumBonuses(s.baseAtk)*(1+sumBonuses(atkBonus))+sumBonuses(s.panelAtkFlat);
   const rows=[
     ['战斗贯穿力',num(b.combatStat),'<div>战斗生命 '+num(battleHp)+' × 10% ＋ 初始攻击 '+num(panelAtk)+' × 30% ＋ 固定贯穿力 '+num(sumBonuses(s.teamSheerForce))+'。</div>'+
-      group('面板生命百分比',hpBonus)+group('面板固定生命',s.panelHpFlat,num)+group('队友最大生命',sources.teamHp)+
+      group('面板生命百分比',hpBonus)+group('面板固定生命',s.panelHpFlat,num)+group('战斗最大生命',hpSources)+
       group('面板攻击百分比',atkBonus)+group('面板固定攻击',s.panelAtkFlat,num)+group('固定贯穿力',s.teamSheerForce,num)],
-    ['招式倍率',percent(d.coefficient),'符法千重 Lv.'+upgradeLevel(c.w)],
-    ['通用、以太及贯穿增伤',times(d.generic),
-      group('通用增伤',sources.general.filter(([, ,type])=>type!=='element'))+
-      group('以太增伤',[...s.ownEther,...sources.general.filter(([, ,type])=>type==='element')])+
+    ['招式倍率',percent(d.coefficient),lead().ultimate+' Lv.'+upgradeLevel(c.w)+
+      (billy && row.natural.spent?'。基础 '+percent(row.natural.baseMult)+'，本行共消耗 '+row.natural.spent+' 层煊赫星辉，每层追加 100% 贯穿力。':'')],
+    ['通用、'+element+'及贯穿增伤',times(d.generic),
+      group('通用增伤',[...sources.general.filter(([, ,type])=>type!=='element'),...(s.ownGeneral??[])])+
+      group(element+'增伤',[...s.ownElement,...sources.general.filter(([, ,type])=>type==='element')])+
       group('全招式贯穿增伤',[...s.ownSheer,...sources.sheer])],
     ['招式专项增伤',percent(d.skill),group('本招附加',row.natural.categorySources)],
     ['最终倍率',times(d.final),group('最终伤害加成',row.natural.finalSources)],
     ...attackCritRows(b,percent),
     ['期望暴击倍率',times(d.crit),'1 ＋ 有效暴击率 × 暴击伤害。'],
-    ['目标受伤倍率',times(d.received),group('目标受伤提升',sources.received)],
+    ['关卡受伤倍率',times(d.received),group('关卡受伤提升',sources.received)],
     ['防御区',times(d.defense),'贯穿伤害自动防御区为 ×1。'],
-    ['以太抗性区',times(d.resist),'<div>敌方基础以太抗性 '+percent(c.res/100)+'。</div>'+
-      group('减抗及无视抗性',[...sources.resDown,['仪玄 · 二影消灾渡厄',row.extraRes]])],
+    [element+'抗性区',times(d.resist),'<div>敌方基础'+element+'抗性 '+percent(c.res/100)+'。</div>'+
+      group('减抗及无视抗性',[...sources.resDown,...(s.ownRes??[]),[actor?actor.name+' · 本招':billy?'星徽·比利':'仪玄 · 二影消灾渡厄',row.extraRes]])],
     ['失衡区',times(d.stun),group('失衡易伤',[...(c.stun?sources.stun:[]),...sources.stunAlways])]
   ];
   el('ultimateExample').innerHTML='<div class="tablewrap factor-table"><table><thead><tr><th>乘区</th><th>结算值</th><th>来源与计算</th></tr></thead><tbody>'+
@@ -62,7 +66,7 @@ function renderYixuanExample(c,b){
 }
 
 function renderDetailedAttackBreakdown(c,b){
-  const ye=isYeShunguang(c);
+  const ye=isYeShunguang(c), actor=expandedLead(c), element=elementNames[lead().element];
   const index=b.rows.findIndex(row=>row.ultimate);
   const row=b.rows[index], d=row.display, sources=b.buffSources, stats=b.statSources;
   const [atk,,,pen]=b.rolls, fifth=b.mains[4];
@@ -87,40 +91,45 @@ function renderDetailedAttackBreakdown(c,b){
     (adjustedAtk?'<div><b>自定义攻击力变化 '+num(adjustedAtk)+'</b>（'+
       [list(stats.atkPctAdjustment),list(stats.atkFlatAdjustment,num)].filter(Boolean).join('、')+'）</div>':'')+
     group('自身战斗攻击力',stats.ownCombatAtkPct)+group('队友攻击力百分比',sources.teamAtkPct)+
-    group('队友固定攻击力',sources.teamAtk,num)+
-    '<div>战斗攻击力 = 调整后面板 '+num(b.initial)+' ＋ 基础攻击力 '+num(baseAtk)+' × '+percent(sumBonuses(stats.ownCombatAtkPct)+sumBonuses(sources.teamAtkPct))+' ＋ '+num(sumBonuses(sources.teamAtk))+' 固定攻击力。</div>');
-  const skill=(ye?yeSkills:nekomataSkills)[index], level=upgradeLevel(c.w);
-  const m6=row.natural.m6?'<div>六影最后一击额外 ＋ '+percent(row.natural.m6)+'。</div>':'';
-  add('终结技倍率',percent(d.coefficient),skill.name.split('：')[1]+' Lv.'+level+'，'+percent(skill.base/10000)+' ＋ '+(level-1)+' × '+percent(skill.step/10000)+'。'+m6,
+    group('队友固定攻击力',sources.teamAtk,num)+group('自身固定攻击力',[
+      ...(stats.ownCombatAtkFlat??[]),['赛维里安 · 暴击率转化',(b.ownAttack??0)-sumBonuses(stats.ownCombatAtkFlat??[])]
+    ],num)+
+    '<div>战斗攻击力 = 调整后面板 '+num(b.initial)+' ＋ 基础攻击力 '+num(baseAtk)+' × '+percent(sumBonuses(stats.ownCombatAtkPct)+sumBonuses(sources.teamAtkPct))+' ＋ '+num(sumBonuses(sources.teamAtk)+(b.ownAttack??0))+' 固定攻击力。</div>');
+  const skill=(actor?.skills??(ye?yeSkills:nekomataSkills))[index], level=upgradeLevel(c.w);
+  const extraMult=actor?row.natural.mult-row.natural.baseMult:row.natural.m6;
+  const extra=extraMult?'<div>本招附属倍率 '+percent(extraMult)+'。</div>':'';
+  add('终结技倍率',percent(d.coefficient),skill.name.split('：')[1]+' Lv.'+level+'，'+percent(skill.base/10000)+' ＋ '+(level-1)+' × '+percent(skill.step/10000)+'。'+extra,
     'coefficient',row.natural.mult,percent);
-  const physical=[...sources.general.filter(([, ,type])=>type==='element'),['五号位物理伤害',fifth==='physical'?.30:0]];
-  const ordinary=sources.general.filter(([, ,type])=>type!=='element');
-  add('通用与物理增伤',times(d.generic),'<div>基础 ×1，以下加成相加。</div>'+group('普通增伤',ordinary)+group('物理增伤',physical),'generic',b.bonus);
+  const elemental=[...sources.general.filter(([, ,type])=>type==='element'),...(stats.ownElement??[['五号位物理伤害',fifth==='physical'?.30:0]])];
+  const ordinary=[...sources.general.filter(([, ,type])=>type!=='element'),...(stats.ownGeneral??[])];
+  add('通用与'+element+'增伤',times(d.generic),'<div>基础 ×1，以下加成相加。</div>'+group('普通增伤',ordinary)+group(element+'增伤',elemental),'generic',b.bonus);
   add('终结技专项增伤',percent(d.skill),(group('招式增伤',row.natural.categorySources)||'<div>当前为 0%。</div>')+
-    '<div>与通用、物理增伤合计 '+times(d.generic+d.skill)+'。</div>','skill',row.natural.category,percent);
+    '<div>与其他普通增伤合计 '+times(d.generic+d.skill)+'。</div>','skill',row.natural.category,percent);
   add('最终倍率',times(d.final),'<div>基础 ×1。</div>'+group('最终伤害加成',row.natural.finalSources),'final',row.natural.final);
 
-  const critRows=attackCritRows(b,percent);
+  const critRows=attackCritRows(b,percent,row.critDamageBonus,actor?.name+' · 本招');
   critRows.forEach(row=>add(...row));
-  add('期望暴击倍率',times(d.crit),'1 ＋ '+critRows[0][1]+' × '+critRows[1][1]+'。','crit',b.critFactor);
-  add('目标受伤倍率',times(d.received),'<div>基础 ×1。</div>'+group('目标受伤提升',sources.received),'received',1+sumBonuses(sources.received));
+  add('期望暴击倍率',times(d.crit),'1 ＋ '+critRows[0][1]+' × '+critRows[1][1]+'。','crit',b.critFactor+Math.max(0,Math.min(1,b.rate))*(row.critDamageBonus??0));
+  add('关卡受伤倍率',times(d.received),'<div>基础 ×1。</div>'+group('关卡受伤提升',sources.received),'received',1+sumBonuses(sources.received));
 
   const penetration=[['五号位穿透率',fifth==='pen'?.24:0],['河豚电音两件',c.two==='puffer'?.08:0],...sources.teamPen,
-    ['自定义穿透率',c.customPen/100]];
+    ['自定义穿透率',c.customPen/100],...(stats.ownPen??[]),[actor?.name+' · 本招',row.extraPen]];
   const flatPen=[['穿透值副词条 ×'+pen,discRoll.pen*pen],['额外固定穿透值',c.extraFlatPen??0]];
-  const ignoreSources=[...sources.ignore,['叶瞬光 · 二影（飞光／斩妄开天）',row.extraIgnore??0]];
+  const ignoreSources=[...sources.ignore,...(stats.ownIgnore??[]),[actor?actor.name+' · 本招及音擎':'叶瞬光 · 二影（飞光／斩妄开天）',row.extraIgnore??0]];
   const ignore=b.ignore+(row.extraIgnore??0);
-  const effectiveDef=Math.max(0,c.enemy*(1-ignore)*(1-b.penRate)-sumBonuses(flatPen));
+  const effectivePen=b.penRate+(row.extraPen??0);
+  const effectiveDef=Math.max(0,c.enemy*(1-ignore)*(1-effectivePen)-sumBonuses(flatPen));
   add('防御区',times(d.defense),'<div>敌方基础防御 '+num(c.enemy)+'。</div>'+group('减防／无视防御',ignoreSources)+
     group('穿透率',penetration)+group('固定穿透值',flatPen,num)+
-    '<div>有效防御 = max(0, '+num(c.enemy)+' × (1 − '+percent(ignore)+') × (1 − '+percent(b.penRate)+') − '+num(sumBonuses(flatPen))+') = '+
+    '<div>有效防御 = max(0, '+num(c.enemy)+' × (1 − '+percent(ignore)+') × (1 − '+percent(effectivePen)+') − '+num(sumBonuses(flatPen))+') = '+
     num(effectiveDef)+'。防御区 = 794 ÷ (794 ＋ '+num(effectiveDef)+')。</div>','defense',row.automaticDefense);
-  const effectiveRes=c.res/100-sumBonuses(sources.resDown);
-  add('物抗区',times(d.resist),'<div>敌方基础物抗 '+percent(c.res/100)+'。</div>'+group('减抗／无视物抗',sources.resDown)+
-    '<div>有效物抗 '+percent(effectiveRes)+'。抗性倍率 = 1 − 有效物抗。</div>','resist',1-effectiveRes);
+  const resSources=[...sources.resDown,...(stats.ownRes??[]),[actor?.name+' · 本招',row.extraRes??0]];
+  const effectiveRes=c.res/100-sumBonuses(resSources);
+  add(element+'抗性区',times(d.resist),'<div>敌方基础'+element+'抗性 '+percent(c.res/100)+'。</div>'+group('减抗／无视抗性',resSources)+
+    '<div>有效抗性 '+percent(effectiveRes)+'。抗性倍率 = 1 − 有效抗性。</div>','resist',1-effectiveRes);
   const snapshot=ye?yeSnapshotStun(c):!!c.stun;
   const baseStun=snapshot?c.vuln/100:1;
-  const stunSources=[...(snapshot?sources.stun:[]),...sources.stunAlways];
+  const stunSources=[...(snapshot?sources.stun:[]),...sources.stunAlways,[actor?.name+' · 失衡易伤',row.extraStun??0]];
   const veilNote=ye?'<div>决裁以开启时的失衡易伤为快照，当前快照加成 '+percent(baseStun-1+sumBonuses(stunSources))+
     '，帷幕易伤加成上限 '+percent(yeVeilCap(c))+'。本招仅应用一次帷幕倍率。</div>':'';
   const automaticStun=ye?1+Math.min(yeVeilCap(c),baseStun-1+sumBonuses(stunSources)):baseStun+sumBonuses(stunSources);
@@ -132,7 +141,7 @@ function renderDetailedAttackBreakdown(c,b){
 }
 
 function renderAttackExample(c,b,element){
-  if(isNekomata(c)||isYeShunguang(c))return renderDetailedAttackBreakdown(c,b);
+  if(isNekomata(c)||isYeShunguang(c)||expandedLead(c))return renderDetailedAttackBreakdown(c,b);
   const index=b.rows.findIndex(r=>r.ultimate);
   const row=b.rows[index], d=row.display;
   const sources=b.buffSources;
@@ -153,7 +162,7 @@ function renderAttackExample(c,b,element){
     ['最终倍率',pct(d.final)+(d.final>1?' · 橘福福潜能觉醒':'')],
     ...critRows.map(([label,value,details])=>[label,'<b>'+value+'</b>'+details]),
     ['期望暴击倍率',percent(d.crit)+' · 1 ＋ '+critRows[0][1]+' × '+critRows[1][1]+'。'+manualCrit],
-    ['目标受伤倍率',withSources(pct(d.received),'received')],
+    ['关卡受伤倍率',withSources(pct(d.received),'received')],
     ['防御区',[withSources(pct(d.defense),'ignore'),row.aftershock?describe('aftershockIgnore'):'',describe('teamPen')].filter(Boolean).join('，')],
     [(element==='物理'?'物':element)+'抗区',withSources(pct(d.resist)+' · 敌方基础'+element+'抗性 '+pct(c.res/100),'resDown')],
     ['失衡区',pct(d.stun)+' · '+[c.stun?describe('stun'):'非失衡',describe('stunAlways')].filter(Boolean).join('，')],
@@ -168,6 +177,12 @@ document.getElementById('yiNotes').innerHTML=`
 <p>贯穿力 = 初始攻击力 × 30% ＋ 战斗最大生命值 × 10% ＋ 固定贯穿力。战斗最大生命值按面板生命乘全队生命增益计算。玄墨伤害采用以太增伤与以太抗性，自动防御区为 ×1。通用、以太、贯穿与招式增伤在同一区相加。驱动优化在生命值百分比、暴击率、暴击伤害与攻击力百分比之间分配副词条，固定生命值可手动输入。</p>
 <p>二影的 15% 无视以太抗性仅用于强化特殊技及终结技，每次符法千重按消耗一次聚墨计一次 1200% 追击。四影静心按优先消耗在本轮第一组凝云术及墨烬影消计算。六影在有青溟云影时，默认按 30 秒内额外一次符法千重，并在凝神覆盖时计入 20% 贯穿增伤。额外获得玄墨值后接的普攻可手动填写。琉音默认额外增加一次青溟云影，诺姆额外增加两次玄墨迅击。</p>
 <p>数据来源见 <a href="https://zzz.gachabase.net/agents/1371/yixuan/beta?lang=chs">仪玄</a>、<a href="https://zzz.gachabase.net/w-engines/14137/qingming-birdcage/beta?lang=chs">青溟笼舍</a>和<a href="https://zzz.gachabase.net/drive-discs/33100/yunkui-tales/beta?lang=chs">云岿如我</a>。</p>`;
+
+document.getElementById('billyNotes').innerHTML=`
+<p>星徽·比利按 Lv.60、核心技 F、Lv.60 辉骑面铠计算。技能默认 Lv.12，三影和五影分别加两级。贯穿力 = 初始攻击力 × 30% ＋ 战斗最大生命值 × 10% ＋ 固定贯穿力。物理贯穿伤害使用普通暴击、物理抗性，自动防御区为 ×1。通用、物理、贯穿与招式增伤相加。</p>
+<p>默认轴包含一组骑士斗技、动力压制命中两次、孤轮特技两次、摇曳步伐、脱缰、骑士漫步、最高马力星光和骑士飞踢各一次。轴为可编辑的单轮示例，闪能、决意与招式衔接由玩家按实战填写。骑士决心的 90% 暴伤及一影的 18% 物理无视抗性默认按整轮覆盖，炽热星辉与辉骑面铠默认满层。炽热星辉需要击破、防护或支援队友。</p>
+<p>二影涡轮暴伤只作用于填入的孤轮特技次数。六影按表格顺序累计和消耗煊赫星辉，最高马力星光及骑士飞踢每次最多消耗两层，本行额外倍率以所有发动次数平均。琉音追加一次骑士飞踢，诺姆追加两次骑士漫步。</p>
+<p>数据来源见 <a href="https://zzz.gachabase.net/agents/1531/starlight-billy/beta?lang=chs">星徽·比利</a>、<a href="https://wiki.biligame.com/zzz/星徽·比利">各级招式倍率</a>与<a href="https://wiki.biligame.com/zzz/辉骑面铠">辉骑面铠各星级数值</a>。</p>`;
 
 document.getElementById('yeNotes').innerHTML=`
 <p>叶瞬光按 Lv.60、核心技 F、Lv.60 云霓孤光、基础技能 Lv.12 计算，三影和五影各提高两级。默认轴为逐云惊霆 → 两段斩流光 → 强化斩流光 灭 → 斩流光 极 → 飞光 4 段 → 掣惊雷 → 斩妄开天。其余招式默认 0 次。飞光每段为六段总倍率的六分之一，流云剑意按每道剑气填写。</p>
@@ -215,13 +230,13 @@ function renderUltimateExample(c,b){
   add('终结技增伤',percent(d.skill),(list(skill)||'当前无终结技专项增伤')+'。与通用倍率相加，本招增伤区合计 '+times(d.generic+d.skill)+'。','skill',sum(skill),percent);
   add('锐化增伤',times(d.sharp),'基础 1，'+list(sources.sharp)+'。','sharp',1+sum(sources.sharp));
   add('最终伤害',times(d.final),natural.final===1?'当前无终结技最终增伤。':'橘福福 · 潜能「侠肝义胆」使终结技最终伤害 '+signed(natural.final-1,percent)+'。','final',natural.final);
-  add('目标受伤',times(d.received),(list(sources.received)||'当前无目标受伤加成')+'。','received',1+sum(sources.received));
+  add('关卡受伤倍率',times(d.received),(list(sources.received)||'当前无关卡受伤加成')+'。','received',1+sum(sources.received));
   const initialCD=[['挽昼基础',.50],['四号位暴伤',four==='cd'?.48:0],['暴伤副词条 ×'+cd,cd*discRoll.cd],['额外初始暴伤',(c.extraInitialCritDmg??0)/100]];
   const rates=[['挽昼基础暴击率',.05],['核心技强化',.288],['极昼',.40],['蜃炎梦火',.20+.02*(c.wr-1)],['四号位暴击',four==='crit'?.24:0],['暴击副词条 ×'+cr,cr*discRoll.crit],['啄木鸟电音',c.two==='woodpecker'?.08:0],[fourSet+'四件',c.set==='star'?.12:b.initial>=1800?.16:b.initial>=1000?.08:0],['初始暴伤折算',.35*sum(initialCD)],['自定义暴击',c.customCrit/100]];
   add('战斗暴击率',percent(b.rate),list([...rates,...sources.teamCritRate])+'。初始暴伤合计 '+percent(sum(initialCD))+'（'+list(initialCD)+'），按 35% 折算。');
   add('锐暴伤害',percent(b.critDmg),list(sources.critDmg)+'。');
-  const first=Math.min(b.rate,1), second=Math.min(1,Math.max(0,b.rate-1)), m=1+b.critDmg;
-  add('期望锐暴',times(d.crit),'单暴倍率 M = '+num(m)+'，双暴倍率 M² = '+num(m*m)+'。期望 = '+percent(1-first)+' × 1 ＋ '+percent(first-second)+' × M ＋ '+percent(second)+' × M²。','crit',b.critFactor);
+  const first=Math.max(0,Math.min(b.rate,1)), second=Math.min(1,Math.max(0,b.rate-1)), m=1+b.critDmg;
+  add('期望锐暴',times(d.crit),'单暴倍率 M = '+num(m)+'，双暴倍率 M² = '+num(m*m)+'。期望 = '+percent(1-first)+' × 1 ＋ '+percent(first-second)+' × M ＋ '+percent(second)+' × M²。','crit',b.critFactor+Math.max(0,Math.min(1,b.rate))*(row.critDamageBonus??0));
   const pen=[['挽昼 · 五号位',five==='pen'?.24:0],['挽昼 · 河豚电音',c.two==='puffer'?.08:0],...sources.teamPen,['自定义穿透率',c.customPen/100]];
   const flat=discRoll.pen*flatPen+(c.extraFlatPen??0), effectiveDef=Math.max(0,c.enemy*(1-b.ignore)*(1-b.penRate)-flat);
   add('敌方防御',times(d.defense),'敌防 '+num(c.enemy)+'；无视防御／减防 '+percent(b.ignore)+'（'+list(sources.ignore)+'）；穿透率 '+percent(b.penRate)+(list(pen)?'（'+list(pen)+'）':'')+'；固定穿透 '+num(flat)+'（副词条 '+flatPen+' × 9'+(c.extraFlatPen?'，额外 '+num(c.extraFlatPen):'')+'）。有效敌防 '+num(effectiveDef)+'，倍率 = 794 ÷ (794 ＋ 有效敌防)。','defense',row.automaticDefense);
@@ -246,4 +261,59 @@ function renderUltimateExample(c,b){
   }
   const release=row.count?'此前存入 '+num(row.mark-row.accrued-ownExtra)+' ＋ 本招积攒 '+num(row.accrued)+(c.w>=6?' ＋ 六影额外结算 '+num(ownExtra):'')+' = 烬灭 '+num(row.mark)+'。':'当前释放 0 次，本行直伤、积攒和引爆均为 0。';
   el('ultimateExample').innerHTML='<p>'+team.join(' / ')+' · '+fourSet+' 4 ＋ '+twoPieceNames[c.two]+' 2</p><div class="factor-table"><table><thead><tr><th>乘区或输入</th><th>本招采用值</th><th>来源与计算</th></tr></thead><tbody>'+fields.join('')+'</tbody></table></div><p class="worked-result"><b>单次期望直伤 '+fmt(row.unit)+'</b><br>'+equation+' ≈ '+num(row.unit)+'</p><p>本轮释放 '+row.count+' 次，直伤共 '+num(row.direct)+'。'+release+'</p>';
+}
+
+const expandedRotationNote={
+  cissia:'蚀骨输入框填基础触发次数。四影、六影额外触发由增益选项补计；毒牙的基础倍率含首轮三段与收招，延长攻击填在额外打击行。',
+  seed:'落霰风暴为电伤。霜蕊轮舞前两段、磁陨轮舞为物理伤害，使用独立的物理抗性输入。崩坠一、二式分行。二影能量增伤按一次衔接重戮分摊，六影激光每次填一组三道，按实际触发次数填写。',
+  sigrid:'敛枪式各段分行。可填写一影溢出强化次数；未指定单独段数时，从有计次的敛枪式第一段起分配。',
+  banyue:'明王、专武与战栗可单独调整。怒相循环、嗔火回复和延长的失衡持续时间通过填写实际招式次数体现。',
+  yidhari:'蓄力下砸、旋转和触手各自计次。涌泉与低生命增益按所选状态覆盖；关闭涌泉后，默认连携行回到普通倍率。',
+  pyrois:'四条终结技分支独立计次。浸染、耀斑与阳炎按本轮状态设置，六影曜锋额外伤害默认只计一次。',
+  severian:'极限闪避成功的第四段与普通第四段分开计次。一影开启时，每轮第一次清场时刻换为连携技。',
+  claret:'两种派生的毁伤次数按实际触发填写。葬血强袭最多连续触发三次毁伤。六影连携技和终结技的单体毁伤自动追加，按同一毁伤倍率计算。'
+};
+function renderExpandedNotes(actor){
+  const source='https://zzz.gachabase.net';
+  el('expandedNotes').innerHTML='<p>'+expandedRotationNote[actor.slug]+'</p>'+
+    '<p>按 60 级角色、60 级专属音擎、核心技 F 和默认 12 级主动技能计算。三、五影各增加 2 级。默认轴用于比较同条件下的伤害，消耗、冷却和触发间隔由技能次数与覆盖选项体现。</p>'+
+    '<p>角色对目标造成伤害提升与通用及属性增伤相加。关卡受伤、明确的失衡易伤和锐化伤害按各自区域结算。</p>'+
+    '<p><a href="'+source+'/agents/'+actor.agentId+'/'+actor.slug+'/beta?lang=chs">角色技能数据</a> · '+
+    '<a href="'+source+'/w-engines/'+actor.weaponId+'/'+actor.weaponSlug+'/beta?lang=chs">专属音擎数据</a> · '+
+    '<a href="'+source+'/drive-discs/beta?lang=chs">驱动盘数据</a></p>';
+}
+
+function renderClaretExample(c,b){
+  const row=b.rows.find(skill=>skill.ultimate), d=row.display, stats=b.statSources, sources=b.buffSources;
+  const [def,cr,cd,pen]=b.rolls;
+  const num=x=>x.toLocaleString('zh-CN',{maximumFractionDigits:4});
+  const times=x=>'×'+num(x);
+  const defPct=[...stats.initialEntries,['防御副词条 ×'+def,discRoll.def*def]];
+  const panelCd=[...stats.panelCd,['暴伤副词条 ×'+cd,discRoll.cd*cd]];
+  const rose=c.set==='rose'?(b.initial>=1800?.16:b.initial>=1000?.08:0):0;
+  const rateEntries=[...stats.panelRate,['暴击率副词条 ×'+cr,discRoll.crit*cr],['荆棘玫瑰四件',rose],
+    ['初始暴伤折合暴击率',sumBonuses(panelCd)*.35],['猩红铭刻／终结技',stats.coreRate+row.critRateBonus],
+    ...sources.teamCritRate,['手动暴击率',c.customCrit/100]];
+  const group=(label,entries,format=pct)=>factorSourceGroup(label,entries,format);
+  const rows=[
+    ['战斗防御力',num(b.combatStat),'<div>872 基础防御 ×（1 ＋ 防御百分比）＋ 184 三号位防御 ＋ 手动固定防御。</div>'+
+      group('初始防御百分比',defPct)+group('关卡防御百分比',[['关卡',c.assault.def]])+group('队友固定防御',sources.teamDef,num)],
+    ['终结技倍率',pct(d.coefficient),'技能 Lv.'+upgradeLevel(c.w)+'。'],
+    ['通用与电属性增伤',times(d.generic),group('普通增伤',[...sources.general.filter(([, ,type])=>type!=='element'),...stats.ownGeneral])+
+      group('电属性增伤',[...sources.general.filter(([, ,type])=>type==='element'),...stats.ownElement])],
+    ['终结技专项增伤',pct(d.skill),group('招式增伤',row.natural.categorySources)],
+    ['最终倍率',times(d.final),group('最终伤害加成',row.natural.finalSources)],
+    ['关卡受伤倍率',times(d.received),group('关卡受伤提升',sources.received)],
+    ['锐化倍率',times(d.sharp),group('锐化伤害加成',[...stats.ownSharp,...sources.sharp])],
+    ['暴击率',pct(b.rate+row.critRateBonus),group('暴击率来源',rateEntries)+group('参与转化的初始暴伤',panelCd)],
+    ['锐暴伤害',pct(b.critDmg),group('锐暴伤害来源',stats.sharpCdSources)],
+    ['期望锐暴倍率',times(d.crit),'一次锐暴乘 1 ＋ 锐暴伤害，两次锐暴乘其平方。'],
+    ['防御区',times(d.defense),'<div>敌方基础防御 '+num(c.enemy)+'。</div>'+group('无视防御／减防',sources.ignore)+
+      group('穿透率',[['穿透率合计',b.penRate]])+group('固定穿透',[['副词条 ×'+pen,discRoll.pen*pen]],num)],
+    ['电抗区',times(d.resist),'<div>敌方基础电抗 '+pct(c.res/100)+'。</div>'+group('电抗削减及无视',[...sources.resDown,['克拉蕾 · 二影',row.extraRes]])],
+    ['失衡区',times(d.stun),group('失衡易伤',[...(c.stun?sources.stun:[]),...sources.stunAlways])]
+  ];
+  el('ultimateExample').innerHTML='<div class="tablewrap factor-table"><table><thead><tr><th>乘区</th><th>结算值</th><th>来源与计算</th></tr></thead><tbody>'+
+    rows.map(([name,value,details])=>'<tr><th scope="row">'+name+'</th><td>'+value+'</td><td>'+details+'</td></tr>').join('')+
+    '</tbody></table></div><p class="worked-result">单次期望伤害 <b>'+fmt(row.unit)+'</b>。本轮 '+row.count+' 次，合计 <b>'+fmt(row.direct)+'</b>。</p>';
 }

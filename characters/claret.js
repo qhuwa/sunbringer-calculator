@@ -1,0 +1,38 @@
+// GachaBase beta snapshot. Skill multipliers use 1/10000 units.
+const claret={
+  name:"克拉蕾", role:"锋御 · 电", kind:"sharp", element:203,
+  stat:441, crit:0.338, cd:0.5, ultimate:"血华誓·千锤百炼",
+  agentId:1611, weaponId:14161, weaponSlug:"crimson-thirst", slug:"claret", ultId:1611021, chainId:1611020,
+  portrait:"https://i.gachabase.net/CoCf-mIBACFwat799rAPKgCA6aXHZOqLwq9KJuV98YM/q:50/f:webp/plain/zzz/assets/acd5ab623b4e6919d0b3ef7557b207cd.png",
+  engines:[['1',"猩红渴望"]],
+  skills:[
+    {id:1611005, name:"普通攻击：血华誓·锻星（一段）", type:"basic", base:10770, step:980, defaultCount:1},
+    {id:1611006, name:"普通攻击：血华誓·锻星（二段）", type:"basic", base:28740, step:2620, defaultCount:1},
+    {id:1611007, name:"普通攻击：血华誓·锻星（三段连续斩击）", type:"basic", base:45210, step:4110, defaultCount:1},
+    {id:1611029, name:"普通攻击：血华誓·锻星（三段下砸）", type:"basic", base:17730, step:1620, defaultCount:1},
+    {id:1611010, name:"强化特殊技：血华誓·铸锋秘术", type:"ex", base:62480, step:5680, defaultCount:1},
+    {id:1611011, name:"特殊技：血华誓·斩金断铁（上挑）", type:"other", base:7660, step:700, defaultCount:1},
+    {id:1611012, name:"特殊技：血华誓·斩金断铁（横斩）", type:"other", base:8770, step:800, defaultCount:1},
+    {id:1611013, name:"特殊技：血华誓·斩金断铁（毁伤）", type:"other", base:81270, step:7390, defaultCount:1},
+    {id:1611014, name:"特殊技：血华誓·葬血强袭", type:"other", base:31280, step:2850, defaultCount:1},
+    {id:1611015, name:"特殊技：血华誓·葬血强袭（毁伤）", type:"other", base:81270, step:7390, defaultCount:1},
+    {id:1611020, name:"连携技：血华誓·血契共鸣", type:"chain", base:105800, step:9620, defaultCount:1},
+    {id:1611021, name:"终结技：血华誓·千锤百炼", type:"ult", base:225200, step:20480, defaultCount:1},
+    {id:1611001, name:"普通攻击：血锻四式（一段）", type:"basic", base:5440, step:500},
+    {id:1611002, name:"普通攻击：血锻四式（二段）", type:"basic", base:6720, step:620},
+    {id:1611003, name:"普通攻击：血锻四式（三段）", type:"basic", base:9520, step:870},
+    {id:1611004, name:"普通攻击：血锻四式（四段）", type:"basic", base:28950, step:2640},
+    {id:1611008, name:"普通攻击：血华誓·伏钺", type:"basic", base:32800, step:2990},
+    {id:1611009, name:"特殊技：初辉启鸣", type:"other", base:9010, step:820},
+    {id:1611016, name:"冲刺攻击：淬火", type:"other", base:5290, step:490},
+    {id:1611017, name:"冲刺攻击：淬火（铭刻）", type:"other", base:13420, step:1220},
+    {id:1611018, name:"闪避反击：回锋", type:"other", base:27250, step:2480},
+    {id:1611019, name:"闪避反击：血华誓·回锋", type:"other", base:33000, step:3000},
+    {id:1611022, name:"快速支援：厄月再临", type:"assist", base:5290, step:490},
+    {id:1611023, name:"快速支援：血华誓·厄月再临", type:"assist", base:11580, step:1060},
+    {id:1611027, name:"支援突击：血华誓·无垢熔锋", type:"assist", base:44620, step:4060},
+    {id:1611028, name:"反制支援：寸铁不让", type:"assist", base:115300, step:10490},
+    {id:1611030, name:"支援突击：血华誓·琢形", type:"assist", base:85630, step:7790},
+    {id:1611096, name:"六影附加毁伤（单体）", type:"other", base:81270, step:7390, automatic:true}
+  ]
+};

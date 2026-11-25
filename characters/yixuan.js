@@ -101,11 +101,15 @@ function yiStats(c,buffs,mains,custom){
     panelCd:[['基础暴击伤害',.50],['四号位主属性',fourth==='cd'?.48:0],['折枝剑歌两件',yiSet(c,'branch')?.16:0]],
     ownCombatCd:[['玄墨暗涌 · 凝神',yiFocused(c)?.40:0]],
     cdAdjustment:[['手动暴击伤害',(c.customNormalCd??0)/100]],
-    ownEther:[['五号位主属性',fifth==='ether'?.30:0],['青溟笼舍 · 以太伤害',yiWeaponStacks(c)*(.08+.012*yiWeaponRank(c))],
+    ownElement:[['五号位主属性',fifth==='ether'?.30:0],['青溟笼舍 · 以太伤害',yiWeaponStacks(c)*(.08+.012*yiWeaponRank(c))],
       ['混沌重金属两件',yiSet(c,'chaoticMetal')?.10:0]],
     ownSheer:[['云岿如我四件满层',yiSetStacks(c)===3?.10:0],['六影 · 凝神',c.w>=6 && yiFocused(c)?.20:0]],
     teamSheerForce:[...buffs.entries.sheerForce,['手动固定贯穿力',c.customSheerForce??0]]
   };
+  return ruptureStats(buffs,statSources);
+}
+
+function ruptureStats(buffs,statSources){
   const baseHp=sumBonuses(statSources.baseHp), baseAtk=sumBonuses(statSources.baseAtk);
   const panelHp=baseHp*(1+sumBonuses(statSources.panelHpPct))+sumBonuses(statSources.panelHpFlat);
   const panelAtk=baseAtk*(1+sumBonuses(statSources.panelAtkPct))+sumBonuses(statSources.panelAtkFlat);
@@ -116,7 +120,7 @@ function yiStats(c,buffs,mains,custom){
   const rate=sumBonuses(statSources.panelRate)+sumBonuses(statSources.ownCombatRate)+sumBonuses(statSources.rateAdjustment);
   const critDmg=sumBonuses(statSources.panelCd)+sumBonuses(statSources.ownCombatCd)+sumBonuses(statSources.cdAdjustment)+buffs.normalCritDmg;
   return {initialBase,hpRollForce,atkRollForce,rate,critDmg,statSources,
-    bonus:1+buffs.general+buffs.sheer+sumBonuses(statSources.ownEther)+sumBonuses(statSources.ownSheer),
+    bonus:1+buffs.general+buffs.sheer+sumBonuses(statSources.ownElement)+sumBonuses(statSources.ownSheer),
     combatWithRolls:(hp,atk)=>(yiHpConversion*panelHp+hpRollForce*hp)*hpMultiplier+
       yiAtkConversion*panelAtk+atkRollForce*atk+fixedForce};
 }

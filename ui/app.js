@@ -11,6 +11,7 @@ const emptyTeammate={name:'空气',role:'空位',portrait:null,engines:[['0','�
 const supportEngines=signature=>[['1',signature],[String(kaboomEngine),'好斗的阿炮'],['0','其他音擎']];
 const teammateChoices={
   air:emptyTeammate,
+  cissia:{...cissia,engines:[...cissia.engines,['0','其他音擎']]},
   jufufu:{name:'橘福福',role:'击破 · 火',portrait:portraits[1],engines:[['1','福虓炉炉'],['0','燃狱齿轮']]},
   roxy:{name:'洛克茜',role:'击破 · 风',portrait:'https://i.gachabase.net/DijdTpaLWeJmg39VwoMIkRzIVyKh8cy96PpISuBx68c/q:50/f:webp/plain/zzz/assets/386b80141590c07add669b27246d96df.png',engines:[['1','永夜辗眠'],['0','其他音擎']]},
   norma:{name:'诺姆',role:'击破 · 火',portrait:'https://i.gachabase.net/ZCzHYreyZcNjBTh-HiFeXL7mazPZS4lVSvWEcZkklxc/q:50/f:webp/plain/zzz/assets/136be6592f54d191d26e33e3d8cd955c.png',engines:[['1','首席跟班'],['0','其他音擎']]},
@@ -48,7 +49,7 @@ el('rollLocks').innerHTML=statNames.map((name,i)=>`<div class="disc-field">
 const rollInputs=statNames.map((_,i)=>el('discRoll'+i));
 const rollLocks=statNames.map((_,i)=>el('lockDiscRoll'+i));
 const sunbringer={name:'挽昼',role:'锋御 · 燎源',element:201,ultimate:'此愿，重塑万象',portrait:portraits[0],engines:[['1','蜃炎梦火']]};
-const leadChoices={sunbringer,nekomata,anby,yeShunguang,yixuan};
+const leadChoices={sunbringer,nekomata,anby,yeShunguang,yixuan,starlightBilly,...expandedLeads};
 const sunInitial={set:'star',two:'inferno',main4:'crit',main5:'auto',main6:'def'};
 const sunFour={star:'星之碑',rose:'荆棘玫瑰'};
 let main='sunbringer';
@@ -58,14 +59,16 @@ const leadSetup={
   nekomata:{skills:nekomataSkills,four:nekoFour,two:nekoTwo,initial:nekoInitial},
   anby:{skills:anbySkills,four:anbyFour,two:anbyTwo,initial:anbyInitial},
   yeShunguang:{skills:yeSkills,four:yeFour,two:yeTwo,initial:yeInitial},
-  yixuan:{skills:yiSkills,four:yiFour,two:yiTwo,initial:yiInitial}
+  yixuan:{skills:yiSkills,four:yiFour,two:yiTwo,initial:yiInitial},
+  starlightBilly:{skills:billySkills,four:billyFour,two:billyTwo,initial:billyInitial},
+  ...Object.fromEntries(Object.entries(expandedLeads).map(([id,actor])=>[id,expandedDriveSetup(actor)]))
 };
 const activeSkills=()=>leadSetup[main].skills;
 const fourPieces=()=>leadSetup[main].four;
 const twoPieces=()=>leadSetup[main].two;
 const defaultDiscs=()=>leadSetup[main].initial;
-const leadRollNames=id=>id==='yixuan'?['生命 %','暴击率','暴击伤害','攻击 %']:
-  id==='sunbringer'?statNames:['攻击 %',...statNames.slice(1)];
+const leadRollNames=id=>usesRupture({main:id})?['生命 %','暴击率','暴击伤害','攻击 %']:
+  usesSharp({main:id})?statNames:['攻击 %',...statNames.slice(1)];
 function teammateCard(slot,index){
   const initial=defaultTeammates[slot];
   const choices=Object.entries(teammateChoices).map(([id,actor])=>`<option value="${id}"${id===initial?' selected':''}>${actor.name}</option>`).join('');
@@ -111,8 +114,18 @@ el('rchar').closest('.fields').insertAdjacentHTML('beforeend',
   '<div class="wide fields" id="rinaControls" hidden><label>潜能觉醒 · 完美侍奉<select id="rinaPotential">'+potentialOptions+
   '</select></label><label>丽娜觉醒前穿透率 %<input id="rinaBasePen" type="number" min="0" max="100" step="any" value="70.4"></label></div>');
 el('rinaPotential').value=6;
+el('rchar').closest('.fields').insertAdjacentHTML('beforeend',
+  '<label class="wide" id="cissiaRegenLabel" hidden>希希芙初始能量自动回复<input id="cissiaRegen" type="number" min="0" step="any" value="3.68" disabled></label>');
+const expandedFieldId=(id,key)=>'lead-'+id+'-'+key;
+el('expandedSettings').innerHTML=Object.entries(expandedControls).map(([id,fields])=>
+  '<div class="fields" data-expanded-role="'+id+'" hidden>'+fields.map(([key,label,min,max,value])=>{
+    const input=expandedFieldId(id,key);
+    return max===undefined?'<label class="roll-limit"><input id="'+input+'" type="checkbox" '+(min===false?'':'checked')+' disabled>'+label+'</label>':
+      '<label>'+label+'<input id="'+input+'" type="number" min="'+min+'" max="'+max+'" step="1" value="'+value+'" disabled></label>';
+  }).join('')+'</div>'
+).join('');
 const multiplierFields=['coefficient','generic','skill','final','received','sharp','crit','defense','resist','stun','mark'];
-const activeMultiplierFields=()=>main==='sunbringer'?multiplierFields:multiplierFields.filter(f=>f!=='sharp' && f!=='mark');
+const activeMultiplierFields=()=>multiplierFields.filter(f=>(f!=='sharp' || usesSharp({main})) && (f!=='mark' || main==='sunbringer'));
 let overrides=[];
 function buildRotation(){
   const roster=activeSkills(), normal=main!=='sunbringer';
@@ -122,7 +135,7 @@ function buildRotation(){
 }
 el('notes').innerHTML=`<p>按 Lv.60 代理人、Lv.60 音擎、核心技 F、基础技能 Lv.12 计算。影画三、五各提升两级。默认按招式明细从上到下结算。默认轮转中毁伤 3 次，不灭热忱 2 次，其余已启用招式各 1 次。下方补充招式默认 0 次，「斩棘」和「执旌」的一至四段可分别计次。「以挽昼之名」和「筑万众之梦」依次在两段终结技之前释放。消耗残痕触发的毁伤统一在「毁伤」行填写次数。毁伤沿用普攻技能等级，每消耗一层残痕触发一次。单次倍率为 80.5% ＋ (普攻等级 − 1) × 7.4%。同一招式多次发动时，表中直伤、烬痕和烬灭均为该行合计。</p>
 <p>轮转按表中次序累计。¹「烬灭扣血」列记在引爆招式上，包含此前储存的烬痕。聚锋、长暗终焉、永昼之炬和两段终结技按实际伤害的 60% 积攒，毁伤为 40%。二影令其余招式按 30% 积攒。默认将各招式积攒量乘 1.35，四影指定的首次引爆改为乘 2。若选择加算假设，各招积攒率加 35 个百分点，该次四影引爆再加 65 个百分点。四影可指定给聚锋后的永昼之炬或第二段终结技。六影另结算第二段终结技自身所积攒烬痕的 80%。未引爆的烬痕不计入总伤害。</p>
-<p>期望直伤 = 战斗防御力 × 招式倍率 ×（通用倍率 ＋ 招式增伤）× 锐化倍率 × 最终倍率 × 目标受伤倍率 × 期望锐暴倍率 × 防御区 × 火抗区 × 失衡倍率。挽昼和蜃炎梦火分别提供 441 和 446 基础防御，武器另加 48% 防御。基础锐暴伤害为 150%，当前生效的加成见上方算例。初始暴伤的 35% 转为暴击率，虎啸的战斗中暴伤不计入此转换。设 M = 1 ＋ 锐暴伤害，单暴乘 M，二次锐暴成功乘 M²。暴击率 100% 至 200% 时，二次锐暴概率为暴击率超出 100% 的部分；达到 200% 时，每次均乘 M²。</p>
+<p>期望直伤 = 战斗防御力 × 招式倍率 ×（通用倍率 ＋ 招式增伤）× 锐化倍率 × 最终倍率 × 关卡受伤倍率 × 期望锐暴倍率 × 防御区 × 火抗区 × 失衡倍率。挽昼和蜃炎梦火分别提供 441 和 446 基础防御，武器另加 48% 防御。基础锐暴伤害为 150%，当前生效的加成见上方算例。初始暴伤的 35% 转为暴击率，虎啸的战斗中暴伤不计入此转换。设 M = 1 ＋ 锐暴伤害，单暴乘 M，二次锐暴成功乘 M²。暴击率 100% 至 200% 时，二次锐暴概率为暴击率超出 100% 的部分；达到 200% 时，每次均乘 M²。</p>
 <p>防御区 = 794 ÷ [794 ＋ max(0, 敌防 × (1 − 无视防御) × (1 − 穿透率) − 穿透值)]。火抗区倍率 = 1 − 有效火抗。有效火抗为敌方基础火抗扣除减抗和无视火抗后的数值。例如基础火抗 −20%，挽昼一影再无视 15 个百分点，火抗区倍率为 1.35。敌防 953、火抗 0%、失衡 150% 是可改的示例目标。锐化增伤独立相乘，即 (1 ＋ 通用、火属性及招式增伤之和) × (1 ＋ 锐化增伤之和)。</p>
 <p>极昼及当前队伍满足条件的状态和套装按全程覆盖计算。知更鸟装备雪兔时三层为 18%。击破队友默认使用赤翼夜曲，触发后为队伍提供 8% 锐化增伤，同队只计一次。两件炎狱为 10% 火伤。橘福福的潜能默认 VI 阶，可单独调整。虎啸下「侠肝义胆」的连携和终结最终倍率独立相乘，两段终结分别生效，烬痕按增幅后的直伤积攒。橘福福额外能力关闭，一影的 35 个百分点失衡易伤单独生效。福虓炉炉与星韵流彩按两层。燃狱齿轮影响击破效率，本页仅统计给定状态下的挽昼输出。</p>
 <p><a href="https://zzz.gachabase.net/agents/1361/trigger/beta?lang=chs">扳机</a>的核心技 F 提供 35 个百分点失衡易伤，一影额外增加 20 个百分点，两项在未失衡时也计入。<a href="https://zzz.gachabase.net/w-engines/14136/spectral-gaze/beta?lang=chs">索魂影眸</a>由电属性追加攻击触发，1 至 5 星分别降低敌方防御力 25%、28.75%、32.5%、36.25%、40%，计入同一减防区。核心技与专武的 5 秒效果均按持续覆盖计算。二影满层提供 24% 战斗中普通暴伤，对挽昼锐暴的贡献为 0；扳机的自身伤害和击破效率不纳入挽昼轮转。</p>
@@ -130,7 +143,8 @@ el('notes').innerHTML=`<p>按 Lv.60 代理人、Lv.60 音擎、核心技 F、基
 <p>自定义词条只作用于当前战斗条件和配置对照。无视防御、穿透率、通用增伤、锐化增伤、火属性增伤、暴击率、锐暴伤害、防御力百分比、固定防御和失衡易伤都可以填写正负百分点。它们会参与驱动盘优化，所以改变后四至六号位和副词条可能重新分配。</p>
 <p>一至三号位主属性固定，四至六号位可指定。自动寻优按词条数上限比较配装。四号位比较暴击率、暴击伤害和防御力，五号位比较火伤、穿透率和防御力，六号位选择防御力。固定轮转的锐化伤害使用防御力，生命、攻击及回复等主属性对本轮输出无直接加成。河豚电音两件提供 8% 穿透率，可与五号位叠至 32%；啄木鸟电音两件提供 8% 暴击率。荆棘玫瑰两件提供 16% 防御力，与星之碑四件搭配时两套合计提供 32% 防御力。六张均为荆棘玫瑰时，该套两件效果计一次。</p>
 <p>所选数量的有效副词条在防御力 ${pct(discRoll.def)}、暴击率 2.4%、暴击伤害 4.8%（折合暴击率 1.68 个百分点）和固定穿透值 9 之间分配。每张盘有四种初始副词条与五次强化机会，主属性与同盘副词条互斥。其余位置由无效词条补足。面板先确定伤害最高的主属性和副词条总数，再优先均分各盘的有效词条数，并尽量分散同类词条。任意三种副词条的数量之和最多为 X，任意两种的数量之和最多为 Y，每一种最多为 Z。总预算为上限，组合限制较紧时允许使用更少的有效词条。副词条 ×6 表示初始 1 次加上强化 5 次。</p>
-<p>任一队友位可选「空气」。只有队伍中有击破或防护队友时，本页才计入挽昼「众愿一心」的 25% 锐暴伤害。队友可切换为洛克茜、诺姆或丽娜。洛克茜按火浸染、风化及专武满覆盖计算，计入锐暴伤害、受伤倍率与失衡易伤。诺姆与挽昼同阵营，技术鸿沟与首席跟班按满层计算。丽娜默认觉醒 VI 阶，觉醒前自身穿透率可改。按人偶在场、挽昼位于人偶附近计算。II 至 VI 阶增加丽娜自身穿透率 1.6 个百分点，并按各阶系数为队友提供防御力，上限 468 点。1 影的 130% 按技能归属应用于核心被动的穿透率共享。啜泣摇篮按满层普通增伤计算，与火属性和招式增伤相加。<a href="https://zzz.gachabase.net/agents/1211/rina/beta?lang=chs#potential">丽娜潜能与影画说明</a>。防护队友装备雪兔四件时，按三层覆盖本轮。对应角色的专属音擎星级仍可单独调节，未装备专属音擎时不计该专属效果。</p>
+<p>任一队友位可选「空气」。只有队伍中有击破或防护队友时，本页才计入挽昼「众愿一心」的 25% 锐暴伤害。队友可切换为洛克茜、诺姆或丽娜。洛克茜按火浸染、风化及专武满覆盖计算，计入锐暴伤害、普通增伤与失衡易伤。诺姆与挽昼同阵营，技术鸿沟与首席跟班按满层计算。丽娜默认觉醒 VI 阶，觉醒前自身穿透率可改。按人偶在场、挽昼位于人偶附近计算。II 至 VI 阶增加丽娜自身穿透率 1.6 个百分点，并按各阶系数为队友提供防御力，上限 468 点。1 影的 130% 按技能归属应用于核心被动的穿透率共享。啜泣摇篮按满层普通增伤计算，与火属性和招式增伤相加。<a href="https://zzz.gachabase.net/agents/1211/rina/beta?lang=chs#potential">丽娜潜能与影画说明</a>。防护队友装备雪兔四件时，按三层覆盖本轮。对应角色的专属音擎星级仍可单独调节，未装备专属音擎时不计该专属效果。</p>
+<p>潘引壶气绝、琉音二影、妮可聚宝箱等角色对目标造成的伤害提升，与通用、技能及属性增伤相加。关卡规定的受伤倍率在独立栏显示。</p>
 <p>危局强袭战使用 2026-11-23 的 Nanoka 中文快照，仅展示有效期内的期次。每个进行中的正式服或测试服期次各取一项轮转期望总伤害最高的增益。所有候选沿用同一组配装限制、Boss 区域层数和条件触发设置。条件勾选及区域层数代表整轮战斗处在该窗口。防御百分比作用于挽昼初始防御，队友固定防御另加。失衡易伤仅在失衡状态生效。主 C 按招式轴计算，队友自身输出可用各自的伤害系数估算。额外出招采用队友卡片中的预设次数。</p>
 <p>Boss 列表和弱点、抗性取自 <a href="https://zzz.gachabase.net/enemies/notorious-boss/beta?lang=chs">GachaBase 测试服首领页</a>，首领详情中的 DEF 也会随选择同步到敌方防御力。未提供 DEF 的条目暂用 953。页面将首领列表中的火弱点映射为 −20% 火抗，将火抗性映射为 +20% 火抗，防御力仍可手动修改。数据快照取自 <a href="https://zzz.gachabase.net/agents/1601/sunbringer/beta?lang=chs">挽昼</a>、<a href="https://zzz.gachabase.net/agents/1391/ju-fufu/beta?lang=chs">橘福福</a>、<a href="https://zzz.gachabase.net/agents/1661/robin/beta?lang=chs">知更鸟</a>、<a href="https://zzz.gachabase.net/w-engines/beta?lang=chs">音擎</a>及<a href="https://zzz.gachabase.net/drive-discs/beta?lang=chs">驱动盘</a>。页面使用本地快照计算。</p>`;
 
@@ -187,6 +201,12 @@ function getConfig(){
   for(const k of ['rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat','w','f','r','wr','fr','rr','fe','re','stun','vuln','enemy','res','beat','customIgnore','customPen','customGeneral','customSharp','customFire','customCrit','customCritDmg','customDefPct','customFlatDef','customStun'])c[k]=Number(el(k).value);
   c.fchar=el('fchar').value;
   c.rchar=el('rchar').value;
+  c.physicalRes=expandedLeads[main]?.skills.some(skill=>skill.element)?el('physicalRes').valueAsNumber:0;
+  c.cissiaRegen=el('cissiaRegen').valueAsNumber;
+  if(expandedLeads[main])c.expanded=Object.fromEntries(expandedControls[main].map(([key])=>{
+    const input=el(expandedFieldId(main,key));
+    return [key,input.type==='checkbox'?input.checked:input.valueAsNumber];
+  }));
   c.kaboomStacks=Number(el('kaboomStacks').value);
   c.astralStacks=Number(el('astralStacks').value);
   for(const slot of teammateSlots){
@@ -197,10 +217,18 @@ function getConfig(){
   }
   for(const k of ['set','two','main4','main5','main6','first','markMode'])c[k]=el(k).value;
   c.counts=activeSkills().map((s,i)=>s.automatic?0:Number(el('n'+i).value));
-  if(usesAttack(c))for(const k of ['customAtkPct','customFlatAtk','customNormalCd'])c[k]=Number(el(k).value);
+  if(!usesSharp(c))for(const k of ['customAtkPct','customFlatAtk','customNormalCd'])c[k]=Number(el(k).value);
+  if(usesRupture(c)){
+    for(const k of ['customHpPct','customFlatHp','customSheerForce','yiSetStacks'])c[k]=Number(el(k).value);
+    c.yiFrozen=el('yiFrozen').checked;
+  }
   if(isYixuan(c)){
-    for(const k of ['customAtkPct','customFlatAtk','customNormalCd','customHpPct','customFlatHp','customSheerForce','yiWeaponStacks','yiSetStacks'])c[k]=Number(el(k).value);
-    for(const k of ['yiFocused','yiFrozen'])c[k]=el(k).checked;
+    c.yiWeaponStacks=Number(el('yiWeaponStacks').value);
+    c.yiFocused=el('yiFocused').checked;
+  }
+  if(isStarlightBilly(c)){
+    for(const k of ['billyWeaponStacks','billyStars','billyM4Stacks','billyTurboCasts','billyBrilliant'])c[k]=Number(el(k).value);
+    for(const k of ['billyCore','billyM1Active','billyRoxy'])c[k]=el(k).checked;
   }
   if(main==='nekomata'){
     for(const k of ['nekoPotential','nekoExtraStacks','nekoM4Stacks','nekoM6Stacks','nekoWoodStacks'])c[k]=Number(el(k).value);
@@ -225,9 +253,8 @@ function getConfig(){
   c.skillOverrides=overrides.map(row=>({...row}));
   return c;
 }
-function bossResistance(boss){
+function bossResistance(boss,attribute=lead().element){
   if(!boss)return 0;
-  const attribute=lead().element;
   if(boss.weakness_ids?.includes(attribute))return -20;
   if(boss.resistance_ids?.includes(attribute))return 20;
   return 0;
@@ -235,6 +262,7 @@ function bossResistance(boss){
 function syncBoss(){
   const boss=bossById.get(el('boss').value);
   const attribute=elementNames[lead().element];
+  el('physicalRes').value=bossResistance(boss,200);
   if(!boss){el('res').value=0;el('bossInfo').textContent='自定义敌人。防御力和'+attribute+'抗可直接编辑。';return;}
   const weakness=(boss.weakness_ids||[]).map(id=>elementNames[id]||id).join('、')||'无';
   const resistance=(boss.resistance_ids||[]).map(id=>elementNames[id]||id).join('、')||'无';
@@ -288,7 +316,7 @@ function variants(c){
   });
 }
 let revision=0, manualBaseline=null;
-const baselineVersion=2;
+const baselineVersion=3;
 function showComparisons(c,build){
   const version=++revision;
   const shadowComparison=el('variants').value==='w';
@@ -363,13 +391,13 @@ const singleRolls=[
   ['失衡易伤','customStun',3,'%']
 ];
 function renderRollGains(config,build){
-  const yi=isYixuan(config);
-  const ordinaryRolls=usesAttack(config)||yi?[
+  const rupture=usesRupture(config);
+  const ordinaryRolls=!usesSharp(config)?[
     ['攻击力百分比','customAtkPct',3,'%'],['固定攻击力','customFlatAtk',19,' 点'],['普通暴击伤害','customNormalCd',4.8,'%'],
     ...singleRolls.filter(([,key])=>!['customDefPct','customFlatDef','customSharp','customCritDmg','extraInitialCritDmg'].includes(key))
       .map(row=>row[1]==='customFire'?[elementNames[lead().element]+'属性增伤',...row.slice(1)]:row)
   ]:singleRolls;
-  const rolls=yi?[
+  const rolls=rupture?[
     ['生命值百分比','customHpPct',3,'%'],['固定生命值','customFlatHp',112,' 点'],
     ...ordinaryRolls.filter(([,key])=>!['customIgnore','customPen','extraFlatPen'].includes(key))
   ]:ordinaryRolls;
@@ -382,10 +410,10 @@ function renderRollGains(config,build){
   }).join('');
 }
 function renderTeammateBuffs(c,sources){
-  const normal=usesAttack(c), yi=isYixuan(c);
-  const categories={general:'普通增伤',teamCritRate:'对目标暴击率',...(yi?{}:{teamPen:'穿透率',ignore:'无视防御／减防'}),resDown:'减抗或无视抗性',received:'目标受伤',
+  const normal=usesAttack(c), rupture=usesRupture(c);
+  const categories={general:'普通增伤',teamCritRate:'对目标暴击率',...(rupture?{}:{teamPen:'穿透率',ignore:'无视防御／减防'}),resDown:'减抗或无视抗性',
     stun:'失衡易伤',stunAlways:'失衡易伤',...(isAnby(c)?{aftershockIgnore:'追加攻击无视防御'}:{}),
-    ...(yi?{teamHp:'最大生命值',sheerForce:'固定贯穿力',sheer:'贯穿增伤',normalCritDmg:'普通暴击伤害'}:
+    ...(rupture?{teamHp:'最大生命值',sheerForce:'固定贯穿力',sheer:'贯穿增伤',normalCritDmg:'普通暴击伤害'}:
       normal?{teamAtk:'固定攻击力',teamAtkPct:'攻击力百分比',normalCritDmg:'普通暴击伤害'}:
       {teamDef:'固定防御力',sharp:'锐化增伤',critDmg:'锐暴伤害'})};
   for(const slot of teammateSlots){
@@ -409,42 +437,48 @@ function renderTeammateBuffs(c,sources){
       lines.push('<li><b>虎啸</b>：连携增伤 +'+pct(juChainBonus)+'，终结技增伤 +'+pct(juUltimateBonus)+'。</li>');
       const [chain,ult]=juPotential[c.potential];
       if(chain || ult)lines.push('<li><b>潜能「侠肝义胆」</b>：连携最终伤害 +'+pct(chain)+'，终结技最终伤害 +'+pct(ult)+'。</li>');
-      if(usesSharp(c))lines.push('<li>虎啸提供 '+(c[slot]>=2?72:50)+'% 战斗中普通暴伤，对挽昼锐暴的贡献为 0。此配队关闭橘福福额外能力。</li>');
+      if(usesSharp(c))lines.push('<li>虎啸提供 '+(c[slot]>=2?72:50)+'% 战斗中普通暴伤，对'+lead().name+'锐暴的贡献为 0。'+(sources.stun.some(([label])=>label==='橘福福 · 额外能力')?'':'当前未满足橘福福额外能力的入队条件。')+'</li>');
     }
+    if(id==='roxy' && expandedLead(c))lines.push('<li>同属性浸染与风化按主 C 的覆盖选项结算。赛维里安默认按风化覆盖。</li>');
     if(id==='rina')lines.push('<li>按丽娜自身 '+Number(rinaBuffs(c).personalPen.toFixed(3))+'% 穿透率、人偶在场且'+lead().name+'位于人偶附近计算。</li>');
     if(id==='trigger'){
       lines.push('<li>破隙幽瞳及索魂影眸按追加攻击命中后持续覆盖计算。</li>');
-      if(usesSharp(c) && c[slot]>=2)lines.push('<li>二影「猎眸」满层提供 24% 战斗中普通暴伤，对挽昼锐暴的贡献为 0。</li>');
+      if(usesSharp(c) && c[slot]>=2)lines.push('<li>二影「猎眸」满层提供 24% 战斗中普通暴伤，对'+lead().name+'锐暴的贡献为 0。</li>');
     }
     if(id==='astra')lines.push('<li>按咏叹华彩在场、核心攻击力增益达上限计算。</li>');
-    if(id==='sunna' && !yi)lines.push('<li>'+ (normal?'攻击增益与帷幕按覆盖本轮计算。猫的凝视可在补充招式单独填写。':'天使协律的攻击力和猫的凝视不参与挽昼结算。')+'</li>');
+    if(id==='sunna' && normal)lines.push('<li>攻击增益与帷幕按覆盖本轮计算。'+
+      (expandedLead(c)?'':'猫的凝视可在补充招式单独填写。')+'</li>');
     if(id==='dialyn')lines.push('<li>好评达标后可让主 C 以终结技入场。额外次数在招式明细标出。</li>');
     if(id==='norma')lines.push('<li>勾选追加连携时，按预热膛温满足两次触发条件计算。技术鸿沟的失衡持续时间延长与琉音同类效果不可叠加。</li>');
     if(id==='zhao'){
-      if(!yi)lines.push('<li>涌泉及半糖雪兔的生命增益可提高仪玄的贯穿力。</li>');
+      if(!rupture)lines.push('<li>涌泉及半糖雪兔的生命增益可提高命破代理人的贯穿力。</li>');
       lines.push(sources.general.some(([label])=>label==='照 · 凝聚力')
         ?'<li>凝聚力按帷幕覆盖、初始生命达到 27,000 计算。</li>'
         :'<li>凝聚力需要强攻、异常或支援队友。</li>');
-      if(usesSharp(c))lines.push('<li>涌泉提供 1,000 点固定攻击力。挽昼按防御力和锐暴结算。</li>');
+      if(usesSharp(c))lines.push('<li>涌泉提供 1,000 点固定攻击力。'+lead().name+'按防御力和锐暴结算。</li>');
     }
     if(id==='orphie'){
       lines.push('<li>准星聚焦按初始能量自动回复达到 3.7 点且覆盖本轮计算。</li>');
-      if(usesSharp(c))lines.push('<li>准星聚焦提供 700 点固定攻击力。挽昼按防御力结算。</li>');
+      if(usesSharp(c))lines.push('<li>准星聚焦提供 700 点固定攻击力。'+lead().name+'按防御力结算。</li>');
       if(!sources.aftershockIgnore.length)lines.push('<li>熔炉所铸需要击破或支援队友。</li>');
       else if(!isAnby(c))lines.push('<li>熔炉所铸为追加攻击提供 25% 无视防御。当前主 C 轮转无追加攻击。</li>');
       if(c[slot+'e']===1)lines.push('<li>嚣枪喧焰的暴击率与无视防御属于奥菲丝自身。</li>');
     }
     if(id==='lucia'){
       lines.push('<li>破暗按 24,000 初始生命吃满。巡梦童谣及所选音擎增益按覆盖本轮。</li>');
-      if(!yi)lines.push('<li>贯穿力和最大生命值可提高仪玄的输出。</li>');
+      if(!rupture)lines.push('<li>贯穿力和最大生命值可提高命破代理人的输出。</li>');
+    }
+    if(id==='cissia'){
+      lines.push('<li>按毒素覆盖本轮计算。初始能量自动回复为 '+c.cissiaRegen+'，电伤无视防御在 3.68 达到上限。一影把该减防效果乘 1.4，并增加 5% 电抗无视。</li>');
+      if(c[slot+'e']===1)lines.push('<li>鳞齿寻踪的能量自动回复计入卡片所填总值。音擎的暴击率和无视防御属于希希芙自身。</li>');
     }
     if(id==='panYinhu'){
       lines.push('<li>通窍按初始攻击力达到 3,000 点，通过快速支援或连携入场计算。</li>');
-      if(!sources.received.some(([label])=>label.startsWith(prefix)))lines.push('<li>气绝需要命破或云岿山队友。</li>');
+      if(!sources.general.some(([label])=>label==='潘引壶 · 气绝'))lines.push('<li>气绝需要命破或云岿山队友。</li>');
     }
     if(id==='nicole'){
       lines.push('<li>机关箱、狡兔三窟和聚宝箱按效果覆盖本轮计算。六影暴击率按十层计。</li>');
-      if(yi)lines.push('<li>机关箱提供 40% 减防。仪玄的贯穿伤害直接无视防御。</li>');
+      if(rupture)lines.push('<li>机关箱提供 40% 减防。贯穿伤害自动无视防御。</li>');
     }
     const moonlight=sources.general.find(([label])=>label.endsWith(' · 月光骑士颂四件'));
     if(drive==='moonlight' && moonlight && !moonlight[0].startsWith(prefix)){
@@ -458,12 +492,12 @@ function renderTeammateBuffs(c,sources){
     if(drive==='mountain'){
       const mountain=sources.normalCritDmg.find(([label])=>label.endsWith(' · 山大王四件'));
       if(mountain && !mountain[0].startsWith(prefix))lines.push('<li>山大王四件效果由'+mountain[0].split(' · ')[0]+'提供。</li>');
-      else if(mountain && usesSharp(c))lines.push('<li>山大王四件提供 '+pct(mountain[1])+' 全队普通暴伤。挽昼终结技使用锐暴伤害。</li>');
+      else if(mountain && usesSharp(c))lines.push('<li>山大王四件提供 '+pct(mountain[1])+' 全队普通暴伤。'+lead().name+'终结技使用锐暴伤害。</li>');
     }
     if(c[slot+'e']===kaboomEngine){
       const cannon=sources.teamAtkPct.find(([label])=>label.endsWith(' · 好斗的阿炮'));
       if(cannon && !cannon[0].startsWith(prefix))lines.push('<li>好斗的阿炮增益由'+cannon[0].split(' · ')[0]+'提供。</li>');
-      else if(cannon && usesSharp(c))lines.push('<li>好斗的阿炮提供 '+pct(cannon[1])+' 全队攻击力。挽昼按防御力结算。</li>');
+      else if(cannon && usesSharp(c))lines.push('<li>好斗的阿炮提供 '+pct(cannon[1])+' 全队攻击力。'+lead().name+'按防御力结算。</li>');
     }
     const summary=el(slot+'BuffSummary');
     if(id==='air'){summary.textContent='空位，无队友增益。';continue;}
@@ -471,10 +505,11 @@ function renderTeammateBuffs(c,sources){
   }
 }
 function render(saveBaseline=false){
-  const silver=main==='anby', ye=main==='yeShunguang', yi=main==='yixuan', normal=main!=='sunbringer';
+  const silver=main==='anby', ye=main==='yeShunguang', yi=main==='yixuan', billy=main==='starlightBilly';
+  const sun=main==='sunbringer', normal=!usesSharp({main}), rupture=usesRupture({main});
   el('yeM6Replacements').disabled=!ye || Number(el('w').value)<6;
   const roster=activeSkills();
-  const statTitle=yi?'贯穿力':normal?'攻击力':'防御力';
+  const statTitle=rupture?'贯穿力':normal?'攻击力':'防御力';
   const critCap=normal?1:2;
   const critTitle=normal?'暴击伤害':'锐暴伤害';
   el('multiplierStatus').textContent='';
@@ -528,16 +563,17 @@ function render(saveBaseline=false){
     return;
   }
   rollInputs.forEach((input,i)=>{if(!rollLocks[i].checked)input.value=b.rolls[i];});
-  if(!normal && c.w>=2){
+  if(sun && c.w>=2){
     const additive=c.markMode==='add';
     const other=solve({...c,markMode:additive?'multiply':'add'},b);
     const [mult,add]=additive?[other,b]:[b,other];
     el('markModeCompare').textContent='固定当前驱动，加算相比乘算：烬灭 '+percentages(add.mark,mult.mark)[1]+'，整轮总伤害 '+percentages(add.score,mult.score)[1]+'。';
   }else el('markModeCompare').textContent='两种算法从挽昼二影起生效。';
   renderTeammateBuffs(c,b.buffSources);
-  if(yi)renderYixuanExample(c,b);
+  if(rupture)renderRuptureExample(c,b);
   else if(normal)renderAttackExample(c,b,elementNames[lead().element]);
-  else renderUltimateExample(c,b);
+  else if(sun)renderUltimateExample(c,b);
+  else renderClaretExample(c,b);
   renderRollGains(c,b);
   if(saveBaseline){
     const team=[lead().name,...teammateSlots.map(slot=>teammateChoices[c[slot+'char']].name)];
@@ -549,13 +585,13 @@ function render(saveBaseline=false){
   const hasTeammateDamage=b.teamFactor!==1;
   el('summaryTitle').textContent=(hasTeammateDamage?'全队':lead().name)+'单轮期望伤害';
   const aftershock= silver?b.rows.reduce((sum,row)=>sum+(row.aftershock?row.direct:0),0):0;
-  const breakdown=normal?(silver?'（追加攻击 '+fmt(aftershock)+'）':''):`（直伤 ${fmt(b.direct)} ＋ 烬灭 ${fmt(b.mark)}）`;
+  const breakdown=!sun?(silver?'（追加攻击 '+fmt(aftershock)+'）':''):`（直伤 ${fmt(b.direct)} ＋ 烬灭 ${fmt(b.mark)}）`;
   const displayFactor=value=>value.toLocaleString('zh-CN',{maximumFractionDigits:6});
   const teamParts=b.teammateCoefficients.filter(({coefficient})=>coefficient!==0).map(({slot,coefficient})=>
     teammateChoices[c[slot+'char']].name+' +'+displayFactor(coefficient*100)+'%');
   el('split').textContent=hasTeammateDamage?[lead().name+' '+fmt(b.mainScore)+breakdown,...teamParts,'合计 ×'+displayFactor(b.teamFactor)].join('　 /　'):
-    '直接伤害　'+fmt(b.direct)+(silver?'　 /　其中追加攻击　'+fmt(aftershock):normal?'':'　 /　烬灭　'+fmt(b.mark));
-  el('summaryStats').innerHTML=[['战斗'+statTitle,fmt(b.combatStat)],['战斗暴击率',pct(normal?Math.min(1,Math.max(0,b.rate)):b.rate)],[critTitle,pct(b.critDmg)],[yi?'贯穿伤害防御区':'无视防御／减防',yi?'×1':pct(b.ignore)]].map(([k,v])=>`<span>${k}<b>${v}</b></span>`).join('');
+    '直接伤害　'+fmt(b.direct)+(silver?'　 /　其中追加攻击　'+fmt(aftershock):!sun?'':'　 /　烬灭　'+fmt(b.mark));
+  el('summaryStats').innerHTML=[['战斗'+statTitle,fmt(b.combatStat)],['战斗暴击率',pct(normal?Math.min(1,Math.max(0,b.rate)):b.rate)],[critTitle,pct(b.critDmg)],[rupture?'贯穿伤害防御区':'无视防御／减防',rupture?'×1':pct(b.ignore)]].map(([k,v])=>`<span>${k}<b>${v}</b></span>`).join('');
   const line=(k,v)=>`<div class="metricline"><span>${k}</span><b>${v}</b></div>`;
   const blocked=driveBlockedStats(c);
   const balanced=makeDiscs(b.rolls,b.mains.map(stat=>blocked[stat]??-1),b.discs);
@@ -572,11 +608,11 @@ function render(saveBaseline=false){
       `<p>当前主属性在 ${c.rollBudget} 条预算内无法达到 ${pct(critCap)} 暴击率。</p>`));
   const groups={core:{label:'核心五招',direct:0,accrued:0},other:{label:'二影其余招式',direct:0,accrued:0},rupture:{label:'毁伤',direct:0,accrued:0}};
   b.rows.forEach((r,i)=>{
-    el('skillName'+i).textContent=r.name;
+    el('skillName'+i).textContent=r.name+(r.element==='physical'?'（物理伤害）':'');
     const count=el('n'+i);
     if(roster[i].automatic){
       count.value=r.count;
-      count.title=yi?'根据符法千重次数与当前影画自动计算':'根据三连组数与当前影画、潜能自动计算';
+      count.title=main==='claret'?'六影每次连携技或终结技自动追加一次':yi?'根据符法千重次数与当前影画自动计算':'根据三连组数与当前影画、潜能自动计算';
     }else{
       count.setAttribute('aria-label',r.name+(roster[i].type==='triple'?'手动组数':'次数'));
       count.disabled=r.available===false;
@@ -611,11 +647,14 @@ function render(saveBaseline=false){
     el('markSummary').textContent=`三连组数 ${groups} 组 · 手动 ${manual} ＋ 一影强化特殊技 ${m1} ＋ 二影终结技 ${m2}。苍光的输入框只填手动组数。白雷、雷殛、苍光·临界和六影跟随组数自动结算。`;
   }else if(yi){
     el('markSummary').textContent='凝云术和墨烬影消各计一行。符法千重后可接玄墨极阵与青溟震击。独立于默认轴获得的术法值、玄墨值和落雷可按实际触发调整。';
+  }else if(billy){
+    el('markSummary').textContent='动力压制填实际命中数，其余每行填该招式的发动次数。二影涡轮暴伤与六影额外倍率按本行次数加权平均。六影层数按表格顺序获得和消耗。';
   }else if(ye){
     const replacements=yeReplacements(c);
     el('markSummary').textContent='飞光按斩击段数填写。标注明心境的招式及开幕攻击按帷幕易伤结算。'+
       (replacements?' 六影把 '+replacements+' 次归尘计为斩妄开天。':'');
-  }else el('markSummary').textContent=normal?'次数按发动次数填写。赤色之刃、猫猫爪刺五段的重复斩击已计入单次倍率。超凶爪印与猫的凝视可按实际触发次数单独填写。':
+  }else if(expandedLeads[main])el('markSummary').textContent=expandedRotationNote[main];
+  else el('markSummary').textContent=normal?'次数按发动次数填写。赤色之刃、猫猫爪刺五段的重复斩击已计入单次倍率。超凶爪印与猫的凝视可按实际触发次数单独填写。':
     '从上到下结算。伤害占比包含该招式的直伤和引爆结算的烬灭。最后一次引爆后新增的烬痕只计积攒。纯闪避、切换主控和招架支援的直伤为 0。';
   if(b.rows.some(row=>row.extraCast))el('markSummary').append(' 输入框填写基础次数，旁边的队友次数自动叠加。');
   if(hasTeammateDamage)el('markSummary').append(' 伤害占比以全队总伤为分母。');
@@ -682,6 +721,11 @@ function syncTeamControls(){
     control.hidden=!slot;
     if(slot && control.parentElement!==el(slot+'Fields'))el(slot+'Fields').append(control);
   }
+  const cissiaSlot=teammateSlot(config,'cissia');
+  el('cissiaRegenLabel').hidden=!cissiaSlot;
+  el('cissiaRegen').disabled=!cissiaSlot;
+  if(cissiaSlot && el('cissiaRegenLabel').parentElement!==el(cissiaSlot+'Fields'))
+    el(cissiaSlot+'Fields').append(el('cissiaRegenLabel'));
   el('rinaBasePen').disabled=el('rinaControls').hidden;
   el('beat').disabled=!teammateSlot(config,'robin');
 }
@@ -714,6 +758,7 @@ document.addEventListener('change',event=>{
     configureLead(input.value);
     syncBoss();
     restoreLeadProfile(leadProfiles[main]);
+    syncTeamControls();
   }
   const slot=teammateSlots.find(key=>input.id===key+'char');
   if(slot){
@@ -785,15 +830,24 @@ const teamFields=new Set(teammateSlots.flatMap(slot=>['char','','e','r','d','Mou
 const settingsControls=Array.from(document.querySelectorAll('select[id],input[id]'))
   .filter(control=>!teamFields.has(control.id) && !['mainAgent','backgroundOpacity'].includes(control.id));
 const leadProfiles={};
-const leadFields=new Set(['w','wr','set','two','main4','main5','main6','res','rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat',
+const leadFields=new Set(['w','wr','set','two','main4','main5','main6','res','physicalRes','rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat',
   'lockDiscSets','lockTwo','lockMain4','lockMain5','lockMain6','customFire','customCritDmg','customDefPct','customFlatDef','customSharp',
   ...rollInputs.map(x=>x.id),...rollLocks.map(x=>x.id),
-  ...settingsControls.filter(x=>x.closest('[data-neko],[data-anby],[data-ye],[data-yi],[data-normal]')).map(x=>x.id)]);
+  ...settingsControls.filter(x=>x.closest('[data-neko],[data-anby],[data-ye],[data-yi],[data-billy],[data-rupture],[data-normal],[data-expanded]')).map(x=>x.id)]);
 
 function configureLead(id){
   main=id;
   document.body.dataset.main=id;
-  const normal=id!=='sunbringer', actor=lead(), element=elementNames[actor.element];
+  const normal=!usesSharp({main:id}), actor=lead(), element=elementNames[actor.element];
+  const mixed=actor.skills?.some(skill=>skill.element);
+  for(const slot of teammateSlots){
+    const select=el(slot+'char');
+    select.querySelector('[value="cissia"]').disabled=id==='cissia';
+    if(id==='cissia' && select.value==='cissia'){
+      select.value='air';
+      syncTeammate(slot);
+    }
+  }
   el('mainAgent').value=id;
   el('mainPortrait').style.display='';
   el('mainPortrait').src=actor.portrait;
@@ -803,17 +857,27 @@ function configureLead(id){
   document.title=actor.name+' · 配队伤害计算器';
   for(const [field,text] of Object.entries({
     summaryTitle:actor.name+'单轮期望伤害',discHeading:actor.name+'驱动盘',skillHeading:actor.name+'招式',
-    resLabel:'敌方'+element+'抗性 %',resColumn:(element==='物理'?'物':element)+'抗区',critColumn:normal?'期望暴击倍率':'锐暴倍率',
+    resLabel:'敌方'+element+'抗性 %',resColumn:mixed?'招式属性抗性区':(element==='物理'?'物':element)+'抗区',critColumn:normal?'期望暴击倍率':'锐暴倍率',
     customElementLabel:element+'属性增伤',exampleHeading:'终结技「'+actor.ultimate+'」乘区拆解',
     stunColumn:id==='yeShunguang'?'失衡／帷幕区':'失衡区'
   }))el(field).textContent=text;
-  for(const [selector,shown] of [['[data-sun]',!normal],['[data-normal]',normal],['[data-attack]',usesAttack({main:id})],
-    ['[data-neko]',id==='nekomata'],['[data-anby]',id==='anby'],['[data-ye]',id==='yeShunguang'],['[data-yi]',id==='yixuan']]){
+  for(const [selector,shown] of [['[data-sun]',id==='sunbringer'],['[data-sharp]',!normal],['[data-normal]',normal],['[data-attack]',usesAttack({main:id})],
+    ['[data-neko]',id==='nekomata'],['[data-anby]',id==='anby'],['[data-ye]',id==='yeShunguang'],['[data-yi]',id==='yixuan'],
+    ['[data-billy]',id==='starlightBilly'],['[data-rupture]',usesRupture({main:id})]]){
     for(const node of document.querySelectorAll(selector)){
       node.hidden=!shown;
       for(const input of node.querySelectorAll('input'))input.disabled=!shown;
     }
   }
+  const expanded=Boolean(expandedLeads[id]);
+  el('physicalRes').disabled=!mixed;
+  el('physicalRes').closest('label').hidden=el('physicalRes').disabled;
+  for(const node of document.querySelectorAll('[data-expanded]'))node.hidden=!expanded;
+  for(const node of document.querySelectorAll('[data-expanded-role]')){
+    node.hidden=node.dataset.expandedRole!==id;
+    for(const input of node.querySelectorAll('input'))input.disabled=node.hidden;
+  }
+  if(expanded)renderExpandedNotes(actor);
   el('we').innerHTML=options(actor.engines);
   el('variants').querySelector('[value="w"]').textContent=actor.name+'影画';
   el('variants').querySelector('[value="wr"]').textContent=actor.engines[0][1]+'星级';
@@ -828,7 +892,7 @@ function configureLead(id){
     rollLocks[i].setAttribute('aria-label','锁定'+name+'条数');
   });
   for(const control of settingsControls){
-    if(!leadFields.has(control.id) || control.id==='res')continue;
+    if(!leadFields.has(control.id) || ['res','physicalRes'].includes(control.id))continue;
     if(control.type==='checkbox')control.checked=control.defaultChecked;
     else if(control.tagName==='SELECT')control.value=discs[control.id]??(control.id.endsWith('Potential')?'6':control.options[0].value);
     else control.value=control.defaultValue;
@@ -877,7 +941,7 @@ function saveSettings(){
 }
 function restoreLeadProfile(profile){
   for(const control of settingsControls){
-    if(!leadFields.has(control.id) || (control.id==='res' && profile?.boss!==el('boss').value))continue;
+    if(!leadFields.has(control.id) || (['res','physicalRes'].includes(control.id) && profile?.boss!==el('boss').value))continue;
     restoreControl(control,profile?.fields?.[control.id]);
   }
   activeSkills().forEach((skill,i)=>{
@@ -889,7 +953,7 @@ function restoreLeadProfile(profile){
     }
   });
   const baseline=profile?.manualBaseline;
-  // Older records contain only the score calculated before teammate coefficients became additive.
+  // Saved baselines contain only the previous score, so a formula change invalidates them.
   if(baseline?.version===baselineVersion && Number.isFinite(baseline.score) && typeof baseline.description==='string')manualBaseline=baseline;
 }
 function restoreSettings(){
@@ -913,7 +977,10 @@ function restoreSettings(){
       teammateBuilds[character]={...savedBuild,engineRanks};
     }
   }
-  for(const slot of teammateSlots)restoreControl(el(slot+'char'),fields[slot+'char']);
+  for(const slot of teammateSlots){
+    restoreControl(el(slot+'char'),fields[slot+'char']);
+    if(main==='cissia' && el(slot+'char').value==='cissia')el(slot+'char').value='air';
+  }
   if(el('fchar').value===el('rchar').value)el('rchar').value='air';
   teammateSlots.forEach(syncTeammate);
   syncTeamControls();
