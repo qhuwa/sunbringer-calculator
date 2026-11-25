@@ -6,7 +6,7 @@
 <section class="summary"><div><p id="summaryTitle">挽昼单轮期望伤害</p><strong id="total"></strong><div class="split" id="split"></div></div><div class="mini" id="summaryStats"></div></section>
 <div class="benchmark"><strong id="compare" aria-live="polite"></strong><span id="reference"></span>
 <div class="compare-actions"><button id="saveBaseline" type="button">设当前配置为基线</button><button id="defaultBaseline" type="button" hidden>恢复全 01 基线</button><button id="recalculate" type="button">手动重算</button></div><span id="calcStatus" role="status"></span></div>
-<h2>队伍配置</h2><p class="comparison-note">全队估算伤害 = 主 C 本轮总伤害 ×（1＋队友 1 系数）×（1＋队友 2 系数）。填 0.2 表示 ×1.2，系数默认 0，按角色保存。</p><p class="comparison-note" id="storageWarning" role="status" hidden>当前浏览器无法保存配置。请允许本地存储，以便下次打开时恢复选择。</p><section class="cards" id="cards"></section>
+<h2>队伍配置</h2><p class="comparison-note">全队估算伤害 = 主 C 本轮总伤害 ×（1＋队友 1 系数＋队友 2 系数）。两人分别填 0.2 和 0.3 时，全队伤害是主 C 的 1.5 倍。系数默认 0，按角色保存。</p><p class="comparison-note" id="storageWarning" role="status" hidden>当前浏览器无法保存配置。请允许本地存储，以便下次打开时恢复选择。</p><section class="cards" id="cards"></section>
 <div class="fields disc-title" id="kaboomOptions" hidden><label>好斗的阿炮层数<select id="kaboomStacks"></select></label><p class="comparison-note">每个命中敌人的友方单位各提供一层，默认按四层覆盖本轮。多人装备时按最高星级结算一份。</p></div>
 <div class="fields disc-title" id="astralOptions" hidden><label>静听嘉音层数<select id="astralStacks"></select></label><p class="comparison-note">默认主 C 通过快速支援入场并吃满三层。主 C 未通过快速支援入场时选 0 层。</p></div>
 <section class="workspace"><article><h2 id="discHeading">挽昼驱动盘</h2><div class="panel">

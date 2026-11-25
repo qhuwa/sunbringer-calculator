@@ -460,11 +460,11 @@ function solve(c,fixedBuild=null,searchMains=null){
   });
   const direct=details.reduce((a,x)=>a+x.direct,0), mark=details.reduce((a,x)=>a+x.mark,0);
   const mainScore=direct+mark;
-  const teammateFactors=teammateSlots.filter(slot=>c[slot+'char']!=='air').map(slot=>({
-    slot,factor:1+(c[slot+'DamageCoefficient']??0)
+  const teammateCoefficients=teammateSlots.filter(slot=>c[slot+'char']!=='air').map(slot=>({
+    slot,coefficient:c[slot+'DamageCoefficient']??0
   }));
-  const teamFactor=teammateFactors.reduce((product,{factor})=>product*factor,1);
+  const teamFactor=1+teammateCoefficients.reduce((sum,{coefficient})=>sum+coefficient,0);
   const score=mainScore*teamFactor;
-  return {...best,combatDef:normal?0:best.combatStat,buffSources:buffs.entries,rows:details,direct,mark,mainScore,teammateFactors,teamFactor,counts,score};
+  return {...best,combatDef:normal?0:best.combatStat,buffSources:buffs.entries,rows:details,direct,mark,mainScore,teammateCoefficients,teamFactor,counts,score};
 }
 

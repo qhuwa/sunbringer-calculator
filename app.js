@@ -288,6 +288,7 @@ function variants(c){
   });
 }
 let revision=0, manualBaseline=null;
+const baselineVersion=2;
 function showComparisons(c,build){
   const version=++revision;
   const shadowComparison=el('variants').value==='w';
@@ -541,7 +542,7 @@ function render(saveBaseline=false){
   if(saveBaseline){
     const team=[lead().name,...teammateSlots.map(slot=>teammateChoices[c[slot+'char']].name)];
     const label=team.map((name,i)=>name==='空气'?name:name+' '+c[['w','f','r'][i]]+'影').join(' / ');
-    manualBaseline={score:b.score,description:'已固定 · '+label};
+    manualBaseline={version:baselineVersion,score:b.score,description:'已固定 · '+label};
   }
   if(el('variants').selectedOptions[0]?.disabled)el('variants').value='w';
   el('total').textContent=fmt(b.score);
@@ -550,8 +551,8 @@ function render(saveBaseline=false){
   const aftershock= silver?b.rows.reduce((sum,row)=>sum+(row.aftershock?row.direct:0),0):0;
   const breakdown=normal?(silver?'（追加攻击 '+fmt(aftershock)+'）':''):`（直伤 ${fmt(b.direct)} ＋ 烬灭 ${fmt(b.mark)}）`;
   const displayFactor=value=>value.toLocaleString('zh-CN',{maximumFractionDigits:6});
-  const teamParts=b.teammateFactors.filter(({factor})=>factor!==1).map(({slot,factor})=>
-    teammateChoices[c[slot+'char']].name+' ×'+displayFactor(factor));
+  const teamParts=b.teammateCoefficients.filter(({coefficient})=>coefficient!==0).map(({slot,coefficient})=>
+    teammateChoices[c[slot+'char']].name+' +'+displayFactor(coefficient*100)+'%');
   el('split').textContent=hasTeammateDamage?[lead().name+' '+fmt(b.mainScore)+breakdown,...teamParts,'合计 ×'+displayFactor(b.teamFactor)].join('　 /　'):
     '直接伤害　'+fmt(b.direct)+(silver?'　 /　其中追加攻击　'+fmt(aftershock):normal?'':'　 /　烬灭　'+fmt(b.mark));
   el('summaryStats').innerHTML=[['战斗'+statTitle,fmt(b.combatStat)],['战斗暴击率',pct(normal?Math.min(1,Math.max(0,b.rate)):b.rate)],[critTitle,pct(b.critDmg)],[yi?'贯穿伤害防御区':'无视防御／减防',yi?'×1':pct(b.ignore)]].map(([k,v])=>`<span>${k}<b>${v}</b></span>`).join('');
@@ -888,7 +889,8 @@ function restoreLeadProfile(profile){
     }
   });
   const baseline=profile?.manualBaseline;
-  if(Number.isFinite(baseline?.score) && typeof baseline.description==='string')manualBaseline=baseline;
+  // Older records contain only the score calculated before teammate coefficients became additive.
+  if(baseline?.version===baselineVersion && Number.isFinite(baseline.score) && typeof baseline.description==='string')manualBaseline=baseline;
 }
 function restoreSettings(){
   let saved;
