@@ -1,5 +1,5 @@
 // Render the selected build and the very same attributed buffs used by solve().
-function factorSourceList(entries,format){
+function factorSourceList(entries,format=pct){
   return entries.filter(([,value])=>value).map(([name,value])=>
     name+' '+(value<0?'−':'+')+format(Math.abs(value))).join('、');
 }
