@@ -112,7 +112,6 @@ function solve(c,fixedBuild=null,searchMains=null){
   const assault=c.assault??assaultEffects(null);
   const extraCasts=teammateRotation(c);
   const counts=c.counts.map((count,i)=>count+(extraCasts[i]?.count??0));
-  const w=c.wr-1;
   const buffs=partyBonuses(c,custom,assault);
   const {teamDef,critDmg}=buffs;
   const actor=expandedLead(c);
@@ -120,14 +119,30 @@ function solve(c,fixedBuild=null,searchMains=null){
   const leadConfig={...c,counts};
   const baseRows=isMiyabi(c)?miyabiRows(leadConfig,buffs,assault.stunFinisher):
     makeRotation(leadConfig,assault.stunFinisher);
+  const weaponModel=evaluateLeadWeapon(leadConfig,baseRows);
+  const {weapon,values:weaponEffects}=weaponModel;
+  const weaponName=weapon?.name??'';
+  const statConfig={...c,weaponModel};
+  let charges=weaponModel.charges;
   const chainBonus=koledaChainBonus(c);
   const rows=baseRows.map((row,i)=>{
     const chain=row.name.startsWith('连携技'), increase=chain?chainBonus:0;
-    return {...row,extraIgnore:(row.extraIgnore??0)+(row.aftershock?buffs.aftershockIgnore:0),
-      category:skillOverride(c,i,'skill',row.category+increase),
-      natural:{...row.natural,category:row.natural.category+increase,
-        categorySources:[...(row.natural.categorySources??[]),['珂蕾妲 · 别小瞧我',increase]]}};
+    const effect=weaponCastModifiers(c,weaponModel,row,charges), modifiers=effect.modifiers;
+    charges=effect.charges;
+    const hitBonus=modifiers.skill??0;
+    return {...row,weaponModifiers:modifiers,extraRes:(row.extraRes??0)+(modifiers.res??0),
+      extraIgnore:(row.extraIgnore??0)+(row.aftershock?buffs.aftershockIgnore:0)+(modifiers.ignore??0),
+      category:skillOverride(c,i,'skill',row.category+increase+hitBonus),
+      natural:{...row.natural,category:row.natural.category+increase+hitBonus,
+        categorySources:[...(row.natural.categorySources??[]),['珂蕾妲 · 别小瞧我',increase],
+          ...(hitBonus?[[weaponName,hitBonus]]:[])],
+        sheerSources:[...(row.natural.sheerSources??[]),...(modifiers.sheer?[[weaponName,modifiers.sheer]]:[])]}};
   });
+  if(weaponEffects.proc && weaponModel.charges && rows.some(row=>row.count && row.mult)){
+    const mult=weaponEffects.proc;
+    rows.push({name:weaponName+' · 追加伤害',weaponProc:true,count:weaponModel.charges,
+      mult,category:0,final:1,extraIgnore:0,markRate:0,markWeight:0,source:'other',natural:{mult,category:0,final:1}});
+  }
   const lastRelease=rows.findLastIndex(row=>row.settle && row.count);
   const resist=1-c.res/100+buffs.resDown;
   const received=1+buffs.received;
@@ -152,16 +167,15 @@ function solve(c,fixedBuild=null,searchMains=null){
     const caps=lockedRolls.map((n,i)=>Math.min(n??Infinity,tripleLimit,pairLimit,singleLimit,6*blocked.filter(x=>x!==i).length));
     const capacity=Math.min(rollBudget,Math.floor(4*tripleLimit/3),2*pairLimit,54-blocked.filter(stat=>stat>=0).length,caps.reduce((sum,n)=>sum+n,0));
     if(capacity<minimumCount || minimumRolls.some((n,i)=>n>caps[i]))continue;
-    const attackStats=isMiyabi(c)?miyabiStats(c,buffs,mains,custom):actor===claret?claretStats(c,buffs,mains,custom):actor?expandedStats(c,buffs,mains,custom):yi?yiStats(c,buffs,mains,custom):billy?billyStats(c,buffs,mains,custom):ye?yeStats(c,buffs,mains,custom):silver?anbyStats(c,buffs,mains,custom):cat?nekomataStats(c,buffs,mains,custom):null;
-    const bonus=attackStats?.bonus??1+buffs.general+(five==='fire'?.30:0);
+    const attackStats=isMiyabi(c)?miyabiStats(statConfig,buffs,mains,custom):actor===claret?claretStats(statConfig,buffs,mains,custom):actor?expandedStats(statConfig,buffs,mains,custom):yi?yiStats(statConfig,buffs,mains,custom):billy?billyStats(statConfig,buffs,mains,custom):ye?yeStats(statConfig,buffs,mains,custom):silver?anbyStats(statConfig,buffs,mains,custom):cat?nekomataStats(statConfig,buffs,mains,custom):null;
+    const bonus=(attackStats?.bonus??1+buffs.general+(five==='fire'?.30:0))+(weaponEffects.damage??0);
     const aftershockShare=attackStats?.aftershockCritShare??0;
-    const penRate=rupture && !mixed?0:(five==='pen'?.24:0)+(c.set==='puffer'||c.two==='puffer'?.08:0)+buffs.teamPen+custom.pen+(attackStats?.pen??0)+engineStat(alternateLeadWeapon(c),'pen');
+    const penRate=rupture && !mixed?0:(five==='pen'?.24:0)+(c.set==='puffer'||c.two==='puffer'?.08:0)+buffs.teamPen+custom.pen+(attackStats?.pen??0)+engineStat(weapon,'pen');
     const ignore=buffs.ignore+(attackStats?.ignore??0);
-    const alt=alternateLeadWeapon(c);
-    const baseDef=attackStats?.baseDef??(alt?441+engineBase(alt,'def'):887);
-    const weaponDef=alt?engineStat(alt,'def'):.48;
-    const sunWeaponRate=alt?engineStat(alt,'crit'):.20+.02*w;
-    const sunWeaponCd=engineStat(alt,'cd');
+    const baseDef=attackStats?.baseDef??441+engineBase(weapon,'def');
+    const weaponDef=engineStat(weapon,'def');
+    const sunWeaponRate=engineStat(weapon,'crit')+(weaponEffects.crit??0);
+    const sunWeaponCd=engineStat(weapon,'cd');
     const elementBonus=key=>sumBonuses(buffs.entries[key].filter(([, ,type])=>type==='element' || type==='targetElement'));
     const physicalBonus=mixed?bonus-elementBonus('general')-sumBonuses(attackStats.statSources.ownElement)+
       (five==='physical'?.30:0):bonus;
@@ -173,8 +187,10 @@ function solve(c,fixedBuild=null,searchMains=null){
     const buckets=new Map();
     const factors=rows.map((row,i)=>{
       const physical=row.element==='physical';
-      const generic=skillOverride(c,i,'generic',physical?physicalBonus+physicalGeneral:bonus);
-      const sharpFactor=normal?1:skillOverride(c,i,'sharp',1+buffs.sharp+(attackStats?.sharp??0));
+      const modifiers=row.weaponModifiers??{};
+      const autoGeneric=(physical?physicalBonus+physicalGeneral:bonus)+(modifiers.damage??0);
+      const generic=skillOverride(c,i,'generic',autoGeneric);
+      const sharpFactor=normal?1:skillOverride(c,i,'sharp',1+buffs.sharp+(modifiers.sharp??0));
       const sheerDamage=rupture && !physical;
       const sheerFactor=sheerDamage?skillOverride(c,i,'sheer',
         1+attackStats.sheerBonus+sumBonuses(row.natural.sheerSources)):1;
@@ -184,8 +200,10 @@ function solve(c,fixedBuild=null,searchMains=null){
       const critDamageBonus=(row.critDamageBonus??0)+(physical?physicalCritDamage:0);
       const receivedFactor=skillOverride(c,i,'received',received);
       const anomalyBonus=row.anomalyTagged?skillOverride(c,i,'anomalyBonus',1+row.anomalyBonus):1;
-      const fixed=anomalyBonus*row.mult*(row.anomalyShare!=null && row.trueAnomaly?row.anomalyShare:1)*(generic+row.category)*row.final*receivedFactor*sharpFactor*sheerFactor*resistFactor*stunFactor;
-      const critOverride=c.skillOverrides?.[i]?.crit??(row.trueAnomaly?1:undefined), defOverride=c.skillOverrides?.[i]?.defense;
+      const rateDamageBase=weaponEffects?.rateScale && !Number.isFinite(c.skillOverrides?.[i]?.generic)?generic+row.category:null;
+      const fixed=anomalyBonus*row.mult*(row.anomalyShare!=null && row.trueAnomaly?row.anomalyShare:1)*
+        (rateDamageBase==null?generic+row.category:1)*row.final*receivedFactor*sharpFactor*sheerFactor*resistFactor*stunFactor;
+      const critOverride=c.skillOverrides?.[i]?.crit??(row.trueAnomaly || row.weaponProc?1:undefined), defOverride=c.skillOverrides?.[i]?.defense;
       const threshold=row.critThreshold??0;
       const bonusCoefficient=Number.isFinite(c.skillOverrides?.[i]?.coefficient)?1:row.thresholdScale??1;
       const attackScaling=rupture && physical;
@@ -199,19 +217,21 @@ function solve(c,fixedBuild=null,searchMains=null){
         const apScaling=row.trueAnomaly && manualAnomaly==null;
         const thresholdDisorder=c.skillOverrides?.[i]?.anomalyBonus==null?row.thresholdDisorder??0:0;
         const disorderRatio=thresholdDisorder?thresholdDisorder/anomalyBonus:0;
-        const key=[def,rateBonus,rowCd,attackScaling,threshold,bonusCoefficient,apScaling,disorderRatio].join('|');
-        if(!buckets.has(key))buckets.set(key,{def,rateBonus,rowCd,attackScaling,threshold,bonusCoefficient,apScaling,disorderRatio,weight:[0,0,0]});
+        const key=[def,rateBonus,rowCd,attackScaling,threshold,bonusCoefficient,apScaling,disorderRatio,rateDamageBase].join('|');
+        if(!buckets.has(key))buckets.set(key,{def,rateBonus,rowCd,attackScaling,threshold,bonusCoefficient,apScaling,disorderRatio,rateDamageBase,weight:[0,0,0]});
         const {weight}=buckets.get(key);
         const critKey=critOverride!=null?0:row.aftershock?2:1;
         weight[critKey]+=damageWeight*(row.trueAnomaly?(manualAnomaly??1):1);
       }
-      return {fixed,remaining,critDamageBonus,attackScaling,sheerDamage,threshold,bonusCoefficient,generic,sharp:sharpFactor,sheer:sheerFactor,
+      return {fixed,remaining,critDamageBonus,attackScaling,sheerDamage,threshold,bonusCoefficient,autoGeneric,generic,rateDamageBase,sharp:sharpFactor,sheer:sheerFactor,
         resist:resistFactor,stun:stunFactor,received:receivedFactor,anomalyBonus};
     });
     const defMains=mains.filter(stat=>stat==='def').length;
     const setDefense=.16+(c.two==='rose' && c.set!=='rose'?.16:0);
-    const initialBase=attackStats?.initialBase??baseDef*(1+weaponDef+setDefense+.48*defMains+custom.defPct)+184+custom.flatDef;
+    const initialBase=(attackStats?.initialBase??baseDef*(1+weaponDef+setDefense+.48*defMains+custom.defPct)+184+custom.flatDef)+
+      baseDef*(weaponEffects?.initialDef??0);
     const critBase=attackStats?.rate??.338+.40+sunWeaponRate+(four==='crit'?.24:0)+.35*(.50+sunWeaponCd+(four==='cd'?.48:0)+(c.extraInitialCritDmg??0)/100)+(c.two==='woodpecker'?.08:0)+custom.crit;
+    const weaponCombatDef=baseDef*(weaponEffects?.combatDef??0);
     const critDamage=attackStats?.critDmg??critDmg;
     const weights=[...buckets.values()];
     const candidates=[];
@@ -232,18 +252,20 @@ function solve(c,fixedBuild=null,searchMains=null){
         const ap=(attackStats?.ap??0)+(isMiyabi(c)?9*pen:0);
         const flatPen=rupture && !mixed?0:(rupture || isMiyabi(c)?0:discRoll.pen*pen)+(c.extraFlatPen??0);
         const ownAttack=attackStats?.combatAttackBonus?.(rate-buffs.teamCritRate)??0;
-        const combatStat=rupture?attackStats.combatWithRolls(d,pen):normal?initial+attackStats.baseAtk*attackStats.attackPct+buffs.teamAtk+ownAttack:initial*(1+assault.def)+teamDef;
+        const combatStat=rupture?attackStats.combatWithRolls(d,pen):normal?initial+attackStats.baseAtk*attackStats.attackPct+buffs.teamAtk+ownAttack:initial*(1+assault.def)+teamDef+weaponCombatDef;
         const combatAttack=rupture && mixed?attackStats.combatAttackWithRolls(pen):combatStat;
+        const weaponRateDamage=weaponEffects.rateScale?weaponOvercritDamage(weaponEffects.rateScale,rate):0;
         let score=0;
-        for(const {def,rateBonus,rowCd,attackScaling,threshold,bonusCoefficient,apScaling,disorderRatio,weight:[fixed,ordinary,aftershock]} of weights){
+        for(const {def,rateBonus,rowCd,attackScaling,threshold,bonusCoefficient,apScaling,disorderRatio,rateDamageBase,weight:[fixed,ordinary,aftershock]} of weights){
           const defense=def==null?1:defenseFactor(def,flatPen);
           const rowCrit=(rateBonus || rowCd)?(normal?expectedNormalCrit(rate+rateBonus,cdValue+rowCd):
             expectedSharpCrit(rate+rateBonus,cdValue+rowCd)):crit;
           const scale=rate-buffs.teamCritRate+1e-9>=threshold?bonusCoefficient:1;
-          score+=(attackScaling?combatAttack:combatStat)*scale*defense*(apScaling?2*ap/100:1)*(ap>=375?1+disorderRatio:1)*(fixed+ordinary*rowCrit+aftershock*(rowCrit+aftershockExtra));
+          const damageBonus=rateDamageBase==null?1:rateDamageBase+weaponRateDamage;
+          score+=(attackScaling?combatAttack:combatStat)*scale*defense*damageBonus*(apScaling?2*ap/100:1)*(ap>=375?1+disorderRatio:1)*(fixed+ordinary*rowCrit+aftershock*(rowCrit+aftershockExtra));
         }
         if(best && score<=best.score)return;
-        candidates.push({score,rolls:[d,cr,cd,pen],initial,combatStat,combatAttack,rate,critFactor:crit,aftershockExtra,aftershockShare,critDmg:cdValue,flatPen,ownAttack,ap,mastery:attackStats?.mastery,dynamicCd});
+        candidates.push({score,rolls:[d,cr,cd,pen],initial,combatStat,combatAttack,rate,critFactor:crit,aftershockExtra,aftershockShare,critDmg:cdValue,flatPen,ownAttack,ap,mastery:attackStats?.mastery,dynamicCd,weaponRateDamage});
     }
     // Visit fuller builds first. A lower roll count can win if main/substat
     // exclusions prevent extending the best allocation to the next count.
@@ -254,7 +276,7 @@ function solve(c,fixedBuild=null,searchMains=null){
         if(discs){
           const {dynamicCd,...stats}=candidate;
           const statSources=attackStats?.statSources;
-          best={...stats,discs,mains,penRate,bonus,teamDef,ignore:rupture?1:ignore,factors,
+          best={...stats,discs,mains,penRate,bonus:bonus+stats.weaponRateDamage,teamDef,baseDef,weaponCombatDef,weaponEffects,weaponName,ignore:rupture?1:ignore,factors,
             statSources:dynamicCd?{...statSources,ownCombatCd:[...statSources.ownCombatCd,...dynamicCd]}:statSources};
           break;
         }
@@ -285,7 +307,7 @@ function solve(c,fixedBuild=null,searchMains=null){
   const details=rows.map((r,i)=>{
     const factors=best.factors[i];
     const rowRate=best.rate+(r.critRateBonus??0), rowCritDmg=best.critDmg+factors.critDamageBonus;
-    const naturalCrit=r.trueAnomaly?1:(normal?expectedNormalCrit(rowRate,rowCritDmg):expectedSharpCrit(rowRate,rowCritDmg))+
+    const naturalCrit=r.trueAnomaly || r.weaponProc?1:(normal?expectedNormalCrit(rowRate,rowCritDmg):expectedSharpCrit(rowRate,rowCritDmg))+
       (r.aftershock?best.aftershockExtra:0);
     const crit=skillOverride(c,i,'crit',naturalCrit);
     const automaticDefense=factors.sheerDamage?1:defenseFactor(factors.remaining,best.flatPen);
@@ -296,14 +318,16 @@ function solve(c,fixedBuild=null,searchMains=null){
     const anomalyBonus=r.anomalyTagged?
       skillOverride(c,i,'anomalyBonus',1+r.anomalyBonus+(best.ap>=375?(r.thresholdDisorder??0):0)):1;
     const disorderScale=factors.anomalyBonus?anomalyBonus/factors.anomalyBonus:1;
-    const unit=(factors.attackScaling?best.combatAttack:best.combatStat)*factors.fixed*(matchedThreshold?factors.bonusCoefficient:1)*crit*defense*anomaly*disorderScale;
+    const generic=factors.generic+(factors.rateDamageBase==null?0:best.weaponRateDamage);
+    const damageBonus=factors.rateDamageBase==null?1:generic+r.category;
+    const unit=(factors.attackScaling?best.combatAttack:best.combatStat)*factors.fixed*damageBonus*(matchedThreshold?factors.bonusCoefficient:1)*crit*defense*anomaly*disorderScale;
     const direct=unit*r.count, accrued=unit*r.markWeight;
     pendingMark+=accrued;
     let mark=0;
     if(r.settle && r.count){mark=pendingMark;pendingMark=0;if(r.ultimate&&c.w>=6)mark+=accrued*.8;}
     const automaticCoefficient=r.natural.mult*(matchedThreshold?(r.thresholdScale??1):1);
     return {...r,extraCast:extraCasts[i],automaticDefense,automaticCoefficient,naturalCrit,unit,base:coefficient*r.count,direct,accrued,mark,
-      display:{...factors,coefficient,skill:r.category,final:r.final,crit,defense,anomaly,anomalyBonus,mark:r.markRate}};
+      display:{...factors,generic,coefficient,skill:r.category,final:r.final,crit,defense,anomaly,anomalyBonus,mark:r.markRate}};
   });
   const direct=details.reduce((a,x)=>a+x.direct,0), mark=details.reduce((a,x)=>a+x.mark,0);
   const mainScore=direct+mark;

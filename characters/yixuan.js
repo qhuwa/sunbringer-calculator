@@ -42,8 +42,6 @@ const yiSkills=[
 ];
 const yiExtra=c=>[...Object.keys(stunNames),...Object.keys(supportNames),...Object.keys(defenseNames)].some(id=>teammateSlot(c,id));
 const yiSet=(c,set)=>c.set===set || c.two===set;
-const yiWeaponRank=c=>c.wr-1;
-const yiWeaponStacks=c=>c.yiWeaponStacks??2;
 const yiSetStacks=c=>equippedDiscStacks(c,'yunkui');
 const yiFocused=c=>(c.yiFocused??true) && yiExtra(c);
 
@@ -70,12 +68,11 @@ function yiRotation(c,stunFinisher){
       ['橘福福 · 虎啸',ju?(chain?juChainBonus:ultimate?juUltimateBonus:0):0],
       ['危局招式增伤',c.stun && (chain||ultimate)?stunFinisher:0]
     ];
-    const sheerSources=[['青溟笼舍 · 特殊技／终结技以太贯穿伤害',leadSignature(c) && (ex||ultimate)?yiWeaponStacks(c)*(.10+.015*yiWeaponRank(c)):0]];
     const finalSources=[['橘福福 · 侠肝义胆',chain?chainFinal:ultimate?ultFinal:0]];
     const category=sumBonuses(categorySources), final=1+sumBonuses(finalSources);
     const extraRes=c.w>=2 && (ex||ultimate)?.15:0;
-    return {name:s.name,count,available,extraRes,extraM6:s.type==='adrenalineUlt'?freeUltimate:0,
-      ultimate:s.type==='adrenalineUlt',natural:{mult,category,final,categorySources,sheerSources,finalSources},
+    return {name:s.name,count,type:ex?'ex':ultimate?'ult':s.type,available,extraRes,extraM6:s.type==='adrenalineUlt'?freeUltimate:0,
+      ultimate:s.type==='adrenalineUlt',natural:{mult,category,final,categorySources,finalSources},
       mult:skillOverride(c,i,'coefficient',mult),category:skillOverride(c,i,'skill',category),final:skillOverride(c,i,'final',final),
       source:'other',markRate:0,markWeight:0,settle:false};
   });
@@ -94,7 +91,7 @@ function yiStats(c,buffs,mains,custom){
       ['静听嘉音两件',yiSet(c,'astral')?.10:0],['手动攻击力百分比',(c.customAtkPct??0)/100]],
     panelAtkFlat:[['二号位主属性',316],['手动固定攻击力',c.customFlatAtk??0]],
     ownCombatAtkPct:[['啄木鸟电音四件',woodpeckerAttackBonus(c)]],
-    panelRate:[['基础暴击率',.05],['核心技强化',.144],['青溟笼舍',.20+.03*yiWeaponRank(c)],
+    panelRate:[['基础暴击率',.05],['核心技强化',.144],
       ['四号位主属性',fourth==='crit'?.24:0],['啄木鸟电音两件',yiSet(c,'woodpecker')?.08:0]],
     ownCombatRate:[['云岿如我四件',.04*yiSetStacks(c)],['一影清灵道心',c.w>=1?.10:0],
       ['折枝剑歌四件（冻结或碎冰）',c.set==='branch' && c.yiFrozen?.12:0]],
@@ -102,7 +99,7 @@ function yiStats(c,buffs,mains,custom){
     panelCd:[['基础暴击伤害',.50],['四号位主属性',fourth==='cd'?.48:0],['折枝剑歌两件',yiSet(c,'branch')?.16:0]],
     ownCombatCd:[['玄墨暗涌 · 凝神',yiFocused(c)?.40:0]],
     cdAdjustment:[['手动暴击伤害',(c.customNormalCd??0)/100]],
-    ownElement:[['五号位主属性',fifth==='ether'?.30:0],['青溟笼舍 · 以太伤害',yiWeaponStacks(c)*(.08+.012*yiWeaponRank(c))],
+    ownElement:[['五号位主属性',fifth==='ether'?.30:0],
       ['混沌重金属两件',yiSet(c,'chaoticMetal')?.10:0]],
     ownSheer:[['云岿如我四件满层',yiSetStacks(c)===3?.10:0],['六影 · 凝神',c.w>=6 && yiFocused(c)?.20:0]],
     teamSheerForce:[...buffs.entries.sheerForce,['手动固定贯穿力',c.customSheerForce??0]]

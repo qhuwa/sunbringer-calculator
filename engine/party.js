@@ -118,7 +118,6 @@ function partyBonuses(c,custom,assault){
   const cannonBonus=cannon?kaboomPerStack[rank(cannon.slot)]*(c.kaboomStacks??4):0;
   const sun=isSunbringer(c), element=damageElement(c);
   const fireOrIce=element==='fire' || element==='ice';
-  const signature=leadSignature(c);
   const cissiaCrit=cissiaSlot && (element==='electric' || stunLead || stunners.length);
   const entries={
     teamAP:[[metanuki?.name+' · 狸法七变化',metanuki?[60,69,78,87,96][rank(metanuki.slot)]:0]],
@@ -146,23 +145,20 @@ function partyBonuses(c,custom,assault){
       ['琉音 · 昨夜来电',engine(dialyn)===1?[.30,.345,.39,.435,.48][rank(dialyn)]:0],
       ['照 · 半糖雪兔',zhaoEngine?[.30,.345,.39,.435,.48][rank(zhao)]:0],
       ['卢西娅 · 长夜诗篇',lucia && (rupture || stunLead || stunners.length)?.30:0]],
-    sharp:[['挽昼 · 蜃炎梦火',sun && signature?.10+.015*w:0],[bloodwing?.name+' · 赤翼夜曲',bloodwing?.08:0],['知更鸟 · 六影',shadow(robin)>=6?.15:0],['自定义锐化增伤',custom.sharp],['危局效果',assault.sharp]],
+    sharp:[[bloodwing?.name+' · 赤翼夜曲',bloodwing?.08:0],['知更鸟 · 六影',shadow(robin)>=6?.15:0],['自定义锐化增伤',custom.sharp],['危局效果',assault.sharp]],
     critDmg:[['珂蕾妲 · 爆破作业',koledaSharpCrit[koledaLevel]],['挽昼 · 基础锐暴伤害',sun?1.50:0],['挽昼 · 众愿一心',sun && (stunners.length || defenders)?.25:0],['洛克茜 · 同属性浸染',sharp && roxyCoverage?.20:0,'element'],['知更鸟 · 星韵流彩',engine(robin)===1?[.15,.173,.195,.218,.24][rank(robin)]:0],['自定义锐暴伤害',custom.critDmg],['危局效果',assault.critDmg]],
     general:[['莱卡恩 · 掠冰（非冰伤）',lycaonAwakened && element!=='ice'?.30:0],
       ['苍角 · 额外能力（冰伤）',soukakuExtra && element==='ice'?.20:0,'element'],
       ['莱特 · 昂扬（火／冰伤）',lighter && fireOrIce && lighterExtra(c)?lighterMoraleBonus(c,shadow(lighter)):0,'element'],
       ['柚叶 · 狸之愿',yuzuha?.15:0],['柚叶 · 二影',shadow(yuzuha)>=2?.15:0],
       ['南宫羽 · 天才偶像',nangong?.25:0],[neon?.name+' · 霓虹妄想',neon?2*[.15,.17,.195,.21,.24][rank(neon.slot)]:0],
-      ['挽昼 · 蜃炎梦火（火伤）',sun && signature?.20+.03*w:0],['挽昼 · 四影',sun && c.w>=4?.10:0],['挽昼 · 炎狱重金属',sun && c.two==='inferno'?.10:0],['挽昼 · 荆棘玫瑰四件',sun && c.set==='rose'?.15:0],
-      ['猫又 · 钢铁肉垫（物伤）',cat && signature?.20+.05*w:0,'element'],['猫又 · 钢铁肉垫（背击）',back && signature?[.25,.315,.38,.44,.50][w]:0],
+      ['挽昼 · 四影',sun && c.w>=4?.10:0],['挽昼 · 炎狱重金属',sun && c.two==='inferno'?.10:0],['挽昼 · 荆棘玫瑰四件',sun && c.set==='rose'?.15:0],
       ['猫又 · 猫步迷影',cat && c.nekoCore?.60:0],['獠牙重金属两件',c.set==='fanged' || c.two==='fanged'?.10:0,'element'],
       ['猫又 · 獠牙重金属四件',c.set==='fanged' && c.nekoDiscProc?.35:0],
       ['叶瞬光 · 合道',ye?.25+(c.w>=1?.10:0):0],
-      ['叶瞬光 · 云霓孤光（开启帷幕）',ye && signature && c.yeVeilBuff?yeWeaponBonus[w]:0],
       ['沧浪行歌两件',ye && yeHasSet(c,'ballad')?.10:0,'element'],
       ['叶瞬光 · 獠牙重金属四件',ye && c.set==='fanged' && c.yeDiscProc?.35:0],
       ['零号·安比 · 电位差',silver && c.anbyMarked?.25:0],
-      ['零号·安比 · 牺牲洁纯（三层电伤）',silver && signature && c.anbyWeaponStacks===3?anbyWeaponElectric[w]:0],
       ['零号·安比 · 雷暴重金属两件',silver && (c.set==='thunder' || c.two==='thunder')?.10:0],
       [ownFurBonus>=teamFurBonus?'橘福福 · 福虓炉炉':furNace.name+' · 福虓炉炉',Math.max(ownFurBonus,teamFurBonus)],
       [slumber?.name+' · '+weaponCatalog.get(14162).name,slumber?.20+.03*rank(slumber.slot):0],
@@ -198,7 +194,7 @@ function partyBonuses(c,custom,assault){
       ['苍角 · 四影（冰抗）',shadow(soukaku)>=4 && element==='ice'?.10:0,'element'],
       ['柚叶 · 一影',shadow(yuzuha)>=1?.10:0],['南宫羽 · 一影',shadow(nangong)>=1?.18:0],
       ['挽昼 · 一影',sun && c.w>=1?.15:0],['希希芙 · 一影',cissiaSlot && element==='electric' && shadow(cissiaSlot)>=1?.05:0,'element'],['猫又 · 一影背击',back && c.w>=1?.16:0],['零号·安比 · 四影银白残响',silver && c.anbyMarked && c.w>=4?.12:0],['星徽·比利 · 一影英雄登场',billy && c.w>=1 && c.billyM1Active!==false?.18:0],['知更鸟 · 二影',shadow(robin)>=2?.15:0],['洛克茜 · 一影',shadow(roxy)>=1?.15:0],['诺姆 · 一影',shadow(norma)>=1?.15:0],
-      ['叶瞬光 · 云霓孤光',ye && signature?yeWeaponRes[w]:0],['耀嘉音 · 一影（三层）',shadow(astra)>=1?.18:0],
+      ['耀嘉音 · 一影（三层）',shadow(astra)>=1?.18:0],
       ['琉音 · 一影好评如潮',dialynExtra && shadow(dialyn)>=1?.15:0],['照 · 一影',shadow(zhao)>=1?.15:0],
       ['卢西娅 · 一影巡梦童谣',shadow(lucia)>=1?.18:0],
       ['青衣 · 六影',shadow(qingyi)>=6 || ownQingyi && c.w>=6 && expandedOption(c,'m6')?.20:0],

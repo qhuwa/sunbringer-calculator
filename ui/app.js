@@ -91,10 +91,25 @@ function teammateCard(slot,index){
     </details>
     <details class="team-details"><summary id="${slot}BuffTitle">队友增益</summary><div id="${slot}BuffSummary" class="team-buffs"></div></details></div>`;
 }
+const leadWeaponConditions={
+  ex:['leadWeaponExActive','weaponExActive','强化特殊技触发效果覆盖全轮',true],
+  targetLow:['leadWeaponLowHp','weaponLowHp','敌人生命低于 50%',false],
+  selfLow:['leadWeaponSelfLow','weaponSelfLow','自身生命低于 50%',false],
+  hpLost:['leadWeaponHpLost','weaponHpLost','本轮触发失去生命效果',false],
+  back:['leadWeaponBack','weaponBack','按背击结算',false],
+  far:['leadWeaponFar','weaponFar','远距离触发效果覆盖本轮',false],
+  veil:['leadWeaponVeil','weaponVeil','已开启以太帷幕',false],
+  coverage:['leadWeaponCoverage','weaponCoverage','条件被动覆盖本轮',true],
+  anomaly:['leadWeaponAnomaly','weaponAnomaly','目标处于属性异常状态',false],
+  offField:['leadWeaponOffField','weaponOffField','角色处于后场',false]
+};
 el('cards').innerHTML=`<div class="card team-card team-card-lead"><span class="lead-card-marker">主 C</span>
   ${agentCardHeader('mainAgent','主 C',agentOptions(leadChoices,'sunbringer'))}
   <div class="fields"><label>意象影画<select id="w">${numericOptions(0,6,' 影')}</select></label><label>音擎星级<select id="wr">${numericOptions(1,5,' 星')}</select></label>
-  ${weaponCardField('we')}<small class="wide weapon-hint" id="leadWeaponHint" hidden></small></div>
+  ${weaponCardField('we')}<small class="wide weapon-hint" id="leadWeaponHint" hidden></small>
+  <label class="wide" hidden><span id="leadWeaponStackLabel">本轮音擎被动层数</span><input id="leadWeaponStacks" type="number" min="0" value="0" disabled></label>
+  ${Object.values(leadWeaponConditions).map(([id,,label,checked])=>
+    `<label class="wide roll-limit" hidden><input id="${id}" type="checkbox"${checked?' checked':''} disabled>${label}</label>`).join('')}</div>
   <details class="team-details" id="leadPotentialSettings" hidden><summary>潜能觉醒</summary><div class="fields">
     <label class="wide" data-neko hidden>猫的报恩<select id="nekoPotential"></select></label>
     <label class="wide" data-anby hidden>银白色的心<select id="anbyPotential"></select></label>
@@ -251,6 +266,10 @@ function getConfig(){
   }
   const stacks=el('leadWeaponStacks');
   if(!stacks.disabled)c.weaponStacks=stacks.valueAsNumber;
+  for(const [id,field] of Object.values(leadWeaponConditions)){
+    const input=el(id);
+    if(!input.disabled)c[field]=input.checked;
+  }
   c.kaboomStacks=Number(el('kaboomStacks').value);
   c.astralStacks=Number(el('astralStacks').value);
   c.snowbunnyStacks=Number(el('snowbunnyStacks').value);
@@ -352,7 +371,7 @@ function variants(c){
   const slot=key[0];
   const actor=slot==='w'?lead():teammateChoices[c[slot+'char']];
   const selectedEngine=c[slot+'e']??1;
-  const engineId=hasEngineRank(c[slot+'char'],selectedEngine)?selectedEngine:1;
+  const engineId=slot==='w' || hasEngineRank(c[slot+'char'],selectedEngine)?selectedEngine:1;
   const engineName=weaponOptionLabel(actor,engineId);
   return Array.from({length:rank?5:7},(_,i)=>{
     const level=rank?i+1:i;
@@ -591,6 +610,7 @@ function render(saveBaseline=false,tuneDiscs=false){
   const statTitle=rupture?'贯穿力':normal?'攻击力':'防御力';
   const critCap=normal?1:2;
   const critTitle=normal?'暴击伤害':'锐暴伤害';
+  renderLeadWeaponHint();
   el('multiplierStatus').textContent='';
   const discLocked=el('lockEntireBuild').checked;
   el('discSearchStatus').textContent=discLocked?'整套驱动盘已锁定。':'';
@@ -707,6 +727,10 @@ function render(saveBaseline=false,tuneDiscs=false){
       `<p>当前主属性在 ${c.rollBudget} 条预算内无法达到 ${pct(critCap)} 暴击率。</p>`));
   const groups={core:{label:'核心五招',direct:0,accrued:0},other:{label:'二影其余招式',direct:0,accrued:0},rupture:{label:'毁伤',direct:0,accrued:0}};
   b.rows.forEach((r,i)=>{
+    if(r.weaponProc){
+      groups.other.direct+=r.direct;
+      return;
+    }
     el('skillName'+i).textContent=r.name+(r.element==='physical'?'（物理伤害）':'');
     const count=el('n'+i);
     if(roster[i].automatic){
@@ -739,6 +763,7 @@ function render(saveBaseline=false,tuneDiscs=false){
   el('multiplierRows').innerHTML=b.rows.map((row,i)=>{
     const cells=activeMultiplierFields().map(field=>{
       if(field==='sheer' && !row.display.sheerDamage || field==='anomaly' && !row.trueAnomaly || field==='anomalyBonus' && !row.anomalyTagged)return '<td>—</td>';
+      if(row.weaponProc)return `<td>${displayFactor(100*row.display[field])}%</td>`;
       const edited=Object.hasOwn(overrides[i],field);
       const value=edited?Number((100*overrides[i][field]).toPrecision(14)):Number((100*row.display[field]).toFixed(2));
       return `<td><input data-field="${field}" data-skill-row="${i}" class="${edited?'overridden':''}" aria-label="${row.name} ${field}" type="number" step="any" value="${value}"></td>`;
@@ -760,6 +785,8 @@ function render(saveBaseline=false,tuneDiscs=false){
   else el('markSummary').textContent=normal?'次数按发动次数填写。赤色之刃、猫猫爪刺五段的重复斩击已计入单次倍率。超凶爪印与猫的凝视可按实际触发次数单独填写。':
     '从上到下结算。伤害占比包含该招式的直伤和引爆结算的烬灭。最后一次引爆后新增的烬痕只计积攒。纯闪避、切换主控和招架支援的直伤为 0。';
   if(b.rows.some(row=>row.extraCast))el('markSummary').append(' 输入框填写基础次数，旁边的队友次数自动叠加。');
+  const weaponProc=b.rows.find(row=>row.weaponProc);
+  if(weaponProc)el('markSummary').append(' '+weaponProc.name+' '+weaponProc.count+' 次，共 '+fmt(weaponProc.direct)+'。');
   if(hasTeammateDamage)el('markSummary').append(' 伤害占比以全队总伤为分母。');
   showComparisons(c,b,discLocked);
   saveSettings();
@@ -845,22 +872,45 @@ function syncTeammateWeaponHint(slot,actor,engine){
   info.textContent=weapon && (weapon.role!==agentRole(actor)?'职业不符，被动不生效。':
     modeledTeamEngines.has(engine)?'已收录的队伍增益见卡片下方。':'此音擎未录入队伍被动，队友角色增益仍按卡片条件计算。');
 }
+function renderLeadWeaponHint(){
+  const weapon=equippedLeadWeapon({main,we:Number(el('we').value)}), info=el('leadWeaponHint');
+  info.hidden=!weapon;
+  if(!weapon)return;
+  const qingyiGears=main==='qingyi' && weapon.id===14110;
+  const matched=weapon.role===agentRole(lead());
+  const modeled=qingyiGears || modeledLeadEngines.has(weapon.id) || Number(el('we').value)===1;
+  const passiveHint=!matched?'职业不符，只结算基础属性和副属性。':modeled?
+    '被动按招式、伤害属性和下方覆盖设置结算。':'当前只有基础属性和副属性。';
+  const converts=usesSharp({main}) && weapon.stat==='cd'?'副属性暴伤按 35% 折算为初始暴击率。':'';
+  const procHint=matched && weapon.id===14001?'触发次数手动填写，追加伤害按主 C 的属性估算。':'';
+  info.textContent=weaponStatsText(weapon)+'。'+converts+passiveHint+procHint;
+}
 function syncLeadEngine(){
-  const select=el('we'), weapon=weaponCatalog.get(Number(select.value));
+  const select=el('we'), config={main,we:Number(select.value)}, weapon=equippedLeadWeapon(config);
   const rank=leadWeaponRanks[main]?.[select.value];
   el('wr').value=rank??1;
   el('variants').querySelector('[value="wr"]').textContent=weaponOptionLabel(lead(),select.value)+'星级';
-  const info=el('leadWeaponHint'), stacks=el('leadWeaponStacks');
+  const stacks=el('leadWeaponStacks');
   const qingyiGears=main==='qingyi' && weapon?.id===14110;
   const maxStacks=qingyiGears?2:weaponPassiveStacks[weapon?.id];
-  info.hidden=!weapon;
-  info.textContent=weapon && (weapon.role!==agentRole(lead())?'职业不符，只有基础与副属性生效。':
-    qingyiGears || modeledLeadEngines.has(weapon.id)?'按下方设置结算已收录的被动。':'当前按基础与副属性计算，此音擎被动尚未建模。');
-  stacks.disabled=maxStacks===undefined || weapon.role!==agentRole(lead());
+  const compatible=Boolean(weapon && weapon.role===agentRole(lead()));
+  const rules=compatible?(weaponPassives[weapon.id]??[]):[];
+  const legacy=compatible?legacyWeaponOptions(config,weapon):{};
+  const profile=leadProfiles[main];
+  const persisted=profile?.weaponConditions?.[weapon?.id]??(Number(profile?.fields?.we)===config.we?profile?.fields:undefined);
+  for(const [key,[id,,,defaultValue]] of Object.entries(leadWeaponConditions)){
+    const input=el(id);
+    const used=rules.some(([, ,rule])=>rule?.when===key || (key==='anomaly' && ['stunOrAnomaly','chainOrExAnomaly'].includes(rule?.when)));
+    input.checked=persisted?.[id]??defaultValue;
+    input.disabled=!used || Object.hasOwn(legacy,key) || key==='anomaly' && Object.hasOwn(legacy,'stunOrAnomaly');
+    input.closest('label').hidden=input.disabled;
+  }
+  stacks.disabled=maxStacks===undefined || !compatible || Object.hasOwn(legacy,'stacks') || qingyiGears && leadSignature(config);
   stacks.closest('label').hidden=stacks.disabled;
   if(!stacks.disabled){
     stacks.max=maxStacks;
-    stacks.value=leadProfiles[main]?.weaponStacks?.[weapon.id]??stacks.max;
+    el('leadWeaponStackLabel').textContent=weapon.id===14001?'加农转子实际触发次数':weapon.id===14124?'消耗音擎充能次数':'本轮音擎被动层数';
+    stacks.value=profile?.weaponStacks?.[weapon.id]??(weapon.id===14001?0:maxStacks);
   }
 }
 function applyWeaponChange(slot){
@@ -997,7 +1047,8 @@ const previousMiyabiCounts={
   1:{1091015:1,1091018:1,1091029:2,1091009:1,1091011:1,1091005:1,shatter:2,frostburn:2,frostDisorder:1},
   2:{1091018:1,1091029:3,frostburn:3,frostDisorder:3}
 };
-const leadFields=new Set(['w','we','wr','leadWeaponStacks','set','two','main4','main5','main6','res','physicalRes','rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat',
+const weaponConditionIds=Object.values(leadWeaponConditions).map(([id])=>id);
+const leadFields=new Set(['w','we','wr','leadWeaponStacks',...weaponConditionIds,'set','two','main4','main5','main6','res','physicalRes','rollBudget','tripleRollLimit','pairRollLimit','maxRollsPerStat',
   'lockDiscSets','lockTwo','lockMain4','lockMain5','lockMain6','lockEntireBuild','customFire','customCritDmg','customDefPct','customFlatDef','customSharp',
   ...Object.keys(leadDiscStackRules).map(key=>key+'Stacks'),
   ...rollInputs.map(x=>x.id),...rollLocks.map(x=>x.id),
@@ -1063,7 +1114,7 @@ function configureLead(id){
     rollLocks[i].setAttribute('aria-label','锁定'+name+'条数');
   });
   for(const control of settingsControls){
-    if(!leadFields.has(control.id) || ['res','physicalRes','we','wr','leadWeaponStacks'].includes(control.id))continue;
+    if(!leadFields.has(control.id) || ['res','physicalRes','we','wr','leadWeaponStacks',...weaponConditionIds].includes(control.id))continue;
     if(control.type==='checkbox')control.checked=control.defaultChecked;
     else if(control.id==='w')control.value=defaultLeadShadows[id]??0;
     else if(control.tagName==='SELECT')control.value=discs[control.id]??(control.id.endsWith('Potential')?'6':control.options[0].value);
@@ -1101,9 +1152,13 @@ function saveSettings(){
   }
   const weaponId=el('we').value;
   const weaponStacks={...leadProfiles[main]?.weaponStacks};
-  if(!el('leadWeaponStacks').disabled)weaponStacks[weaponId]=el('leadWeaponStacks').value;
+  const weapon=equippedLeadWeapon({main,we:Number(weaponId)});
+  if(weapon && !el('leadWeaponStacks').disabled)weaponStacks[weapon.id]=el('leadWeaponStacks').value;
+  const weaponConditions={...leadProfiles[main]?.weaponConditions};
+  const activeConditions=weaponConditionIds.filter(id=>!el(id).disabled);
+  if(weapon && activeConditions.length)weaponConditions[weapon.id]=Object.fromEntries(activeConditions.map(id=>[id,fields[id]]));
   (leadWeaponRanks[main]??={})[weaponId]=el('wr').value;
-  leadProfiles[main]={weaponStacks,fields:Object.fromEntries(Object.entries(fields).filter(([id])=>leadFields.has(id))),
+  leadProfiles[main]={weaponStacks,weaponConditions,fields:Object.fromEntries(Object.entries(fields).filter(([id])=>leadFields.has(id))),
     rotation,manualBaseline,boss:fields.boss,discLimitPreset,
     ...(main==='miyabi'?{rotationPreset:miyabiRotationPreset}:{})};
   for(const slot of teammateSlots){
@@ -1129,7 +1184,7 @@ function restoreLeadProfile(profile){
   const useNewDiscLimits=fields && profile.discLimitPreset===undefined && !fields.lockEntireBuild &&
     !rollLocks.some(lock=>fields[lock.id]) && discLimitFields.every((id,i)=>fields[id]===previousDiscLimits[i]);
   for(const control of settingsControls){
-    if(!leadFields.has(control.id) || ['we','leadWeaponStacks'].includes(control.id) || (['res','physicalRes'].includes(control.id) && profile?.boss!==el('boss').value))continue;
+    if(!leadFields.has(control.id) || ['we','leadWeaponStacks',...weaponConditionIds].includes(control.id) || (['res','physicalRes'].includes(control.id) && profile?.boss!==el('boss').value))continue;
     if(useNewDiscLimits && discLimitFields.includes(control.id))continue;
     restoreControl(control,fields?.[control.id]??fields?.[oldStackFields[control.id]]);
   }

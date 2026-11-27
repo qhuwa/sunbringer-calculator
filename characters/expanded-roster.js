@@ -60,7 +60,6 @@ function expandedRotation(c,stunFinisher){
   const ju=teammateSlot(c,'jufufu');
   const [chainFinal,ultFinal]=juPotential[ju?c.potential:0]??juPotential[0];
   const option=key=>expandedOption(c,key);
-  const weapon=c.wr-1;
   const counts=new Map(actor.skills.map((skill,i)=>[skill.id,c.counts[i]]));
   const classic=Object.hasOwn(classicLeads,c.main)?classicRotationRules(c,actor,counts):null;
   const stunKit=Object.hasOwn(stunLeads,c.main)?stunLeadRotation(c,counts):null;
@@ -96,7 +95,6 @@ function expandedRotation(c,stunFinisher){
         extraRes=m>=1?.10:0;
       }
       categorySources.push(['希希芙 · 二影蛇吻',m>=2 && id===1521006?.35:0]);
-      extraIgnore=leadSignature(c) && option('weapon')?[.28,.315,.35,.385,.42][weapon]:0;
     }
     if(actor===seed){
       const ally=hasAttackAlly(c);
@@ -107,7 +105,7 @@ function expandedRotation(c,stunFinisher){
         ['「席德」 · 四影围杀',m>=4 && ally && option('core') && ult?.20:0]);
       critDamageBonus=m>=1 && collapse?.30:0;
       extraRes=ally && (specialBasic || ult)?.25:0;
-      extraIgnore=(m>=2 && ally && option('core')?.20:0)+(leadSignature(c) && option('weapon')===2 && (basic || ult)?.20+.03*weapon:0);
+      extraIgnore=m>=2 && ally && option('core')?.20:0;
       if(id===1461096)available=m>=6 && counts.get(1461006)>0;
     }
     if(actor===sigrid){
@@ -164,7 +162,7 @@ function expandedRotation(c,stunFinisher){
     const baseMult=(skill.base+(upgradeLevel(m)-1)*skill.step)/10000*(skill.split??1);
     const mult=(baseMult+bonusMult)*coeffScalar;
     const category=sumBonuses(categorySources), final=1+sumBonuses(finalSources);
-    return {name,count,available,element:skill.element,aftershock:skill.aftershock,ultimate:id===actor.ultId,source:'other',markRate:0,markWeight:0,settle:false,
+    return {name,count,type,available,element:skill.element,aftershock:skill.aftershock,ultimate:id===actor.ultId,source:'other',markRate:0,markWeight:0,settle:false,
       extraIgnore,extraRes,extraPen,extraStun,critDamageBonus,critRateBonus,critThreshold,thresholdScale,
       natural:{mult,baseMult,category,final,categorySources,sheerSources,finalSources,
         critSources:actor===qingyi && critDamageBonus?[['青衣 · 六影醉花月云转',critDamageBonus]]:[]},
@@ -173,8 +171,7 @@ function expandedRotation(c,stunFinisher){
 }
 
 function expandedStats(c,buffs,mains,custom){
-  const actor=expandedLead(c), r=c.wr-1, m=c.w;
-  const rank=(value,step)=>value+step*r;
+  const actor=expandedLead(c), m=c.w;
   const option=key=>expandedOption(c,key);
   const has=set=>c.set===set || c.two===set;
   const fourth=mains[3], fifth=mains[4], count=stat=>mains.filter(x=>x===stat).length;
@@ -198,7 +195,7 @@ function expandedStats(c,buffs,mains,custom){
     atkFlatAdjustment:[['手动固定攻击力',c.customFlatAtk??0]],
     ownCombatAtkPct:[[name+' · 影画',actor===sigrid && m>=1?.25:actor===severian && m>=4?.10:0],
       ['激素朋克四件',c.set==='hormone'?.25:0],['啄木鸟电音四件',woodpeckerAttackBonus(c)],
-      ['拂晓行纪四件',c.set==='chronicle'?.10:0],[weapon,actor===severian && option('weapon')?rank(.10,.015):0]],
+      ['拂晓行纪四件',c.set==='chronicle'?.10:0]],
     ownCombatAtkFlat:[[name+' · 核心被动',bloom?1000:0],[name+' · 额外能力',actor===sigrid && supportOrStun?840:0]],
     panelRate:[['角色面板（含核心技强化）',actor.crit],['四号位主属性',fourth==='crit'?.24:0],
       ['啄木鸟电音两件',has('woodpecker')?.08:0],[weapon,actor.weaponCrit??(actor===seed || actor===severian?.24:0)]],
@@ -220,7 +217,6 @@ function expandedStats(c,buffs,mains,custom){
   if(Object.hasOwn(classicLeads,c.main))classicStatSources(c,actor,statSources);
   if(actor===cissia){
     const regen=1.56*(1+(leadSignature(c)?.60:engineStat(alternateLeadWeapon(c),'energy'))+(has('swing')?.20:0)+(mains[5]==='energy'?.60:0));
-    ownCombatRate.push([weapon,[.25,.288,.325,.363,.40][r]]);
     if(option('core')){
       statSources.ownIgnore.push(['希希芙 · 生物毒素',cissiaDefenseIgnore(regen,m)]);
       ownRes.push(['希希芙 · 一影',m>=1?.05:0]);
@@ -228,42 +224,32 @@ function expandedStats(c,buffs,mains,custom){
     ownCombatCd.push(['希希芙 · 额外能力',option('core') && (hasElectricAlly(c) || partyHas(c,Object.keys(stunNames)))?.50:0]);
   }
   if(actor===seed){
-    ownCombatRate.push([weapon,rank(.15,.02)]);
     ownCombatCd.push(['「席德」 · 强袭',bloom?.30:0],['「席德」 · 六影',m>=6?.50:0]);
     ownGeneral.push(['「席德」 · 围杀',bloom?.25:0]);
-    ownElement.push([weapon,option('weapon')*rank(.125,.02)]);
   }
   if(actor===sigrid){
-    ownCombatCd.push([weapon,option('weapon')*rank(.32,.048)]);
-    ownRes.push([weapon,option('weapon')===2?rank(.20,.03):0]);
     ownGeneral.push(['希格莉德 · 浸染',supportOrStun && (option('infusion') || option('roxy') && partyHas(c,['roxy']))?.15:0],
       ['希格莉德 · 四影巡空枪势',m>=4 && option('core')?.18:0]);
   }
   if(actor===banyue){
-    ownCombatRate.push([weapon,rank(.20,.03)]);
     ownCombatCd.push(['般岳 · 核心被动',option('core')?.36+(m>=2?.15:0):0]);
     ownElement.push(['般岳 · 核心被动',option('core')?.36+(m>=2?.15:0):0],
       ['般岳 · 明王',supportOrStun?option('stacks')*(m>=6?.13:.05):0]);
-    ownSheer.push([weapon,option('weapon')*rank(.09,.0135)]);
     ownRes.push(['般岳 · 一影战栗',m>=1 && option('shiver')?.10:0]);
   }
   if(actor===yidhari){
-    ownCombatRate.push([weapon,option('low')?rank(.20,.03):0]);
     ownCombatCd.push(['伊德海莉 · 额外能力',supportOrStun && option('low')?.30:0],['伊德海莉 · 二影',m>=2?.40:0]);
     ownGeneral.push(['伊德海莉 · 低生命核心增伤',option('low')?1:0]);
-    ownSheer.push([weapon,option('weapon')*rank(.06,.01)],['伊德海莉 · 六影启谛',m>=6 && yidhariVeil && option('m6')?.25:0]);
+    ownSheer.push(['伊德海莉 · 六影启谛',m>=6 && yidhariVeil && option('m6')?.25:0]);
   }
   if(actor===pyrois){
-    ownCombatRate.push([weapon,.20]);
     ownCombatCd.push(['佩洛伊斯 · 额外能力',supportOrStun?.40:0]);
     ownGeneral.push(['佩洛伊斯 · 耀斑',option('flare')?.40:0]);
-    ownRes.push([weapon,option('weapon')?rank(.16,.015):0]);
   }
   if(actor===severian){
-    ownCombatRate.push([weapon,rank(.20,.03)]);
     ownCombatCd.push(['赛维里安 · 核心被动',.60]);
     ownGeneral.push(['赛维里安 · 核心被动',.25],['赛维里安 · 风属性队友',partyHas(c,['roxy'])?.30:0]);
-    ownRes.push([weapon,option('weapon')?[.15,.173,.195,.218,.24][r]:0],['赛维里安 · 一影',m>=1?.15:0]);
+    ownRes.push(['赛维里安 · 一影',m>=1?.15:0]);
     ownPen.push(['赛维里安 · 二影',m>=2 && option('m2')?.20:0]);
   }
   if(rupture){
@@ -299,26 +285,24 @@ function expandedStats(c,buffs,mains,custom){
 }
 
 function claretStats(c,buffs,mains,custom){
-  const r=c.wr-1, weapon=claret.engines[0][1], has=set=>c.set===set || c.two===set;
-  const alternate=alternateLeadWeapon(c);
-  const name=alternate?.name??weapon;
-  const baseDef=claret.stat+(alternate?engineBase(alternate,'def'):431);
-  const initialEntries=[[name,alternate?engineStat(alternate,'def'):.48],['防御主属性',.48*mains.filter(stat=>stat==='def').length],
+  const has=set=>c.set===set || c.two===set;
+  const {weapon,values}=c.weaponModel??evaluateLeadWeapon(c), name=weapon.name;
+  const baseDef=claret.stat+engineBase(weapon,'def');
+  const initialEntries=[[name,engineStat(weapon,'def')],['防御主属性',.48*mains.filter(stat=>stat==='def').length],
     ['荆棘玫瑰两件',has('rose')?.16:0],['星之碑两件',has('star')?.16:0],['手动防御百分比',custom.defPct]];
   const initialBase=baseDef*(1+sumBonuses(initialEntries))+184+custom.flatDef;
   const sharpCdSources=[['克拉蕾 · 基础锐暴伤害',1.50],
     ['克拉蕾 · 残锋',expandedOption(c,'blade') && (partyHas(c,Object.keys(stunNames)) || hasElectricAlly(c))?.25:0],
     ...buffs.entries.critDmg];
-  const panelRate=[['克拉蕾 · 面板暴击率',claret.crit],[name,alternate?engineStat(alternate,'crit'):.25+.025*r],
+  const panelRate=[['克拉蕾 · 面板暴击率',claret.crit],[name,engineStat(weapon,'crit')],[name+'被动',values.crit??0],
     ['四号位主属性',mains[3]==='crit'?.24:0],['啄木鸟电音两件',has('woodpecker')?.08:0],['星之碑四件',c.set==='star'?.12:0]];
   const panelCd=[['基础暴伤',claret.cd],['四号位主属性',mains[3]==='cd'?.48:0],
-    [name,engineStat(alternate,'cd')],['额外初始暴伤',(c.extraInitialCritDmg??0)/100]];
+    [name,engineStat(weapon,'cd')],['额外初始暴伤',(c.extraInitialCritDmg??0)/100]];
   const coreRate=expandedOption(c,'core')?.30:0;
   const rate=sumBonuses(panelRate)+.35*sumBonuses(panelCd)+coreRate+custom.crit;
-  const ownElement=[[name,alternate?0:.15+.025*r],['五号位电伤主属性',mains[4]==='electric'?.30:0],['雷暴重金属两件',has('thunder')?.10:0]];
+  const ownElement=[['五号位电伤主属性',mains[4]==='electric'?.30:0],['雷暴重金属两件',has('thunder')?.10:0]];
   const ownGeneral=[['荆棘玫瑰四件',c.set==='rose'?.15:0]];
-  const ownSharp=[[name,!alternate && expandedOption(c,'weapon')?.10+.015*r:0]];
   return {baseDef,initialBase,rate,critDmg:sumBonuses(sharpCdSources),
-    bonus:1+buffs.general+sumBonuses(ownElement)+sumBonuses(ownGeneral),sharp:sumBonuses(ownSharp),
-    statSources:{initialEntries,sharpCdSources,panelRate,panelCd,coreRate,ownElement,ownGeneral,ownSharp}};
+    bonus:1+buffs.general+sumBonuses(ownElement)+sumBonuses(ownGeneral),
+    statSources:{initialEntries,sharpCdSources,panelRate,panelCd,coreRate,ownElement,ownGeneral}};
 }

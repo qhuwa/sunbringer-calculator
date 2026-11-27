@@ -32,7 +32,6 @@ const isAnby=c=>c.main==='anby';
 const anbyFour={shadow:'如影相随',thunder:'雷暴重金属',woodpecker:'啄木鸟电音',hormone:'激素朋克'};
 const anbyTwo={...anbyFour,puffer:'河豚电音',astral:'静听嘉音'};
 const anbyInitial={set:'shadow',two:'thunder',main4:'crit',main5:'auto',main6:'atk'};
-const anbyWeaponElectric=[.20,.23,.26,.29,.32];
 const anbyExtra=c=>['jufufu','roxy','norma','trigger','dialyn',...Object.keys(supportNames)].some(id=>teammateSlot(c,id));
 
 function anbyCircuit(c){
@@ -70,14 +69,13 @@ function anbyRotation(c,stunFinisher){
 }
 
 function anbyStats(c,buffs,mains,custom){
-  const alternate=alternateLeadWeapon(c);
-  const baseAtk=929+(alternate?engineBase(alternate,'atk'):713);
+  const weapon=equippedLeadWeapon(c);
+  const baseAtk=929+engineBase(weapon,'atk');
   const [fourth,fifth]=mains.slice(3,5);
   const atkMains=mains.filter(stat=>stat==='atk').length;
   const has=set=>c.set===set || c.two===set;
-  const initialBase=baseAtk*(1+engineStat(alternate,'atk')+.30*atkMains+(has('hormone')?.10:0)+(has('astral')?.10:0)+(c.customAtkPct||0)/100)+316+(c.customFlatAtk||0);
+  const initialBase=baseAtk*(1+engineStat(weapon,'atk')+.30*atkMains+(has('hormone')?.10:0)+(has('astral')?.10:0)+(c.customAtkPct||0)/100)+316+(c.customFlatAtk||0);
   const shadowStacks=equippedDiscStacks(c,'shadow');
-  const weaponCritPerStack=[.10,.115,.13,.145,.16][c.wr-1];
   const statSources={
     ownCombatAtkPct:[['如影相随四件',.04*shadowStacks],['啄木鸟电音四件',woodpeckerAttackBonus(c)],
       ['雷暴重金属四件',c.set==='thunder' && c.anbyShock?.28:0],['激素朋克四件',c.set==='hormone' && c.anbyDiscProc?.25:0]],
@@ -86,9 +84,8 @@ function anbyStats(c,buffs,mains,custom){
     ownCombatRate:[['如影相随四件 · '+shadowStacks+' 层',.04*shadowStacks],
       ['二影「冗余协议」',c.w>=2?.12:0],['额外能力「电极化」',anbyExtra(c)?.10:0]],
     rateAdjustment:[['自定义暴击率',custom.crit]],
-    panelCd:[['基础暴伤',.50],['牺牲洁纯副属性',.48],['四号位主属性',fourth==='cd'?.48:0]],
-    ownCombatCd:[['牺牲洁纯 · 固定暴伤',3*weaponCritPerStack],
-      ['牺牲洁纯 · '+c.anbyWeaponStacks+' 层',c.anbyWeaponStacks*weaponCritPerStack]],
+    panelCd:[['基础暴伤',.50],['四号位主属性',fourth==='cd'?.48:0]],
+    ownCombatCd:[],
     cdAdjustment:[['自定义普通暴伤',(c.customNormalCd||0)/100]]
   };
   applyLeadEngineStats(c,statSources,'牺牲洁纯');

@@ -43,8 +43,6 @@ const yeFour={ballad:'沧浪行歌',dawn:'拂晓生花',fanged:'獠牙重金属'
 const yeTwo={...yeFour,branch:'折枝剑歌',puffer:'河豚电音',astral:'静听嘉音'};
 const yeInitial={set:'ballad',two:'branch',main4:'cd',main5:'auto',main6:'atk'};
 const yeHasSet=(c,set)=>c.set===set || c.two===set;
-const yeWeaponBonus=[.25,.287,.325,.362,.40];
-const yeWeaponRes=[.20,.22,.24,.26,.28];
 const yeVeilCap=c=>c.w>=4?2:1.10;
 const yeSnapshotStun=c=>c.yeVeilSnapshot==='stunned' || (c.yeVeilSnapshot!=='normal' && !!c.stun);
 function yeVeilFactor(c,buffs){
@@ -97,7 +95,7 @@ function yeStats(c,buffs,mains,custom){
     rateAdjustment:[['自定义暴击率',custom.crit]],
     panelCd:[['基础暴伤',.50],['云霓孤光副属性',.48],['四号位主属性',fourth==='cd'?.48:0],
       ['折枝剑歌两件',yeHasSet(c,'branch')?.16:0]],
-    ownCombatCd:[['云霓孤光 · 开启帷幕',c.yeVeilBuff?yeWeaponBonus[c.wr-1]:0]],
+    ownCombatCd:[],
     cdAdjustment:[['自定义普通暴伤',(c.customNormalCd||0)/100]]
   };
   applyLeadEngineStats(c,statSources,'云霓孤光');

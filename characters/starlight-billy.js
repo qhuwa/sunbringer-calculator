@@ -62,9 +62,8 @@ function billyRotation(c,stunFinisher){
 }
 
 function billyStats(c,buffs,mains,custom){
-  const fourth=mains[3], fifth=mains[4], rank=c.wr-1;
+  const fourth=mains[3], fifth=mains[4];
   const hasSet=set=>yiSet(c,set);
-  const weaponStacks=c.billyWeaponStacks??2;
   const setStacks=yiSetStacks(c);
   const frozen=c.set==='branch' && c.yiFrozen;
   const statSources={
@@ -78,7 +77,7 @@ function billyStats(c,buffs,mains,custom){
       ['静听嘉音两件',hasSet('astral')?.10:0],['手动攻击力百分比',(c.customAtkPct??0)/100]],
     panelAtkFlat:[['二号位主属性',316],['手动固定攻击力',c.customFlatAtk??0]],
     ownCombatAtkPct:[['啄木鸟电音四件',woodpeckerAttackBonus(c)]],
-    panelRate:[['基础暴击率',.05],['核心技强化',.144],['辉骑面铠',.20+.03*rank],
+    panelRate:[['基础暴击率',.05],['核心技强化',.144],
       ['四号位主属性',fourth==='crit'?.24:0],['啄木鸟电音两件',hasSet('woodpecker')?.08:0]],
     ownCombatRate:[['云岿如我四件',.04*setStacks],['折枝剑歌四件（冻结或碎冰）',frozen?.12:0]],
     rateAdjustment:[['手动暴击率',custom.crit]],
@@ -87,7 +86,7 @@ function billyStats(c,buffs,mains,custom){
       ['折枝剑歌四件（异常掌控达标）',c.set==='branch' && mains[5]==='mastery'?.30:0]],
     cdAdjustment:[['手动暴击伤害',(c.customNormalCd??0)/100]],
     ownElement:[['五号位主属性',fifth==='physical'?.30:0]],
-    ownSheer:[['辉骑面铠 · 骑士气势',weaponStacks*(.10+.015*rank)],['云岿如我四件满层',setStacks===3?.10:0]],
+    ownSheer:[['云岿如我四件满层',setStacks===3?.10:0]],
     teamSheerForce:[...buffs.entries.sheerForce,['手动固定贯穿力',c.customSheerForce??0]]
   };
   applyLeadEngineStats(c,statSources,'辉骑面铠');

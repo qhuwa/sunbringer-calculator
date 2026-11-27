@@ -1,75 +1,121 @@
 const alternateLeadWeapon=c=>weaponCatalog.get(c.we);
-const leadSignature=c=>!alternateLeadWeapon(c);
+const leadDefaultWeapons={sunbringer:14160,nekomata:14102,anby:14138,yeShunguang:14143,yixuan:14137,starlightBilly:14153};
+const defaultLeadWeapon=c=>weaponCatalog.get(expandedLead(c)?.weaponId??leadDefaultWeapons[c.main??'sunbringer']);
+const equippedLeadWeapon=c=>alternateLeadWeapon(c)??defaultLeadWeapon(c);
+const leadSignature=c=>!alternateLeadWeapon(c) || c.we===defaultLeadWeapon(c)?.id;
 const weaponRankIndex=rank=>Math.max(0,Math.min(4,(rank??1)-1));
 const engineStat=(weapon,stat)=>weapon?.stat===stat?weapon.value:0;
 const engineBase=(weapon,type)=>weapon?.baseType===type?weapon.base:0;
 const modeledTeamEngines=new Set([13113,13115,14107,14116,14121,14125,14139,14141,14151,14162,13103,14002]);
-const modeledLeadEngines=new Set([14114,14118,14125,13008,13009,13003,14104,14119,14122,14162,12011]);
-const weaponPassiveStacks={14118:3,13008:4,13003:10,14104:8};
+const modeledLeadEngines=new Set([14114,14125,...Object.keys(weaponPassives).map(Number)]);
 const leadWeaponRole=c=>expandedLead(c)?.role.split(' · ')[0]??(usesSharp(c)?'锋御':usesRupture(c)?'命破':'强攻');
 
-// The catalog supplies base and advanced stats across specialties. Passives require a specialty match.
-function leadWeaponEffects(c){
-  const weapon=alternateLeadWeapon(c);
-  const result={atk:0,ap:0,general:0,element:0,crit:0,cd:0,res:0,disorder:0};
-  if(!weapon || weapon.role!==leadWeaponRole(c))return result;
-  const r=weaponRankIndex(c.wr), stacks=c.weaponStacks??weaponPassiveStacks[weapon.id]??0;
-  const element=damageElement(c);
+const weaponSkillTypes=[['basic','普通攻击'],['ex','强化特殊技'],['special','特殊技'],['chain','连携技'],
+  ['ult','终结技'],['dash','冲刺攻击'],['dodge','闪避反击'],['quick','快速支援']];
+const weaponSkillType=row=>weaponSkillTypes.find(([type,prefix])=>row.type===type || row.name.startsWith(prefix))?.[0];
+
+// Preserve controls saved before the weapon rules were moved out of the agent kits.
+function legacyWeaponOptions(c,weapon){
+  if(!leadSignature(c))return {};
+  const option=key=>expandedOption(c,key);
   switch(weapon.id){
-    case 14122: // Timeweaver. The Disorder bonus also requires 375 AP.
-      result.ap=[75,85,95,105,115][r];
-      result.disorder=[.25,.275,.30,.325,.35][r];
-      break;
-    case 12011: // Magnetic Storm – Bravo
-      result.ap=[25,28,32,36,40][r];
-      break;
-    case 14118: // Fusion Compiler
-      result.atk=.12+.015*r;
-      result.ap=stacks*[25,28,32,36,40][r];
-      break;
-    case 13008: // Weeping Gemini
-      result.ap=stacks*[30,34,38,42,46][r];
-      break;
-    case 13009: // Electro-Lip Gloss, target afflicted
-      result.atk=.10+.015*r;
-      result.general=.15+.025*r;
-      break;
-    case 13003: // Rainforest Gourmet
-      result.atk=stacks*[.025,.028,.032,.036,.04][r];
-      break;
-    case 14104: // The Brimstone
-      result.atk=stacks*[.035,.044,.052,.06,.07][r];
-      break;
-    case 14119: // Deep Sea Visitor, normal hit and ice dash hit
-      result.element=element==='ice'?[.25,.315,.38,.44,.50][r]:0;
-      result.crit=element==='ice'?2*(.10+.025*r):(.10+.025*r);
-      break;
-    case 14162: // Everlasting Slumber
-      result.crit=.24+.02*r;
-      result.res=element==='wind'?roxyWeaponRes[r]:0;
-      break;
+    case 14102:return {back:nekoBack(c)};
+    case 14138:return {stacks:c.anbyWeaponStacks??3};
+    case 14143:return {veil:c.yeVeilBuff??true};
+    case 14137:return {stacks:c.yiWeaponStacks??2};
+    case 14153:return {stacks:c.billyWeaponStacks??2};
+    case 14159:case 14146:case 14147:case 14104:case 14124:case 14119:case 13106:return {stacks:option('weapon')};
+    case 14132:return {stacks:option('strings')};
+    case 14105:return {stacks:option('weapon'),selfLow:option('low')};
+    case 14163:case 14155:case 14152:case 14129:case 14161:return {coverage:option('weapon')};
+    case 13144:return {hpLost:option('hpCost')};
+    case 13108:return {far:option('weapon')};
+    case 14120:return {stunOrAnomaly:c.stun || option('anomaly')};
+    default:return {};
   }
-  return result;
+}
+
+function leadWeaponRuleOptions(c,weapon,rows){
+  const previous=legacyWeaponOptions(c,weapon);
+  const active=rows.filter(row=>row.count>0);
+  const matchingElement=(row,element)=>(row.element??damageElement(c))===element;
+  const has=(...types)=>active.some(row=>types.includes(weaponSkillType(row)));
+  const ex=(c.weaponExActive??true) && has('ex');
+  const stacks=Math.max(0,c.weaponStacks??previous.stacks??(weapon.id===14001?0:weaponPassiveStacks[weapon.id]??0));
+  const anomaly=Boolean(c.weaponAnomaly);
+  const basicHit=previous.stacks!==undefined?stacks>=1:has('basic');
+  const iceDash=previous.stacks!==undefined?stacks>=2 && damageElement(c)==='ice':
+    active.some(row=>weaponSkillType(row)==='dash' && matchingElement(row,'ice'));
+  const fireAftershock=active.some(row=>row.aftershock && matchingElement(row,'fire'));
+  return {stacks,ex,basicHit,iceDash,fireAftershock,chainOrEx:ex || has('chain'),chainOrExAnomaly:anomaly && (ex || has('chain')),
+    chainOrUlt:has('chain','ult'),dodgeOrQuick:has('dodge','quick'),stunOrAnomaly:previous.stunOrAnomaly??(c.stun || anomaly),
+    coverage:c.weaponCoverage??previous.coverage??true,targetLow:c.weaponLowHp??false,selfLow:c.weaponSelfLow??previous.selfLow??false,
+    hpLost:c.weaponHpLost??previous.hpLost??false,back:c.weaponBack??previous.back??false,far:c.weaponFar??previous.far??false,
+    veil:c.weaponVeil??previous.veil??false,offField:c.weaponOffField??false};
+}
+
+// Equipment stats apply across specialties. Passive rules can target the build, the element, or the individual cast.
+function evaluateLeadWeapon(c,rows=[]){
+  const weapon=equippedLeadWeapon(c), values={}, castRules=[];
+  if(!weapon || weapon.role!==leadWeaponRole(c) || !weaponPassives[weapon.id])return {weapon,values,castRules};
+  // These alternate-weapon rules coexist with the pre-existing specialty kit for its own signature.
+  if(weapon.id===14162 && leadSignature(c))return {weapon,values,castRules};
+  const options=leadWeaponRuleOptions(c,weapon,rows);
+  const rank=weaponRankIndex(c.wr);
+  for(const [stat,amount,rule={}] of weaponPassives[weapon.id]){
+    if(rule.when && !options[rule.when] || rule.agent && rule.agent!==c.main || options.stacks<(rule.minStacks??0))continue;
+    const value=(Array.isArray(amount)?amount[rank]:amount)*(rule.stacked?options.stacks:1);
+    if(!value)continue;
+    if(rule.element || rule.skills)castRules.push({stat,value,...rule});
+    else values[stat]=(values[stat]??0)+value;
+  }
+  return {weapon,values,castRules,charges:options.stacks};
+}
+
+function weaponCastModifiers(c,model,row,charges){
+  const type=weaponSkillType(row), element=row.element??damageElement(c);
+  const modifiers={};
+  for(const rule of model.castRules){
+    if(rule.element && rule.element!==element || rule.skills && !rule.skills.includes(type))continue;
+    let value=rule.value;
+    if(rule.charges){
+      if(!row.count)continue;
+      const used=Math.min(charges,row.count);
+      charges-=used;
+      value*=used/row.count;
+    }
+    modifiers[rule.stat]=(modifiers[rule.stat]??0)+value;
+  }
+  return {modifiers,charges};
+}
+
+const weaponOvercritDamage=(scale,rate)=>scale*Math.max(0,Math.min(.50,rate-1));
+
+function leadWeaponEffects(c){
+  const {values,castRules}=c.weaponModel??evaluateLeadWeapon(c);
+  const element=damageElement(c);
+  const matching=stat=>castRules.filter(rule=>rule.stat===stat && rule.element===element && !rule.skills)
+    .reduce((sum,rule)=>sum+rule.value,0);
+  return {atk:values.atk??0,ap:values.ap??0,general:values.damage??0,element:matching('damage'),crit:values.crit??0,
+    cd:values.cd??0,res:matching('res'),disorder:values.disorder??0};
 }
 
 function applyLeadEngineStats(c,sources,signatureName){
-  const weapon=alternateLeadWeapon(c);
-  if(!weapon)return;
-  for(const [key,entries] of Object.entries(sources)){
+  const model=c.weaponModel??evaluateLeadWeapon(c);
+  const {weapon,values}=model;
+  if(!weapon || (!alternateLeadWeapon(c) && !weaponPassives[weapon.id]) || weapon.id===14162 && leadSignature(c))return;
+  for(const entries of Object.values(sources)){
     const remaining=entries.filter(([name])=>!name.startsWith(signatureName));
     entries.splice(0,entries.length,...remaining);
   }
-  const effects=leadWeaponEffects(c);
   const insert=(key,value)=>{if(value)(sources[key]??=[]).push([weapon.name,value]);};
   insert('baseAtk',engineBase(weapon,'atk'));
   insert('panelAtkPct',engineStat(weapon,'atk'));
   insert('panelHpPct',engineStat(weapon,'hp'));
   insert('panelRate',engineStat(weapon,'crit'));
   insert('panelCd',engineStat(weapon,'cd'));
-  insert('ownCombatAtkPct',effects.atk);
-  insert('ownCombatRate',effects.crit);
-  insert('ownCombatCd',effects.cd);
-  insert('ownElement',effects.element);
-  insert('ownGeneral',effects.general);
-  insert('ownRes',effects.res);
+  insert('ownCombatAtkPct',values.atk);
+  insert('ownCombatRate',values.crit);
+  insert('ownCombatCd',values.cd);
+  insert('teamSheerForce',values.force);
 }

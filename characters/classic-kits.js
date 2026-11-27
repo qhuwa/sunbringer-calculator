@@ -53,7 +53,6 @@ function classicBattle(c,actor,counts){
 
 function classicStatSources(c,actor,s){
   const {option,mind,stunners,support,potential,physical,ice,fire,obol,anomaly,ally}=classicBattle(c,actor);
-  const r=c.wr-1, weapon=actor.engines[0][1];
   const name=actor.name;
   const ownElement=s.ownElement, ownGeneral=s.ownGeneral;
   const rate=s.ownCombatRate, cd=s.ownCombatCd, atk=s.ownCombatAtkPct;
@@ -66,42 +65,34 @@ function classicStatSources(c,actor,s){
   if(c.set==='fanged')damage('獠牙重金属四件',option('assault')?.35:0);
   switch(actor){
     case corin:
-      element(weapon,option('weapon')*[.03,.035,.04,.044,.048][r]);
       damage(label('扫除帮手'),c.stun && (physical || ally('rina'))?.35:0);
       damage(label('一影'),mind>=1?.12:0);
       s.ownRes.push([label('二影'),mind>=2?.005*option('m2'):0]);
       break;
     case manato:
-      element(weapon,.15+.0225*r);
       element(label('熔锋'),option('forge')?.20:0);
       crit(label('熔锋'),option('forge')?.10:0);
-      crit(weapon,option('hpCost')?.15+.0225*r:0);
       element(label('六影'),mind>=6?.03*option('m6'):0);
       s.ownRes.push([label('二影熔锋'),mind>=2 && option('forge')?.08:0]);
       break;
     case hugo:
       crit(label('暗渊回响'),option('echo')?.12:0);
       critDamage(label('暗渊回响'),option('echo')?.25:0);
-      critDamage(weapon,.45+.0675*r);
       s.ownCombatAtkFlat.push([label('终末裁决 · 击破队友'),[0,300,900][stunners]]);
-      s.ownIgnore.push([weapon,option('weapon')?.25+.0375*r:0]);
       s.ownRes.push([label('四影'),mind>=4 && option('m4')?.12:0]);
       break;
     case evelyn:
       crit(label('牵缠禁制'),option('bind')?.25:0);
       s.ownIgnore.push([label('一影禁锢'),mind>=1 && option('bind')?.12:0]);
       attack(label('二影'),mind>=2?.15:0);
-      critDamage(weapon,.50+.075*r);
       critDamage(label('四影护盾'),mind>=4 && option('m4')?.40:0);
       break;
     case soldier11:
       element(label('燎原'),(fire || obol)?.10+(c.stun?.225:0):0);
-      attack(weapon,option('weapon')*[.035,.044,.052,.06,.07][r]);
       critDamage(label('潜能觉醒'),(fire || obol) && potential>=2?.08*potential:0);
       if(c.set==='inferno')crit('炎狱重金属四件',option('burn')?.28:0);
       break;
     case zhuyuan:
-      crit(weapon,[.15,.188,.226,.264,.30][r]);
       crit(label('武装协同'),option('extra') && (support || ally('qingyi') || ally('cissia'))?.30:0);
       break;
     case ellen:{
@@ -109,15 +100,12 @@ function classicStatSources(c,actor,s){
       element(label('风暴潮'),layers*.03);
       critDamage(label('潜能觉醒'),potential>=2?layers*.008*potential:0);
       s.ownRes.push([label('潜能觉醒'),layers===10?[0,0,.033,.05,.067,.083,.10][potential]:0]);
-      element(weapon,.25+.065*r);
-      crit(weapon,option('weapon')*(.10+.025*r));
       crit(label('一影'),mind>=1?option('m1')*.02:0);
       crit('折枝剑歌四件',c.set==='branch' && option('freeze')?.12:0);
       s.ownPen.push([label('六影'),mind>=6?.20:0]);
       break;
     }
     case harumasa:
-      crit(weapon,(.10+.015*r)*(anomaly?2:1));
       damage(label('超频'),anomaly && stunners?.40:0);
       if(potential>=2)attack(label('潜能觉醒'),.02*potential);
       s.ownRes.push([label('六影'),mind>=6 && anomaly && option('m6')?.15:0]);
@@ -129,7 +117,6 @@ function classicStatSources(c,actor,s){
       break;
     case billy:
       damage(label('稳定据枪'),option('crouch')?.50:0);
-      element(weapon,option('weapon')?[.36,.41,.465,.52,.575][r]:0);
       damage(label('六影'),mind>=6?option('m6')*.06:0);
       break;
   }
@@ -137,9 +124,9 @@ function classicStatSources(c,actor,s){
 
 function classicRotationRules(c,actor,counts){
   const {option,mind,stunners,support,potential,physical,ice,chainCount,ultCount,ally}=classicBattle(c,actor,counts);
-  const r=c.wr-1, weapon=actor.engines[0][1], e=effect=>actor.name+' · '+effect;
+  const e=effect=>actor.name+' · '+effect;
   const n=id=>counts.get(id)??0;
-  let rounds=option('weapon'), arrows=option('m2'), feast=option('m6');
+  let arrows=option('m2'), feast=option('m6');
   const decisionCount=(id,type)=>c.stun?(option('decide')===type || option('decide')===3?Math.min(1,n(id)):0):
     type===1 && mind>=6?n(id):0;
   return (skill,count,category)=>{
@@ -174,7 +161,6 @@ function classicRotationRules(c,actor,counts){
       }
       case evelyn:
         if(chain || ult){
-          out.extraRes=option('strings')*[.125,.145,.165,.185,.20][r];
           if(stunners || support){
             add(e('潜袭支点'),.30);
             if(id!==1321096){out.critThreshold=.80;out.thresholdScale=1.25;}
@@ -197,11 +183,6 @@ function classicRotationRules(c,actor,counts){
           add(e('特种弹药'),c.stun?.80:.40);
           add(e('二影'),mind>=2?option('m2')*.10:0);
           out.extraRes=mind>=4?.25:0;
-        }
-        if(elemental && (basic || dash) && count){
-          const spent=Math.min(rounds,count);
-          rounds-=spent;
-          add(weapon,(leadSignature(c)?spent/count:0)*[.35,.435,.52,.605,.70][r]);
         }
         if(id===1241027)out.count=mind>=6?Math.min(option('m6'),n(1241016)):0;
         break;
@@ -228,7 +209,6 @@ function classicRotationRules(c,actor,counts){
           add(e('二影电掣'),.50*charged/count);
         }
         if(slash || follow)out.extraRes=potential>=2?.025*potential:0;
-        if(leadSignature(c) && (dash && elemental || follow))add(weapon,.40+.06*r);
         if(follow)out.count=c.stun?n(1201020)+n(1201021)+n(1201022):0;
         if(id===1201024)out.count=ultCount;
         if(id===1201096)out.count=mind>=6?Math.floor(n(1201008)/12):0;

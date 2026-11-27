@@ -69,7 +69,7 @@ function miyabiStats(c,buffs,mains,custom){
     ownCombatCd:[[weapon.name,signature?[.50,.57,.65,.72,.80][rank]:effect.cd],['折枝剑歌四件',c.set==='branch' && mastery>=115?.30:0]],
     ownCombatAtkPct:[[weapon.name,effect.atk],['激素朋克四件',c.set==='hormone'?.25:0],['啄木鸟电音四件',woodpeckerAttackBonus(c)]],
     ownCombatAtkFlat:[],
-    ownGeneral:[[weapon.name,effect.general]],
+    ownGeneral:[],
     ownElement:[['驱动盘五号位冰伤',mains[4]==='ice'?.30:0],['极地重金属两件',has('polar')?.10:0],
       ['星见雅 · 名残雪',expandedOption(c,'ultimate')?.30:0],
       [weapon.name,signature?[.20,.23,.26,.29,.32][rank]*expandedOption(c,'weapon'):effect.element]],
